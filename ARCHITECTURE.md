@@ -1,6 +1,6 @@
-# Architecture & Deep Dive: PIOS AI & MLOps Platform
+# Architecture & Deep Dive: PulseAI Platform
 
-This document provides a technical deep-dive into the architectural components of the **PIOS AI & MLOps Platform**.
+This document provides a technical deep-dive into the architectural components of the **PulseAI Platform**.
 
 ---
 

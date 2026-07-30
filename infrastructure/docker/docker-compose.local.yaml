@@ -1,12 +1,12 @@
 services:
   postgres:
     image: postgres:16
-    container_name: pios-postgres
+    container_name: pulse-postgres
     networks:
       - default
       - sonar-network
     environment:
-      POSTGRES_DB: pios
+      POSTGRES_DB: pulse
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       # These are consumed by init-db.sh
@@ -27,7 +27,7 @@ services:
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.22.4
     mem_limit: 1g
-    container_name: pios-mlflow
+    container_name: pulse-mlflow
     networks:
       - default
     ports:

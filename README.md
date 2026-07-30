@@ -1,4 +1,4 @@
-# PIOS AI & MLOps Platform
+# PulseAI — Config-Driven AI Agent & MLOps Platform
 
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 [![Django 5.0](https://img.shields.io/badge/django-5.0-green.svg)](https://www.djangoproject.com/)
@@ -6,7 +6,7 @@
 [![MLflow](https://img.shields.io/badge/MLflow-2.22+-blue.svg)](https://mlflow.org/)
 [![Feast](https://img.shields.io/badge/Feast-Feature%20Store-orange.svg)](https://feast.dev/)
 
-**PIOS AI** is a config-driven, autonomous AI Agent & MLOps platform for dynamic blood donation management, inventory optimization, and digital twin simulation.
+**PulseAI** is a general, config-driven, autonomous AI Agent & MLOps platform for dynamic blood donation management, supply orchestration, inventory optimization, and digital twin simulation.
 
 ---
 

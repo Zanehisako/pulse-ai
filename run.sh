@@ -18,7 +18,7 @@ fi
 # ── HELP ──────────────────────────────────────
 show_help() {
   echo -e "${B}══════════════════════════════════════════════${N}"
-  echo -e "${B}           🧠 PIOS AI & MLOps Platform        ${N}"
+  echo -e "${B}             💓 PulseAI Platform              ${N}"
   echo -e "${B}══════════════════════════════════════════════${N}"
   echo ""
   echo "Usage: ./run.sh [command]"
