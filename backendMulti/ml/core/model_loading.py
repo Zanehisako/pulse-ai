@@ -177,7 +177,7 @@ def _local_runtime_from_active_registry(model_id: str, registry: Any | None) -> 
     runtime = active_registry.get(model_id) if active_registry is not None else None
     if runtime is None:
         return None
-    if runtime.status != "loaded" or runtime.model_type == "mlflow":
+    if runtime.status != "loaded":
         return None
     return runtime
 
