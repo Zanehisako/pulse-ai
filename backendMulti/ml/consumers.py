@@ -72,7 +72,6 @@ class OrchestratorWebsocketConsumer(AsyncJsonWebsocketConsumer):
                 await self.send_json({"type": "error", "message": "Query parameter is required."})
                 return
 
-            # Execute prediction in background thread to avoid blocking ASGI loop
             import threading
             threading.Thread(
                 target=self._run_orchestrator,
@@ -91,13 +90,20 @@ class OrchestratorWebsocketConsumer(AsyncJsonWebsocketConsumer):
         refresh_runtime_state("ws-predict", force=False, warmup=False)
         orchestrator = get_orchestrator()
 
-        # Attach custom log handler to catch live python logs during orchestrator run
-        root_logger = logging.getLogger()
+        # Attach log handler to root and ML loggers to capture all live execution logs
+        loggers_to_attach = [
+            logging.getLogger(),
+            logging.getLogger("ml"),
+            logging.getLogger("ml.orchestrator"),
+            logging.getLogger("ml.core"),
+        ]
         log_handler = WebsocketLogHandler(self, None)
-        log_handler.setLevel(logging.INFO)
-        formatter = logging.Formatter("[%(levelname)s] %(name)s: %(message)s")
+        log_handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("%(message)s")
         log_handler.setFormatter(formatter)
-        root_logger.addHandler(log_handler)
+
+        for lgr in loggers_to_attach:
+            lgr.addHandler(log_handler)
 
         def event_callback(event: Dict[str, Any]) -> None:
             async_to_sync(self.send_json)(event)
@@ -124,10 +130,12 @@ class OrchestratorWebsocketConsumer(AsyncJsonWebsocketConsumer):
                 "result": result,
             })
         except Exception as exc:
+            logging.error("Orchestrator unhandled exception: %s", exc, exc_info=True)
             async_to_sync(self.send_json)({
                 "type": "error",
                 "phase": "error",
                 "message": f"Orchestrator execution error: {exc}"
             })
         finally:
-            root_logger.removeHandler(log_handler)
+            for lgr in loggers_to_attach:
+                lgr.removeHandler(log_handler)

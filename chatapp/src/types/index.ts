@@ -14,6 +14,7 @@ export interface ExecutionStep {
   reasoning?: string;
   status?: StepStatus;
   output?: unknown;
+  error?: string;
 }
 
 export interface MessageTelemetry {

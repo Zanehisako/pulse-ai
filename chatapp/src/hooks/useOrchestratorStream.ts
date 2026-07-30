@@ -63,7 +63,6 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
 
       socket.onclose = () => {
         setStatus(prev => ({ ...prev, ws_connected: false }));
-        // Retry connection after 3 seconds if disconnected
         setTimeout(() => {
           if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
             connectWebSocket();
@@ -160,7 +159,8 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
               ? {
                   ...s,
                   status: isSuccess ? ('success' as const) : ('failed' as const),
-                  output: event.output || event.error
+                  output: event.output,
+                  error: event.error || (isSuccess ? undefined : 'Tool execution failed or was skipped.')
                 }
               : s
           );
