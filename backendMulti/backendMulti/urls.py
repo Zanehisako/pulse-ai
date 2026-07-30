@@ -1,5 +1,7 @@
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
+from django.views.static import serve
 from inventory.views import DonorListView
 from ml.api.views import OrchestratorChatView
 
@@ -17,7 +19,6 @@ urlpatterns = [
     path("alerts/", include("alerts.urls")),
     path("admin/", admin.site.urls),
     path('api/', include('communications.urls')),
-    # path("dashboard/", include("dashboard.urls")),
     path('api/workspace/', include('workspace.urls')),
     path("api/donors/", DonorListView.as_view(), name="donors-list"),
     path("dashboard/", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
@@ -30,7 +31,7 @@ urlpatterns = [
     path("api/ml/", include(("ml.urls", "ml"), namespace="ml")),
     path("ml/", include(("ml.urls", "ml-legacy"), namespace="ml-legacy")),
     path("chat/", OrchestratorChatView.as_view(), name="root-chat"),
-
+    path("assets/<path:path>", serve, {"document_root": settings.BASE_DIR.parent / "chatapp" / "dist" / "assets"}),
 ]
 
 try:

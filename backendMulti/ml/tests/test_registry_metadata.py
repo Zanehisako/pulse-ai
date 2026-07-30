@@ -55,7 +55,7 @@ def test_registry_applies_runtime_metadata_defaults(tmp_path: Path):
     assert runtime.status == "loaded"
     assert "component demand" in runtime.description.lower()
     assert "forecast" in runtime.examples[0]["user_query"].lower()
-    assert runtime.defaults["prediction_source"] == "feast_online"
+    assert runtime.defaults["prediction_source"] == "direct_input"
     assert runtime.defaults["feast"]["feature_service"] == "quebec_arima_sarima_forecast_service"
 
 

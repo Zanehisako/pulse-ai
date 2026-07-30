@@ -6,7 +6,7 @@
         "task": "donor_horizon"
       },
       "defaults": {
-        "prediction_source": "feast_online",
+        "prediction_source": "direct_input",
         "forecast_selection": {
           "enabled": true,
           "target": "donation",
@@ -62,7 +62,7 @@
         "task": "donor_individual"
       },
       "defaults": {
-        "prediction_source": "feast_online",
+        "prediction_source": "direct_input",
         "feast": {
           "feature_service": "quebec_donor_service",
           "entity_keys": ["donor_id"],
@@ -86,7 +86,7 @@
         "task": "donor_individual"
       },
       "defaults": {
-        "prediction_source": "feast_online",
+        "prediction_source": "direct_input",
         "feast": {
           "feature_service": "quebec_donor_service",
           "entity_keys": ["donor_id"],
@@ -127,7 +127,7 @@
         "task": "inventory_forecast"
       },
       "defaults": {
-        "prediction_source": "feast_online",
+        "prediction_source": "direct_input",
         "forecast_selection": {
           "enabled": true,
           "target": "stockout",
@@ -167,7 +167,7 @@
         "task": "inventory_forecast"
       },
       "defaults": {
-        "prediction_source": "feast_online",
+        "prediction_source": "direct_input",
         "feast": {
           "feature_service": "quebec_arima_sarima_forecast_service",
           "entity_keys": ["hospital_id", "blood_type", "component_type"],
@@ -191,7 +191,7 @@
         "task": "inventory_forecast"
       },
       "defaults": {
-        "prediction_source": "feast_online",
+        "prediction_source": "direct_input",
         "feast": {
           "feature_service": "quebec_arima_sarima_forecast_service",
           "entity_keys": ["hospital_id", "blood_type", "component_type"],
@@ -215,7 +215,7 @@
         "task": "inventory_forecast"
       },
       "defaults": {
-        "prediction_source": "feast_online",
+        "prediction_source": "direct_input",
         "feast": {
           "feature_service": "quebec_arima_sarima_forecast_service",
           "entity_keys": ["hospital_id", "blood_type", "component_type"],
