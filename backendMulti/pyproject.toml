@@ -81,7 +81,7 @@ training = [
 ]
 dreamerv3 = [
   "jax==0.4.33",
-  "jaxlib==0.4.33",
+  "jaxlib==0.10.2",
   "elements>=3.19.1",
   "portal>=3.5.0",
   "ruamel.yaml",
