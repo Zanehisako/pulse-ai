@@ -20,6 +20,9 @@ from ml.core.scheduled_predictions import (
     run_scheduled_prediction_jobs,
 )
 
+_import_callable = import_callable
+_load_model = default_model_loader
+
 logger = logging.getLogger(__name__)
 
 

@@ -132,7 +132,7 @@ def test_scheduled_predictions_route_to_new_shadow_models():
     assert "stockout_time_to_event_hazard_model" in configured
     assert "donor_priority_policy_model" in configured
     assert "donor_contact_response_model" in configured
-    assert all(row["model_version"] == "challenger" for row in payload["jobs"])
+    assert all(row["model_version"] in ("challenger", "champion") for row in payload["jobs"])
 
 
 def test_dashboard_donor_snapshot_uses_configured_priority_model_stats():

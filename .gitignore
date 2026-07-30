@@ -783,7 +783,6 @@ ml-backend/simulator/validation_results/plots/validation_comparison_bar.png
 ml-backend/simulator/validation_results/tables/validation_summary.csv
 ml-backend/simulator/validation_results/tables/validation_summary.txt
 ml-backend/simulator/strategy_radar_comparison.html
-web-app/pios-web/src/assets/5.png
 catboost_info/
 celerybeat-schedule*
 backendMulti/ml/models/
