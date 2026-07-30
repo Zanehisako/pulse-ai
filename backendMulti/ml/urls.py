@@ -77,6 +77,11 @@ urlpatterns = [
         views.OrchestratorWarmupView.as_view(),
         name="orchestrator-warmup",
     ),
+    path(
+        "chat/",
+        views.OrchestratorChatView.as_view(),
+        name="chat",
+    ),
     # Training Scheduler
     path(
         "scheduler/status/",

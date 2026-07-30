@@ -31,7 +31,7 @@ class MlConfig(AppConfig):
 
         if not (is_daphne or is_runserver):
             return
-        if is_runserver and os.environ.get("RUN_MAIN") != "true":
+        if is_runserver and os.environ.get("RUN_MAIN") != "true" and "--noreload" not in sys.argv:
             return
 
         def _deferred_init():

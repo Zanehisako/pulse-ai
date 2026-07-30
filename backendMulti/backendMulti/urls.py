@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import include, path
 from inventory.views import DonorListView
+from ml.api.views import OrchestratorChatView
 
 from backendMulti.api_docs import (
     DocsAutoAuthTokenView,
@@ -28,6 +29,7 @@ urlpatterns = [
 
     path("api/ml/", include(("ml.urls", "ml"), namespace="ml")),
     path("ml/", include(("ml.urls", "ml-legacy"), namespace="ml-legacy")),
+    path("chat/", OrchestratorChatView.as_view(), name="root-chat"),
 
 ]
 

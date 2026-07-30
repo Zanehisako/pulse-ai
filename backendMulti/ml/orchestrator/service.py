@@ -1811,6 +1811,7 @@ class DynamicXLAMOrchestrator:
         max_tokens: int,
         temperature: float = 0.1,
         system_prompt: str | None = None,
+        event_callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> str:
         if self._llm is None:
             raise RuntimeError("Orchestrator LLM unavailable.")
@@ -1823,6 +1824,35 @@ class DynamicXLAMOrchestrator:
                 messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": prompt})
             try:
+                if event_callback:
+                    chunks = self._llm.create_chat_completion(
+                        messages=messages,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        stream=True,
+                    )
+                    accumulated = []
+                    for chunk in chunks:
+                        choices = chunk.get("choices", []) if isinstance(chunk, dict) else []
+                        if choices and isinstance(choices[0], dict):
+                            delta = choices[0].get("delta", {}) if isinstance(choices[0].get("delta"), dict) else {}
+                            text_token = delta.get("content") or ""
+                            if text_token:
+                                accumulated.append(text_token)
+                                current_text = "".join(accumulated)
+                                self._emit_run_event(
+                                    event_callback,
+                                    {
+                                        "type": "token",
+                                        "phase": "summarizing",
+                                        "token": text_token,
+                                        "text": current_text,
+                                    },
+                                )
+                    full_text = "".join(accumulated).strip()
+                    if full_text:
+                        return full_text
+
                 output = self._llm.create_chat_completion(
                     messages=messages,
                     max_tokens=max_tokens,
@@ -1838,6 +1868,34 @@ class DynamicXLAMOrchestrator:
                     text = self._extract_chat_message_text(message.get("content"))
                     if text:
                         return text
+            except Exception:
+                pass
+
+        if event_callback:
+            try:
+                chunks = self._llm(
+                    prompt, max_tokens=max_tokens, temperature=temperature, echo=False, stream=True
+                )
+                accumulated = []
+                for chunk in chunks:
+                    choices = chunk.get("choices", []) if isinstance(chunk, dict) else []
+                    if choices and isinstance(choices[0], dict):
+                        text_token = choices[0].get("text") or ""
+                        if text_token:
+                            accumulated.append(text_token)
+                            current_text = "".join(accumulated)
+                            self._emit_run_event(
+                                event_callback,
+                                {
+                                    "type": "token",
+                                    "phase": "summarizing",
+                                    "token": text_token,
+                                    "text": current_text,
+                                },
+                            )
+                full_text = "".join(accumulated).strip()
+                if full_text:
+                    return full_text
             except Exception:
                 pass
 
@@ -5562,6 +5620,7 @@ class DynamicXLAMOrchestrator:
         execution_results: list[ExecutionResult],
         plan: ExecutionPlan,
         planner_mode: str,
+        event_callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> str:
         success_rows = [r for r in execution_results if r.success]
         if not success_rows:
@@ -5601,6 +5660,7 @@ class DynamicXLAMOrchestrator:
             prompt,
             max_tokens=max_tokens,
             temperature=0.1,
+            event_callback=event_callback,
         )
 
     def _extract_response(self, results) -> str:
@@ -6644,7 +6704,9 @@ class DynamicXLAMOrchestrator:
                 "successful_tool_count": len([r for r in results if r.success]),
             },
         )
-        summary = self._summarize(prepared_query, results, plan, planner_mode)
+        summary = self._summarize(
+            prepared_query, results, plan, planner_mode, event_callback=event_callback
+        )
         logger.debug("Finished request. Summary preview: %s", summary[:80])
         self._emit_run_event(
             event_callback,

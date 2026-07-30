@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PulseAI Orchestrator — Real-time AI Agent Chat</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- FontAwesome & Libraries -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css" />
+
+  <style>
+    :root {
+      --bg-dark: #070913;
+      --bg-surface: #0d1120;
+      --bg-card: rgba(18, 23, 42, 0.85);
+      --bg-card-hover: rgba(26, 33, 58, 0.9);
+      --bg-input: #12182c;
+      --border-color: #1e2846;
+      --border-bright: #2e3d6b;
+      
+      --accent-crimson: #ef4444;
+      --accent-blood: #dc2626;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-amber: #f59e0b;
+      
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-heading: 'Outfit', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+      
+      --shadow-glow: 0 0 25px rgba(239, 68, 68, 0.15);
+      --shadow-cyan: 0 0 25px rgba(6, 182, 212, 0.15);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(7, 9, 19, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-cyan);
+    }
+
+    #root {
+      height: 100%;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 64px);
+      position: relative;
+    }
+
+    /* Header */
+    .app-header {
+      height: 64px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      backdrop-filter: blur(12px);
+      z-index: 20;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent-crimson), #991b1b);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+    }
+
+    .brand-title {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--accent-emerald);
+    }
+
+    .status-pulse {
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent-emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-emerald);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 15px var(--accent-emerald); }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 320px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preset-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .preset-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-cyan);
+      transform: translateY(-1px);
+    }
+
+    .preset-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preset-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Main Chat Feed */
+    .main-chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: var(--bg-dark);
+      position: relative;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .message-row {
+      display: flex;
+      gap: 16px;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .message-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .user-avatar {
+      background: linear-gradient(135deg, var(--accent-purple), #4c1d95);
+      color: white;
+    }
+
+    .assistant-avatar {
+      background: linear-gradient(135deg, var(--accent-cyan), #0e7490);
+      color: white;
+      box-shadow: var(--shadow-cyan);
+    }
+
+    .message-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+    }
+
+    .message-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .message-sender {
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .user-bubble {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-main);
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    /* Reasoning & Execution Plan Drawer */
+    .reasoning-box {
+      background: rgba(13, 17, 32, 0.95);
+      border: 1px solid var(--border-bright);
+      border-left: 3px solid var(--accent-amber);
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 13px;
+      color: #fcd34d;
+      margin-bottom: 8px;
+    }
+
+    .reasoning-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .plan-drawer {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .plan-header {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .plan-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px;
+      background: rgba(7, 9, 19, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .step-badge {
+      background: var(--accent-cyan);
+      color: #000;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    .step-details {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .step-command {
+      font-family: var(--font-mono);
+      color: var(--accent-emerald);
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 8px;
+      border-radius: 4px;
+      word-break: break-all;
+    }
+
+    /* Markdown Body */
+    .markdown-body {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-main);
+    }
+    .markdown-body p { margin-bottom: 12px; }
+    .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+      font-family: var(--font-heading);
+      margin: 16px 0 10px 0;
+      color: #fff;
+    }
+    .markdown-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+    .markdown-body th, .markdown-body td {
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      text-align: left;
+    }
+    .markdown-body th {
+      background: rgba(30, 40, 70, 0.5);
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+    }
+    .markdown-body pre {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      margin: 14px 0;
+    }
+
+    /* Input Bar */
+    .input-area {
+      padding: 16px 24px 24px 24px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .input-box-wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-bright);
+      border-radius: 14px;
+      padding: 10px 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .chat-textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      resize: none;
+      max-height: 160px;
+      min-height: 24px;
+      line-height: 1.5;
+    }
+
+    .send-btn {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent-crimson), var(--accent-blood));
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .send-btn:hover:not(:disabled) {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: var(--border-color);
+      box-shadow: none;
+    }
+
+    .telemetry-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>  {% verbatim %}
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    function App() {
+      const [messages, setMessages] = useState([
+        {
+          id: 'welcome',
+          sender: 'assistant',
+          markdown: '### 🩸 PulseAI Orchestrator Online\nConnected to **Gemma 12B QAT GGUF** model via local `llama_cpp` engine.\nAsk me any natural-language query to inspect donor eligibility, hospital stockout predictions, or digital twin simulation parameters.',
+          timestamp: new Date().toLocaleTimeString(),
+          reasoning: null,
+          plan: null,
+          telemetry: null
+        }
+      ]);
+      const [inputQuery, setInputQuery] = useState('');
+      const [isStreaming, setIsStreaming] = useState(false);
+      const [status, setStatus] = useState({ llm_ready: true, active_model: 'gemma-4-12B-it-QAT-Q4_0.gguf' });
+      const messagesEndRef = useRef(null);
+
+      const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      };
+
+      useEffect(() => {
+        scrollToBottom();
+      }, [messages]);
+
+      // Fetch model status on mount
+      useEffect(() => {
+        fetch('/api/ml/orchestrator/status/')
+          .then(res => res.json())
+          .then(data => {
+            if (data.llm_ready !== undefined) {
+              setStatus({
+                llm_ready: data.llm_ready,
+                active_model: data.selected_model_path ? data.selected_model_path.split('/').pop() : 'gemma-4-12B-it-QAT-Q4_0.gguf'
+              });
+            }
+          })
+          .catch(() => {});
+      }, []);
+
+      const handleSend = async (queryText) => {
+        const text = queryText || inputQuery;
+        if (!text.trim() || isStreaming) return;
+
+        const userMsg = {
+          id: Date.now().toString(),
+          sender: 'user',
+          text: text,
+          timestamp: new Date().toLocaleTimeString()
+        };
+
+        const assistantMsgId = (Date.now() + 1).toString();
+        const assistantMsg = {
+          id: assistantMsgId,
+          sender: 'assistant',
+          markdown: '',
+          timestamp: new Date().toLocaleTimeString(),
+          reasoning: null,
+          plan: null,
+          steps: [],
+          telemetry: { startTime: performance.now(), durationMs: 0 }
+        };
+
+        setMessages(prev => [...prev, userMsg, assistantMsg]);
+        if (!queryText) setInputQuery('');
+        setIsStreaming(true);
+
+        try {
+          const response = await fetch('/api/ml/predict/nl/?stream=true', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'text/event-stream'
+            },
+            body: JSON.stringify({
+              query: text,
+              features: { current_inventory: 45.0, daily_consumption_rate: 12.0 }
+            })
+          });
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const jsonStr = line.replace('data: ', '').trim();
+                if (!jsonStr) continue;
+                try {
+                  const event = JSON.parse(jsonStr);
+                  handleStreamEvent(assistantMsgId, event);
+                } catch (e) {}
+              }
+            }
+          }
+        } catch (err) {
+          setMessages(prev => prev.map(m => m.id === assistantMsgId ? {
+            ...m,
+            markdown: '❌ Error connecting to orchestrator endpoint: ' + err.message
+          } : m));
+        } finally {
+          setIsStreaming(false);
+        }
+      };
+
+      const handleStreamEvent = (msgId, event) => {
+        setMessages(prev => prev.map(m => {
+          if (m.id !== msgId) return m;
+
+          let updated = { ...m };
+          if (event.type === 'plan') {
+            updated.reasoning = event.reasoning;
+            updated.steps = event.steps || [];
+          } else if (event.type === 'tool_started') {
+            updated.steps = (updated.steps || []).map(s => s.step === event.step ? { ...s, status: 'executing' } : s);
+          } else if (event.type === 'tool_finished') {
+            updated.steps = (updated.steps || []).map(s => s.step === event.step ? { ...s, status: 'success', output: event.output } : s);
+          } else if (event.type === 'token') {
+            updated.markdown = event.text || (updated.markdown + event.token);
+          } else if (event.type === 'final' || event.type === 'result') {
+            const summary = event.markdown || (event.result ? event.result.summary : null);
+            if (summary) updated.markdown = summary;
+            if (updated.telemetry) {
+              updated.telemetry.durationMs = Math.round(performance.now() - updated.telemetry.startTime);
+            }
+          }
+          return updated;
+        }));
+      };
+
+      return (
+        <React.Fragment>
+          {/* Header */}
+          <header className="app-header">
+            <div className="brand-section">
+              <div className="brand-logo">
+                <i className="fa-solid fa-droplet"></i>
+              </div>
+              <div>
+                <div className="brand-title">PulseAI Orchestrator</div>
+                <div className="brand-subtitle">Dynamic Tool-Calling Agent</div>
+              </div>
+            </div>
+
+            <div className="status-badge">
+              <div className="status-pulse"></div>
+              <span>MODEL: {status.active_model}</span>
+            </div>
+          </header>
+
+          <div className="app-container">
+            {/* Sidebar */}
+            <aside className="sidebar">
+              <div>
+                <div className="sidebar-section-title">
+                  <i className="fa-solid fa-bolt"></i> Sample Queries
+                </div>
+
+                <div className="preset-card" onClick={() => handleSend("Check donor eligibility for age 30, weight 70kg, last donation 2024-01-01")}>
+                  <div className="preset-title">🩸 Donor Eligibility</div>
+                  <div className="preset-desc">Evaluate donor criteria using classification tool</div>
+                </div>
+
+                <div className="preset-card" onClick={() => handleSend("Predict blood supply stockout risk for regional hospital")}>
+                  <div className="preset-title">🏥 Stockout Hazard Prediction</div>
+                  <div className="preset-desc">Run hazard rate survival model for hospital inventory</div>
+                </div>
+
+                <div className="preset-card" onClick={() => handleSend("Show central hospital inventory for blood type O+")}>
+                  <div className="preset-title">📦 Hospital Inventory Query</div>
+                  <div className="preset-desc">Inspect current stock levels via database tool</div>
+                </div>
+              </div>
+            </aside>
+
+            {/* Main Chat Feed */}
+            <main className="main-chat-area">
+              <div className="chat-messages">
+                {messages.map(msg => (
+                  <div key={msg.id} className="message-row">
+                    <div className={`message-avatar ${msg.sender === 'user' ? 'user-avatar' : 'assistant-avatar'}`}>
+                      <i className={`fa-solid ${msg.sender === 'user' ? 'fa-user' : 'fa-robot'}`}></i>
+                    </div>
+
+                    <div className="message-content">
+                      <div className="message-header">
+                        <span className="message-sender">{msg.sender === 'user' ? 'Operator' : 'PulseAI Agent'}</span>
+                        <span>{msg.timestamp}</span>
+                      </div>
+
+                      {msg.sender === 'user' ? (
+                        <div className="user-bubble">{msg.text}</div>
+                      ) : (
+                        <React.Fragment>
+                          {/* Reasoning & Plan Panel */}
+                          {msg.reasoning && (
+                            <div className="reasoning-box">
+                              <div className="reasoning-header">
+                                <span><i className="fa-solid fa-brain"></i> Orchestrator Reasoning</span>
+                              </div>
+                              <div>{msg.reasoning}</div>
+                            </div>
+                          )}
+
+                          {msg.steps && msg.steps.length > 0 && (
+                            <div className="plan-drawer">
+                              <div className="plan-header">
+                                <i className="fa-solid fa-list-check"></i> Execution Workflow ({msg.steps.length} steps)
+                              </div>
+                              {msg.steps.map((step, idx) => (
+                                <div key={idx} className="plan-step">
+                                  <span className="step-badge">STEP {idx + 1}</span>
+                                  <div className="step-details">
+                                    <div><strong>{step.tool}</strong></div>
+                                    {step.command && <div className="step-command">{step.command}</div>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Markdown Output */}
+                          <div
+                            className="markdown-body"
+                            dangerouslySetInnerHTML={{ __html: marked.parse(msg.markdown || '') }}
+                          />
+
+                          {msg.telemetry && msg.telemetry.durationMs > 0 && (
+                            <div className="telemetry-tag">
+                              <span><i className="fa-solid fa-clock"></i> Stream Time: {msg.telemetry.durationMs} ms</span>
+                              <span><i className="fa-solid fa-shield-halved"></i> Config-Driven Tool Execution</span>
+                            </div>
+                          )}
+                        </React.Fragment>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input Bar */}
+              <div className="input-area">
+                <div className="input-box-wrapper">
+                  <textarea
+                    className="chat-textarea"
+                    placeholder="Ask the PulseAI Orchestrator anything (e.g. Check donor eligibility, predict stockout risk)..."
+                    value={inputQuery}
+                    onChange={(e) => setInputQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                  />
+                  <button
+                    className="send-btn"
+                    disabled={isStreaming || !inputQuery.trim()}
+                    onClick={() => handleSend()}
+                  >
+                    <i className={`fa-solid ${isStreaming ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
+                  </button>
+                </div>
+              </div>
+            </main>
+          </div>
+        </React.Fragment>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+  {% endverbatim %}
+</body>
+</html>

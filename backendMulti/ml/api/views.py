@@ -2004,3 +2004,12 @@ class DriftRunView(APIView):
                 {"error": f"Drift check failed: {exc}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class OrchestratorChatView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from django.shortcuts import render
+        return render(request, "index.html")

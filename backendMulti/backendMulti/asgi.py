@@ -24,6 +24,7 @@ from alerts.routing import websocket_urlpatterns as alerts_ws
 from notifications.routing import websocket_urlpatterns as notifications_ws
 from dashboard.routing import websocket_urlpatterns as dashboard_ws
 from digital_twin.routing import websocket_urlpatterns as digital_twin_ws
+from ml.routing import websocket_urlpatterns as ml_ws
 from backendMulti.middleware.ws_auth import TokenAuthMiddleware
 
 _inner = ProtocolTypeRouter({
@@ -31,7 +32,7 @@ _inner = ProtocolTypeRouter({
     "websocket": AuthMiddlewareStack(
         TokenAuthMiddleware(
             URLRouter(
-                alerts_ws + notifications_ws + dashboard_ws + digital_twin_ws
+                alerts_ws + notifications_ws + dashboard_ws + digital_twin_ws + ml_ws
             )
         )
     ),

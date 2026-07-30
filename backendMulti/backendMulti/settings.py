@@ -82,7 +82,7 @@ ROOT_URLCONF = "backendMulti.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [BASE_DIR / "templates", BASE_DIR.parent / "chatapp" / "dist", BASE_DIR.parent / "chatapp"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -98,17 +98,25 @@ WSGI_APPLICATION = "backendMulti.wsgi.application"
 ASGI_APPLICATION = "backendMulti.asgi.application"
 
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "pios"),
-        # "USER": os.getenv("DB_USER", "postgres"),
-        "USER": os.getenv("DB_USER", "admin"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "admin"),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+_db_engine = os.getenv("DB_ENGINE", "django.db.backends.postgresql")
+if "sqlite3" in _db_engine:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": _db_engine,
+            "NAME": os.getenv("DB_NAME", "pios"),
+            "USER": os.getenv("DB_USER", "admin"),
+            "PASSWORD": os.getenv("DB_PASSWORD", "admin"),
+            "HOST": os.getenv("DB_HOST", "localhost"),
+            "PORT": os.getenv("DB_PORT", "5432"),
+        }
+    }
 
 AUTH_USER_MODEL = "authApp.User"
 
@@ -127,12 +135,18 @@ CHANNEL_LAYERS = {
     }
 }
 
+_default_permission = (
+    'rest_framework.permissions.AllowAny'
+    if os.getenv("PIOS_DISABLE_AUTH", "0") == "1"
+    else 'rest_framework.permissions.IsAuthenticated'
+)
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'backendMulti.services.authentication.KeycloakAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [        
-        'rest_framework.permissions.IsAuthenticated',
+        _default_permission,
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_FILTER_BACKENDS": [
@@ -261,6 +275,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR.parent / "chatapp" / "dist", BASE_DIR.parent / "chatapp"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 

@@ -160,7 +160,12 @@ def prediction_scalar(raw: Any, path_config: dict[str, Any] | None = None) -> fl
             if isinstance(value, dict):
                 value = value[part]
             elif isinstance(value, (list, tuple)):
-                value = value[int(part)]
+                if str(part).isdigit():
+                    value = value[int(part)]
+                elif value and isinstance(value[0], dict) and part in value[0]:
+                    value = value[0][part]
+                else:
+                    value = value[int(part)]
             else:
                 value = getattr(value, part)
     return float(value)
