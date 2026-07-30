@@ -119,14 +119,8 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
         const updated: ChatMessage = { ...m };
         if (event.phase) updated.phase = event.phase;
 
-        if (event.type === 'planner_context' && event.steps) {
+        if (event.type === 'planner_context') {
           updated.phase = 'planning';
-          updated.steps = event.steps.map(s => ({
-            step: s.index || s.step || 1,
-            tool: s.tool,
-            reasoning: s.reasoning,
-            status: 'pending'
-          }));
         } else if (event.type === 'plan') {
           updated.phase = 'planned';
           updated.reasoning = event.reasoning || null;
@@ -138,6 +132,8 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
               reasoning: s.reasoning,
               status: 'pending'
             }));
+          } else {
+            updated.steps = [];
           }
         } else if (event.type === 'tool_started') {
           updated.phase = 'executing_tool';
