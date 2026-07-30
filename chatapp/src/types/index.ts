@@ -68,6 +68,8 @@ export interface StreamEvent {
   logger?: string;
   message?: string;
   timestamp?: string;
+  success?: boolean;
+  error?: string;
   result?: {
     summary?: string;
   };

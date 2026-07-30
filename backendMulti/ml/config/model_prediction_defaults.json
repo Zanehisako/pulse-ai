@@ -27,7 +27,7 @@
           "entity_keys": ["donor_id"],
           "allow_direct_input": true,
           "allow_feature_overrides": true,
-          "fail_open": false
+          "fail_open": true
         },
         "output": {
           "name": "donation_probability",

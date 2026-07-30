@@ -1,6 +1,6 @@
 /**
  * Custom React Hook: useOrchestratorStream (TypeScript)
- * Manages WebSocket streaming query execution, real-time agent log records, reasoning, and plan telemetry.
+ * Manages WebSocket streaming query execution, real-time agent log records, reasoning, tool execution, and auto-reconnection.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -42,7 +42,7 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
+  const connectWebSocket = useCallback(() => {
     fetchOrchestratorStatus()
       .then(resStatus => {
         setStatus(prev => ({ ...prev, ...resStatus }));
@@ -63,6 +63,12 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
 
       socket.onclose = () => {
         setStatus(prev => ({ ...prev, ws_connected: false }));
+        // Retry connection after 3 seconds if disconnected
+        setTimeout(() => {
+          if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+            connectWebSocket();
+          }
+        }, 3000);
       };
 
       socket.onerror = () => {
@@ -71,11 +77,17 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
     } catch (e) {
       console.warn('WebSocket connection failed:', e);
     }
-
-    return () => {
-      if (wsRef.current) wsRef.current.close();
-    };
   }, []);
+
+  useEffect(() => {
+    connectWebSocket();
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+      }
+    };
+  }, [connectWebSocket]);
 
   const sendQuery = useCallback(async (queryText: string): Promise<void> => {
     if (!queryText || !queryText.trim() || isStreaming) return;
@@ -141,9 +153,16 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
             s.step === event.step ? { ...s, status: 'executing', tool: event.tool || s.tool } : s
           );
         } else if (event.type === 'tool_finished') {
-          updated.phase = 'tool_completed';
+          const isSuccess = event.success !== false && !event.error;
+          updated.phase = isSuccess ? 'tool_completed' : 'tool_failed';
           updated.steps = (updated.steps || []).map(s =>
-            s.step === event.step ? { ...s, status: 'success', output: event.output } : s
+            s.step === event.step
+              ? {
+                  ...s,
+                  status: isSuccess ? ('success' as const) : ('failed' as const),
+                  output: event.output || event.error
+                }
+              : s
           );
         } else if (event.type === 'token') {
           updated.phase = 'generating_response';
