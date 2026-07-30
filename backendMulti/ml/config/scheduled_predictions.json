@@ -1,0 +1,563 @@
+{
+  "version": "2026-05-10",
+  "prediction_history_seed": {
+    "description": "Settings for the synthetic prediction history seed used by trend detection and dynamic thresholds.",
+    "model_name": "stockout_days_predictor",
+    "history_days": 60,
+    "alert_threshold": 3.0
+  },
+  "dashboard_forecast": {
+    "cap_policy": {
+      "enabled": true,
+      "default_max_factor": 2.0,
+      "min_floor_units": 50.0,
+      "horizon_max_factors": {
+        "t1": 2.0,
+        "t7": 4.0,
+        "t30": 8.0
+      }
+    }
+  },
+  "dashboard_snapshots": {
+    "ideal": {
+      "stats_candidates": [
+        {"model_id": "donor_priority_policy_model"},
+        {"model_id": "donor_priority_policy_model_shadow"},
+        {"identifier": "donor_priority_policy_model"}
+      ],
+      "fallback_filter": {
+        "model_id__icontains": "donor_priority"
+      },
+      "field_aliases": {
+        "blood_type": ["blood_type", "blood_group"],
+        "eligible_to_donate": ["eligible_to_donate", "eligibility_status"],
+        "is_regular_donor": ["is_regular_donor", "regularity"],
+        "is_rare_type": ["is_rare_type", "rare_blood_type"],
+        "center_distance_km": ["center_distance_km"],
+        "travel_time_min": ["travel_time_min"],
+        "response_readiness_index": ["response_readiness_index"],
+        "donor_momentum": ["donor_momentum"],
+        "operational_outreach_priority": ["operational_outreach_priority"],
+        "readiness_score": ["readiness_score"]
+      },
+      "binary_features": [
+        "eligible_to_donate",
+        "is_regular_donor",
+        "is_rare_type"
+      ]
+    }
+  },
+  "jobs": [
+    {
+      "id": "shadow_component_inventory_risk",
+      "legacy_names": [
+        "run_stockout_predictions",
+        "run_stockout_predictions_sync",
+        "run_hospital_shortage_predictions",
+        "run_hospital_shortage_predictions_sync",
+        "run_dashboard_predictions",
+        "run_dashboard_predictions_sync"
+      ],
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "dashboard_role": "stockout_risk",
+      "description": "Shadow stockout risk predictions from the component inventory simulator.",
+      "model_id": "component_inventory_risk_simulator",
+      "result_model_name": "component_inventory_risk_simulator_shadow",
+      "model_version": "challenger",
+      "entity_source": "inventory.tasks.stockout_supply_entities",
+      "feature_builder": "inventory.tasks.inventory_risk_feature_frame",
+      "feature_mapping": {
+        "hospital_id": {"attr": "hospital.hospital_id", "default": ""},
+        "blood_type": {"attr": "blood_product_type", "default": ""},
+        "component_type": {"value": "RBC"},
+        "event_timestamp": {"attr": "event_timestamp"},
+        "current_inventory": {"attr": "current_stock_units", "default": 0},
+        "usage_today": {"attr": "usage_today", "default": 0},
+        "current_stock_units": {"attr": "current_stock_units", "default": 0},
+        "units_used": {"attr": "usage_today", "default": 0},
+        "units_collected": {"value": 0},
+        "wastage": {"value": 0},
+        "reserved_units": {"value": 0},
+        "substitution_available_units": {"value": 0},
+        "safety_threshold_units": {"value": 1},
+        "shelf_life_days": {"value": 42},
+        "temp_c": {"value": 20},
+        "is_holiday": {"value": 0},
+        "dow": {"value": 1},
+        "month": {"value": 1},
+        "is_weekend": {"value": 0},
+        "is_ice_storm": {"value": 0},
+        "is_heat_wave": {"value": 0},
+        "age_bucket_expiring_0_3d": {"value": 0},
+        "age_bucket_expiring_4_7d": {"value": 0}
+      },
+      "prediction_value": {
+        "path": "0.p_stockout_0_7d"
+      },
+      "result": {
+        "entity_id_attr": "supply_id",
+        "entity_type": "supply",
+        "hospital_id_attr": "hospital.hospital_id",
+        "blood_type_attr": "blood_product_type"
+      },
+      "alert": {
+        "operator": ">=",
+        "threshold": 0.5,
+        "requires_hospital_scope": true
+      },
+      "alert_context": {
+        "current_stock_units_attr": "current_stock_units",
+        "usage_today_attr": "usage_today",
+        "days_since_last_restock_attr": "days_since_last_restock"
+      },
+      "alert_source": "scheduled-inventory-risk-simulator"
+    },
+    {
+      "id": "shadow_stockout_hazard_sentinel",
+      "legacy_names": [
+        "run_dashboard_predictions",
+        "run_dashboard_predictions_sync"
+      ],
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "dashboard_role": "stockout_sentinel",
+      "description": "Shadow stockout hazard sentinel used to compare against simulator risk.",
+      "model_id": "stockout_time_to_event_hazard_model",
+      "result_model_name": "stockout_time_to_event_hazard_model_shadow",
+      "model_version": "challenger",
+      "entity_source": "inventory.tasks.stockout_supply_entities",
+      "feature_builder": "inventory.tasks.inventory_risk_feature_frame",
+      "feature_mapping": {
+        "hospital_id": {"attr": "hospital.hospital_id", "default": ""},
+        "blood_type": {"attr": "blood_product_type", "default": ""},
+        "component_type": {"value": "RBC"},
+        "event_timestamp": {"attr": "event_timestamp"},
+        "current_inventory": {"attr": "current_stock_units", "default": 0},
+        "usage_today": {"attr": "usage_today", "default": 0},
+        "current_stock_units": {"attr": "current_stock_units", "default": 0},
+        "units_used": {"attr": "usage_today", "default": 0},
+        "units_collected": {"value": 0},
+        "wastage": {"value": 0},
+        "shelf_life_days": {"value": 42},
+        "temp_c": {"value": 20},
+        "is_holiday": {"value": 0},
+        "dow": {"value": 1},
+        "month": {"value": 1},
+        "is_weekend": {"value": 0},
+        "is_ice_storm": {"value": 0},
+        "is_heat_wave": {"value": 0}
+      },
+      "prediction_value": {
+        "path": "0.p_stockout_by_7d"
+      },
+      "result": {
+        "entity_id_attr": "supply_id",
+        "entity_type": "supply_hazard",
+        "hospital_id_attr": "hospital.hospital_id",
+        "blood_type_attr": "blood_product_type"
+      },
+      "alert": {
+        "operator": ">=",
+        "threshold": 0.5,
+        "requires_hospital_scope": true
+      },
+      "alert_source": "scheduled-stockout-hazard-sentinel"
+    },
+    {
+      "id": "dashboard_sota_stockout_days",
+      "legacy_names": [
+        "run_dashboard_predictions",
+        "run_dashboard_predictions_sync"
+      ],
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "dashboard_role": "stockout_days",
+      "description": "Dashboard-facing expected days until stockout from the SOTA inventory risk simulator.",
+      "model_id": "component_inventory_risk_simulator",
+      "result_model_name": "component_inventory_risk_simulator_stockout_days",
+      "model_version": "challenger",
+      "entity_source": "inventory.tasks.stockout_supply_entities",
+      "feature_builder": "inventory.tasks.inventory_risk_feature_frame",
+      "feature_mapping": {
+        "hospital_id": {"attr": "hospital.hospital_id", "default": ""},
+        "blood_type": {"attr": "blood_product_type", "default": ""},
+        "component_type": {"value": "RBC"},
+        "event_timestamp": {"attr": "event_timestamp"},
+        "current_inventory": {"attr": "current_stock_units", "default": 0},
+        "usage_today": {"attr": "usage_today", "default": 0},
+        "current_stock_units": {"attr": "current_stock_units", "default": 0},
+        "units_used": {"attr": "usage_today", "default": 0},
+        "units_collected": {"value": 0},
+        "wastage": {"value": 0},
+        "reserved_units": {"value": 0},
+        "substitution_available_units": {"value": 0},
+        "safety_threshold_units": {"value": 1},
+        "shelf_life_days": {"value": 42}
+      },
+      "prediction_value": {
+        "path": "0.expected_days_until_stockout"
+      },
+      "result": {
+        "entity_id_attr": "supply_id",
+        "entity_type": "supply_stockout_days",
+        "hospital_id_attr": "hospital.hospital_id",
+        "blood_type_attr": "blood_product_type"
+      },
+      "alert": {
+        "operator": "<=",
+        "threshold": 7,
+        "requires_hospital_scope": true
+      },
+      "alert_context": {
+        "current_stock_units_attr": "current_stock_units",
+        "usage_today_attr": "usage_today",
+        "days_since_last_restock_attr": "days_since_last_restock"
+      },
+      "alert_source": "scheduled-sota-stockout-days"
+    },
+    {
+      "id": "shadow_donor_priority_policy",
+      "legacy_names": [
+        "run_donor_propensity_predictions",
+        "run_donor_propensity_predictions_sync",
+        "run_dashboard_predictions",
+        "run_dashboard_predictions_sync"
+      ],
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "dashboard_role": "donor_scores",
+      "description": "Shadow expected-utility donor priority scores for outreach ranking.",
+      "model_id": "donor_priority_policy_model",
+      "result_model_name": "donor_priority_policy_model_shadow",
+      "model_version": "challenger",
+      "entity_source": "inventory.tasks.donor_entities",
+      "feature_builder": "inventory.tasks.donor_priority_feature_frame",
+      "feature_mapping": {
+        "donor_id": {"attr": "donor_id", "default": ""},
+        "event_timestamp": {"attr": "event_timestamp"},
+        "eligible_to_donate": {"lte": {"attr": "days_until_eligible", "value": 0, "default": 0}},
+        "is_regular_donor": {"gte": {"attr": "frequency_365", "value": 2, "default": 0}},
+        "blood_type": {"attr": "blood_group", "default": ""},
+        "is_rare_type": {
+          "in_values": {
+            "attr": "blood_group",
+            "values": ["O-", "B-", "AB-", "AB+"],
+            "default": ""
+          }
+        },
+        "center_distance_km": {"value": 20},
+        "travel_time_min": {"value": 30},
+        "response_readiness_index": {"value": 0.5},
+        "donor_momentum": {"value": 0.5},
+        "operational_outreach_priority": {"value": 0.5}
+      },
+      "prediction_value": {
+        "path": "0.donor_priority_score"
+      },
+      "result": {
+        "entity_id_attr": "donor_id",
+        "entity_type": "donor",
+        "hospital_id_value": "",
+        "blood_type_attr": "blood_group"
+      },
+      "alert": {
+        "operator": ">=",
+        "threshold": 0.7,
+        "requires_hospital_scope": false
+      },
+      "alert_source": "scheduled-donor-priority-policy"
+    },
+    {
+      "id": "shadow_donor_contact_response",
+      "legacy_names": [
+        "run_donor_propensity_predictions",
+        "run_donor_propensity_predictions_sync"
+      ],
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "dashboard_role": "donor_contact_response",
+      "description": "Shadow donor contact-response score. Uses proxy labels until contact outcomes exist.",
+      "model_id": "donor_contact_response_model",
+      "result_model_name": "donor_contact_response_model_shadow",
+      "model_version": "challenger",
+      "entity_source": "inventory.tasks.donor_entities",
+      "feature_builder": "inventory.tasks.donor_contact_response_feature_frame",
+      "feature_mapping": {
+        "donor_id": {"attr": "donor_id", "default": ""},
+        "event_timestamp": {"attr": "event_timestamp"},
+        "eligible_to_donate": {"lte": {"attr": "days_until_eligible", "value": 0, "default": 0}},
+        "blood_type": {"attr": "blood_group", "default": ""},
+        "is_rare_type": {
+          "in_values": {
+            "attr": "blood_group",
+            "values": ["O-", "B-", "AB-", "AB+"],
+            "default": ""
+          }
+        },
+        "recency_days": {"attr": "recency_days", "default": 0},
+        "donation_count_last_12m": {"attr": "frequency_365", "default": 0},
+        "snapshot_days_until_eligible": {"attr": "days_until_eligible", "default": 0},
+        "response_readiness_index": {"value": 0.5},
+        "donor_momentum": {"value": 0.5},
+        "operational_outreach_priority": {"value": 0.5},
+        "digital_contactability_score": {"value": 0.5},
+        "center_distance_km": {"value": 20},
+        "travel_time_min": {"value": 30}
+      },
+      "prediction_value": {
+        "path": "0.contact_response_score"
+      },
+      "result": {
+        "entity_id_attr": "donor_id",
+        "entity_type": "donor_contact_response",
+        "hospital_id_value": "",
+        "blood_type_attr": "blood_group"
+      },
+      "alert": {
+        "operator": ">=",
+        "threshold": 0.7,
+        "requires_hospital_scope": false
+      },
+      "alert_source": "scheduled-donor-contact-response"
+    },
+    {
+      "id": "dashboard_forecast_t1",
+      "legacy_names": [
+        "run_dashboard_predictions",
+        "run_dashboard_predictions_sync"
+      ],
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "dashboard_role": "forecast",
+      "dashboard_horizon": "t1",
+      "description": "1-day projected stock forecast for dashboard stock cards.",
+      "model_id": "component_demand_quantile_forecast_model",
+      "result_model_name": "blood_stock_forecast_t1",
+      "model_version": "challenger",
+      "entity_source": "inventory.tasks.stockout_supply_entities",
+      "feature_builder": "inventory.tasks.inventory_risk_feature_frame",
+      "feature_mapping": {
+        "hospital_id": {"attr": "hospital.hospital_id", "default": ""},
+        "blood_type": {"attr": "blood_product_type", "default": ""},
+        "component_type": {"value": "RBC"},
+        "event_timestamp": {"attr": "event_timestamp"},
+        "current_inventory": {"attr": "current_stock_units", "default": 0},
+        "usage_today": {"attr": "usage_today", "default": 0},
+        "current_stock_units": {"attr": "current_stock_units", "default": 0},
+        "units_used": {"attr": "usage_today", "default": 0},
+        "units_collected": {"value": 0},
+        "wastage": {"value": 0},
+        "month": {"value": 1},
+        "dow": {"value": 1}
+      },
+      "prediction_value": {
+        "path": "0.demand_units"
+      },
+      "postprocess": [
+        {
+          "type": "subtract_from_attr",
+          "attr": "current_stock_units",
+          "min_value": 0,
+          "round_digits": 2
+        }
+      ],
+      "result": {
+        "entity_id_attr": "supply_id",
+        "entity_type": "supply_forecast_t1",
+        "hospital_id_attr": "hospital.hospital_id",
+        "blood_type_attr": "blood_product_type"
+      },
+      "alert": {
+        "enabled": false
+      },
+      "alert_source": "scheduled-forecast-t1"
+    },
+    {
+      "id": "dashboard_forecast_t7",
+      "legacy_names": [
+        "run_dashboard_predictions",
+        "run_dashboard_predictions_sync"
+      ],
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "dashboard_role": "forecast",
+      "dashboard_horizon": "t7",
+      "forecast_output_type": "absolute",
+      "description": "7-day projected stock forecast for dashboard stock cards.",
+      "model_id": "component_demand_quantile_forecast_model",
+      "result_model_name": "blood_stock_forecast_t7",
+      "model_version": "challenger",
+      "entity_source": "inventory.tasks.stockout_supply_entities",
+      "feature_builder": "inventory.tasks.inventory_risk_feature_frame",
+      "feature_mapping": {
+        "hospital_id": {"attr": "hospital.hospital_id", "default": ""},
+        "blood_type": {"attr": "blood_product_type", "default": ""},
+        "component_type": {"value": "RBC"},
+        "event_timestamp": {"attr": "event_timestamp"},
+        "current_inventory": {"attr": "current_stock_units", "default": 0},
+        "usage_today": {"attr": "usage_today", "default": 0},
+        "current_stock_units": {"attr": "current_stock_units", "default": 0},
+        "units_used": {"attr": "usage_today", "default": 0},
+        "units_collected": {"value": 0},
+        "wastage": {"value": 0},
+        "month": {"value": 1},
+        "dow": {"value": 1}
+      },
+      "prediction_value": {
+        "path": "0.demand_units"
+      },
+      "postprocess": [
+        {
+          "type": "multiply",
+          "factor": 7
+        },
+        {
+          "type": "subtract_from_attr",
+          "attr": "current_stock_units",
+          "min_value": 0,
+          "round_digits": 2
+        }
+      ],
+      "result": {
+        "entity_id_attr": "supply_id",
+        "entity_type": "supply_forecast_t7",
+        "hospital_id_attr": "hospital.hospital_id",
+        "blood_type_attr": "blood_product_type"
+      },
+      "alert": {
+        "enabled": false
+      },
+      "alert_source": "scheduled-forecast-t7"
+    },
+    {
+      "id": "dashboard_forecast_t30",
+      "legacy_names": [
+        "run_dashboard_predictions",
+        "run_dashboard_predictions_sync"
+      ],
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "dashboard_role": "forecast",
+      "dashboard_horizon": "t30",
+      "forecast_output_type": "absolute",
+      "description": "30-day projected stock forecast for dashboard stock cards.",
+      "model_id": "component_demand_quantile_forecast_model",
+      "result_model_name": "blood_stock_forecast_t30",
+      "model_version": "challenger",
+      "entity_source": "inventory.tasks.stockout_supply_entities",
+      "feature_builder": "inventory.tasks.inventory_risk_feature_frame",
+      "feature_mapping": {
+        "hospital_id": {"attr": "hospital.hospital_id", "default": ""},
+        "blood_type": {"attr": "blood_product_type", "default": ""},
+        "component_type": {"value": "RBC"},
+        "event_timestamp": {"attr": "event_timestamp"},
+        "current_inventory": {"attr": "current_stock_units", "default": 0},
+        "usage_today": {"attr": "usage_today", "default": 0},
+        "current_stock_units": {"attr": "current_stock_units", "default": 0},
+        "units_used": {"attr": "usage_today", "default": 0},
+        "units_collected": {"value": 0},
+        "wastage": {"value": 0},
+        "month": {"value": 1},
+        "dow": {"value": 1}
+      },
+      "prediction_value": {
+        "path": "0.demand_units"
+      },
+      "postprocess": [
+        {
+          "type": "multiply",
+          "factor": 30
+        },
+        {
+          "type": "subtract_from_attr",
+          "attr": "current_stock_units",
+          "min_value": 0,
+          "round_digits": 2
+        }
+      ],
+      "result": {
+        "entity_id_attr": "supply_id",
+        "entity_type": "supply_forecast_t30",
+        "hospital_id_attr": "hospital.hospital_id",
+        "blood_type_attr": "blood_product_type"
+      },
+      "alert": {
+        "enabled": false
+      },
+      "alert_source": "scheduled-forecast-t30"
+    },
+    {
+      "id": "dashboard_wastage",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "dashboard_role": "wastage",
+      "description": "Forecast wastage (expiry units) for model validation.",
+      "model_id": "component_expiry_waste_model",
+      "result_model_name": "blood_wastage_forecast",
+      "model_version": "champion",
+      "entity_source": "inventory.tasks.stockout_supply_entities",
+      "feature_builder": "inventory.tasks.inventory_risk_feature_frame",
+      "feature_mapping": {
+        "hospital_id": { "attr": "hospital.hospital_id", "default": "" },
+        "blood_type": { "attr": "blood_product_type", "default": "" },
+        "component_type": { "value": "RBC" },
+        "event_timestamp": { "attr": "event_timestamp" },
+        "current_inventory": { "attr": "current_stock_units", "default": 0 },
+        "usage_today": { "attr": "usage_today", "default": 0 },
+        "current_stock_units": { "attr": "current_stock_units", "default": 0 },
+        "units_used": { "attr": "usage_today", "default": 0 },
+        "units_collected": { "value": 0 },
+        "wastage": { "value": 0 },
+        "month": { "value": 1 },
+        "dow": { "value": 1 }
+      },
+      "prediction_value": { "path": "0.prediction" },
+      "postprocess": [],
+      "result": {
+        "entity_id_attr": "supply_id",
+        "entity_type": "supply_wastage",
+        "hospital_id_attr": "hospital.hospital_id",
+        "blood_type_attr": "blood_product_type"
+      },
+      "alert": { "enabled": false },
+      "alert_source": "scheduled-wastage"
+    },
+    {
+      "id": "dashboard_supply",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "dashboard_role": "supply",
+      "description": "Forecast supply (units collected) for model validation.",
+      "model_id": "component_supply_forecast_model",
+      "result_model_name": "blood_supply_forecast",
+      "model_version": "champion",
+      "entity_source": "inventory.tasks.stockout_supply_entities",
+      "feature_builder": "inventory.tasks.inventory_risk_feature_frame",
+      "feature_mapping": {
+        "hospital_id": { "attr": "hospital.hospital_id", "default": "" },
+        "blood_type": { "attr": "blood_product_type", "default": "" },
+        "component_type": { "value": "RBC" },
+        "event_timestamp": { "attr": "event_timestamp" },
+        "current_inventory": { "attr": "current_stock_units", "default": 0 },
+        "usage_today": { "attr": "usage_today", "default": 0 },
+        "current_stock_units": { "attr": "current_stock_units", "default": 0 },
+        "units_used": { "attr": "usage_today", "default": 0 },
+        "units_collected": { "value": 0 },
+        "wastage": { "value": 0 },
+        "month": { "value": 1 },
+        "dow": { "value": 1 }
+      },
+      "prediction_value": { "path": "0.prediction" },
+      "postprocess": [],
+      "result": {
+        "entity_id_attr": "supply_id",
+        "entity_type": "supply_supply",
+        "hospital_id_attr": "hospital.hospital_id",
+        "blood_type_attr": "blood_product_type"
+      },
+      "alert": { "enabled": false },
+      "alert_source": "scheduled-supply"
+    }
+  ]
+}

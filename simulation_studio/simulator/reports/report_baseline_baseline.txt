@@ -1,0 +1,202 @@
+========================================================================
+QUEBEC CITY BLOOD SUPPLY CHAIN SIMULATION REPORT
+========================================================================
+
+SCENARIO
+------------------------------------------------------------------------
+Name: Normal Operations
+Duration: 336 h (~14.0 days)
+Description: Balanced Quebec City winter baseline using scaled real-world demand and donor flow.
+
+Narrative:
+  Baseline winter operations for the Quebec City blood network, calibrated from public Hema-Quebec and Statistics Canada data rather than hand-picked magic numbers.
+  
+    • Quebec City estimated completed donations: 39.7 per day
+    • Quebec City estimated hospital demand: 19.7 orders/day
+    • Quebec City estimated blood products consumed: 83.6 units/day
+    • Average units per order proxy: 4.23
+  
+  The simulator now treats the donor figure as successful completed donations, then backs into the required arrival pace. A routine provincial replenishment flow also tops up city inventory when reserves fall below target.
+
+REAL-WORLD CALIBRATION
+------------------------------------------------------------------------
+  • Quebec CMA population share: 839,311 / 8,501,833 = 9.87%
+  • Scaled blood-product demand: 83.6 labile products/day
+  • Scaled hospital-order cadence: 19.7 orders/day (~1 every 1.22 h)
+  • Scaled completed donations target: 39.7 successful donations/day
+  • Simulated donor arrivals needed to hit that target: 60.1 arrival attempts/day (~1 every 0.23 h during collection hours)
+
+INPUTS
+------------------------------------------------------------------------
+Donor inter-arrival: 0.23 h
+Donor show factor: 1.00
+Eligibility rate: 93%
+Demand inter-arrival: 1.22 h
+Demand surge factor: 1.00x
+Average units per order: 4.23
+Initial inventory buffer: 4.0 days
+Reserve target: 4.0 days
+Provincial replenishment rate: 45% of daily demand
+Transport penalty: 1.00x
+Effective transport penalty: 1.00x
+Forecast refresh interval: 12.0 h
+Demand forecast noise: 0.10
+Episode intervention budget: 6500
+Forced weather: dynamic winter mix
+
+ACTIONS
+------------------------------------------------------------------------
+Selected strategy: Baseline
+Description: Run the network with standing resources only.
+Action cost: 0
+Budget remaining: 6500 / 6500
+  - No intervention actions applied.
+  - Donor arrival factor: 1.00x inter-arrival
+  - Donor show-up factor: 1.00x
+  - Donor eligibility factor: 1.00x
+  - Demand management factor: 1.00x
+  - Committed donor share: 0%
+  - Release delay factor: 1.00x
+  - Extra staffing per site: nurses +0.0, lab +0.0, processing +0.0
+  - Extra mobile units: 0.0
+  - Added hours per side: 0.0
+  - Replenishment cadence: every 12h
+
+OUTPUTS
+------------------------------------------------------------------------
+Donor attempts: 827
+Successful donations: 519
+Deferred/rejected: 66 (11.3%)
+No-shows: 242
+Base requested units: 1793
+Deferred/conserved units: 0
+Net requested units: 1793
+Transfused units: 1543
+Shortage units: 250
+Shortage rate: 13.9%
+Shortage vs base demand: 13.9%
+Expired units: 15
+Transfer units: 899
+Provincial inbound units: 449
+Remaining inventory: 394
+Average donor travel: 65.2 min
+Average nurse wait: 0.0 min
+
+REWARD BREAKDOWN
+------------------------------------------------------------------------
+     fulfilled_units:  18516.0
+        shortage_rbc: -14560.0
+  shortage_platelets:  -4760.0
+     shortage_plasma:     -0.0
+   priority_shortage: -22725.0
+     conserved_units:      0.0
+       expired_units:   -270.0
+      transfer_units:  -6293.0
+   exact_match_units:   1789.5
+compatible_substitution_units:    122.5
+incompatible_fulfillment_units:     -0.0
+        budget_spent:     -0.0
+budget_blocked_controls:     -0.0
+    budget_exhausted:     -0.0
+            avg_wait:     -0.0
+          avg_travel:     -2.0
+         action_cost:     -0.0
+        total_reward: -26771.1
+
+SHORTAGES BY COMPONENT
+------------------------------------------------------------------------
+         RBC: 182
+   PLATELETS: 68
+
+PER-CENTRE PERFORMANCE
+------------------------------------------------------------------------
+Héma-Québec Lebourgneuf [blood_bank]
+  donated=228 rejected=32 no_show=106 orders=0
+  transfused=0 shortage=0 transfers_in=0 expired=0
+  inventory RBC=29 PLT=5 PLS=195 avg_travel=75.3m
+
+CHU Enfant-Jésus [hospital]
+  donated=96 rejected=13 no_show=53 orders=186
+  transfused=766 shortage=99 transfers_in=426 expired=0
+  inventory RBC=7 PLT=3 PLS=7 avg_travel=59.9m
+
+Héma-Québec Sainte-Foy [blood_bank]
+  donated=84 rejected=13 no_show=49 orders=0
+  transfused=0 shortage=0 transfers_in=0 expired=4
+  inventory RBC=23 PLT=5 PLS=90 avg_travel=64.8m
+
+Hôtel-Dieu de Lévis [hospital]
+  donated=65 rejected=8 no_show=30 orders=207
+  transfused=777 shortage=151 transfers_in=473 expired=0
+  inventory RBC=8 PLT=0 PLS=5 avg_travel=42.2m
+
+Mobile Unit – Université Laval [mobile]
+  donated=9 rejected=0 no_show=4 orders=0
+  transfused=0 shortage=0 transfers_in=0 expired=11
+  inventory RBC=4 PLT=0 PLS=13 avg_travel=23.4m
+
+INVENTORY TIMELINE
+------------------------------------------------------------------------
+ Day      RBC      PLT      PLS   CumShort
+   0      148       99       39          0
+   0      136       86       31          0
+   0      147       75       33          0
+   1      144       71       30          4
+   1      119       80       36          4
+   1       97       73       30          4
+   1       98       74       41          4
+   2      105       75       51          4
+   2       98       75       61          9
+   2       90       73       64          9
+   2       76       57       73          9
+   3       71       54       84         13
+   3       69       48       88         19
+   3       55       38       94         28
+   3       66       41       97         32
+   4       55       40      108         32
+   4       70       28      114         32
+   4       57       27      117         32
+   4       68       38      122         32
+   5       81       29      131         32
+   5       77       33      132         32
+   5       80       36      142         32
+   5       78       46      152         32
+   6       69       42      154         32
+   6       81       44      167         33
+   6       81       48      167         41
+   6       89       51      170         41
+   7       82       41      170         43
+   7      103       44      181         43
+   7       84       42      189         50
+   7       78       37      196         52
+   8       67       31      205         57
+   8       68       32      211         57
+   8       60       28      209         60
+   8       66       24      213         79
+   9       59       18      213         79
+   9       70       22      217         97
+   9       56       20      218        102
+   9       59       29      228        105
+  10       61       15      226        109
+  10       76       11      237        109
+  10       71       15      256        124
+  10       86       15      272        132
+  11       78        7      281        150
+  11       92       15      288        154
+  11       74       16      297        171
+  11       80       17      299        176
+  12       81        6      289        176
+  12       81       10      282        177
+  12       72        4      284        200
+  12       85       16      292        204
+  13       64       16      291        210
+  13       75       11      288        211
+  13       63        8      293        230
+  13       64       13      298        238
+
+RECOMMENDATIONS
+------------------------------------------------------------------------
+Current action mix keeps shortage pressure within the playable target band.
+Transfers are carrying too much of the load. More local collection capacity would reduce fragility.
+
+Report generated: 2026-04-12 22:26:28

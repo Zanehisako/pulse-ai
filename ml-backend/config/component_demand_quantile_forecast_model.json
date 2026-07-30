@@ -1,0 +1,82 @@
+{
+  "id": "component_demand_quantile_forecast_model",
+  "name": "Component Demand Quantile Forecast",
+  "enabled": true,
+  "type": "model",
+  "input_schema": {
+    "hospital_id": "string",
+    "blood_type": "string",
+    "component_type": "string",
+    "event_timestamp": "datetime",
+    "inventory_features": "object"
+  },
+  "output_schema": {
+    "demand_units": "number",
+    "prediction": "number"
+  },
+  "adapter": "mlflow_pyfunc",
+  "entrypoint": "training_scripts.train_component_demand_quantile_forecast",
+  "permissions": [
+    "read_inventory_state",
+    "read_inventory_history",
+    "write_shadow_prediction"
+  ],
+  "timeout_seconds": 30,
+  "model_type": "regression",
+  "registered_model_name": "component_demand_quantile_forecast_model",
+  "description": "Probabilistic demand forecast: P10/P50/P90 daily demand by hospital, component, and blood type. Uses quantile regression (LightGBM/XGBoost) over inventory features.",
+  "target": {
+    "column": "units_used",
+    "task_type": "regression",
+    "output_name": "demand_units"
+  },
+  "feature_engineering": {
+    "group_columns": [
+      "hospital_id",
+      "blood_type",
+      "component_type"
+    ],
+    "timestamp_column": "event_timestamp"
+  },
+  "forecast_outputs": {
+    "horizons_days": [1, 7, 30],
+    "quantiles": [0.1, 0.5, 0.9]
+  },
+  "training": {
+    "include_default_regressors": true,
+    "forbidden_feature_groups": [
+      "stockout_same_row_risk_scores"
+    ],
+    "selection": {
+      "primary_metric": "rmsse",
+      "direction": "minimize",
+      "fallback_metrics": [
+        "mase",
+        "root_mean_squared_error",
+        "wape"
+      ]
+    }
+  },
+  "prediction_defaults": {
+    "forecast_selection": {
+      "enabled": true,
+      "target": "stockout",
+      "primary_metric": "rmsse",
+      "direction": "minimize",
+      "fallback_metrics": [
+        "mase",
+        "root_mean_squared_error"
+      ]
+    },
+    "horizon_routing": {
+      "enabled": false
+    },
+    "output": {
+      "name": "demand_units",
+      "unit": "units",
+      "task_type": "multi_quantile_regression",
+      "clip_min": 0.0,
+      "apply_clipping": true
+    }
+  }
+}

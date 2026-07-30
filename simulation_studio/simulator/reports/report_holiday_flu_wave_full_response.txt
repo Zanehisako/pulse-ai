@@ -1,0 +1,247 @@
+========================================================================
+QUEBEC CITY BLOOD SUPPLY CHAIN SIMULATION REPORT
+========================================================================
+
+SCENARIO
+------------------------------------------------------------------------
+Name: Holiday Flu Wave
+Duration: 504 h (~21.0 days)
+Description: A realistic seasonal holdout where respiratory illness, holiday travel and routine snow friction depress donation while hospitals stay mildly elevated.
+
+Narrative:
+  Baseline winter operations for the Quebec City blood network, calibrated from public Hema-Quebec and Statistics Canada data rather than hand-picked magic numbers.
+  
+    • Quebec City estimated completed donations: 39.7 per day
+    • Quebec City estimated hospital demand: 19.7 orders/day
+    • Quebec City estimated blood products consumed: 83.6 units/day
+    • Average units per order proxy: 4.23
+  
+  The simulator now treats the donor figure as successful completed donations, then backs into the required arrival pace. A routine provincial replenishment flow also tops up city inventory when reserves fall below target.
+  
+  Holdout benchmark stressors applied:
+    • Donor arrivals slow by 45% because regular donors travel or stay home sick
+    • Show-up rate falls 22% and eligibility drops as febrile donors are deferred
+    • Hospital orders arrive 14% faster with a modest acuity lift per order
+    • Routine snow slows transport without creating a full infrastructure outage
+    • Provincial replenishment still exists, but the wider network is also stretched
+
+REAL-WORLD CALIBRATION
+------------------------------------------------------------------------
+  • Quebec CMA population share: 839,311 / 8,501,833 = 9.87%
+  • Scaled blood-product demand: 83.6 labile products/day
+  • Scaled hospital-order cadence: 19.7 orders/day (~1 every 1.22 h)
+  • Scaled completed donations target: 39.7 successful donations/day
+  • Simulated donor arrivals needed to hit that target: 60.1 arrival attempts/day (~1 every 0.23 h during collection hours)
+
+INPUTS
+------------------------------------------------------------------------
+Donor inter-arrival: 0.34 h
+Donor show factor: 0.78
+Eligibility rate: 84%
+Demand inter-arrival: 1.05 h
+Demand surge factor: 1.10x
+Average units per order: 4.45
+Initial inventory buffer: 4.8 days
+Reserve target: 4.0 days
+Provincial replenishment rate: 30% of daily demand
+Transport penalty: 1.22x
+Effective transport penalty: 1.22x
+Forecast refresh interval: 12.0 h
+Demand forecast noise: 0.20
+Episode intervention budget: 7800
+Forced weather: snow
+
+ACTIONS
+------------------------------------------------------------------------
+Selected strategy: Full Crisis Response
+Description: Activate campaign, mobile collection, longer hours, fast lab processing, hospital conservation and emergency transfers together.
+Action cost: 0
+Budget remaining: 4713 / 7800
+  - No intervention actions applied.
+  - Donor arrival factor: 1.00x inter-arrival
+  - Donor show-up factor: 1.00x
+  - Donor eligibility factor: 1.00x
+  - Demand management factor: 1.00x
+  - Committed donor share: 0%
+  - Release delay factor: 1.00x
+  - Extra staffing per site: nurses +0.0, lab +0.0, processing +0.0
+  - Extra mobile units: 0.0
+  - Added hours per side: 0.0
+  - Replenishment cadence: every 12h
+
+OUTPUTS
+------------------------------------------------------------------------
+Donor attempts: 1586
+Successful donations: 758
+Deferred/rejected: 106 (12.3%)
+No-shows: 722
+Base requested units: 3440
+Deferred/conserved units: 367
+Net requested units: 3073
+Transfused units: 2326
+Shortage units: 747
+Shortage rate: 24.3%
+Shortage vs base demand: 21.7%
+Expired units: 118
+Transfer units: 1568
+Provincial inbound units: 745
+Remaining inventory: 462
+Average donor travel: 155.7 min
+Average nurse wait: 0.0 min
+
+REWARD BREAKDOWN
+------------------------------------------------------------------------
+     fulfilled_units:  27912.0
+        shortage_rbc: -43600.0
+  shortage_platelets: -14140.0
+     shortage_plasma:     -0.0
+   priority_shortage: -69570.0
+     conserved_units:      0.0
+       expired_units:  -2124.0
+      transfer_units: -10976.0
+   exact_match_units:   2809.5
+compatible_substitution_units:    158.5
+incompatible_fulfillment_units:     -0.0
+        budget_spent:   -771.8
+budget_blocked_controls:     -0.0
+    budget_exhausted:     -0.0
+            avg_wait:     -0.0
+          avg_travel:     -4.7
+         action_cost:     -0.0
+        total_reward: -110214.2
+
+SHORTAGES BY COMPONENT
+------------------------------------------------------------------------
+         RBC: 545
+   PLATELETS: 202
+
+PER-CENTRE PERFORMANCE
+------------------------------------------------------------------------
+Héma-Québec Lebourgneuf [blood_bank]
+  donated=401 rejected=55 no_show=369 orders=0
+  transfused=0 shortage=0 transfers_in=0 expired=21
+  inventory RBC=26 PLT=3 PLS=226 avg_travel=189.6m
+
+CHU Enfant-Jésus [hospital]
+  donated=87 rejected=9 no_show=72 orders=350
+  transfused=1125 shortage=404 transfers_in=728 expired=0
+  inventory RBC=3 PLT=0 PLS=1 avg_travel=133.9m
+
+Héma-Québec Sainte-Foy [blood_bank]
+  donated=107 rejected=17 no_show=113 orders=0
+  transfused=0 shortage=0 transfers_in=0 expired=51
+  inventory RBC=10 PLT=4 PLS=113 avg_travel=136.9m
+
+Hôtel-Dieu de Lévis [hospital]
+  donated=83 rejected=18 no_show=117 orders=360
+  transfused=1201 shortage=343 transfers_in=840 expired=0
+  inventory RBC=5 PLT=0 PLS=1 avg_travel=107.0m
+
+Mobile Unit – Université Laval [mobile]
+  donated=12 rejected=2 no_show=15 orders=0
+  transfused=0 shortage=0 transfers_in=0 expired=16
+  inventory RBC=2 PLT=0 PLS=15 avg_travel=62.7m
+
+Mobile Surge Unit #1 [mobile]
+  donated=15 rejected=3 no_show=21 orders=0
+  transfused=0 shortage=0 transfers_in=0 expired=15
+  inventory RBC=1 PLT=1 PLS=19 avg_travel=41.3m
+
+Mobile Surge Unit #2 [mobile]
+  donated=26 rejected=2 no_show=15 orders=0
+  transfused=0 shortage=0 transfers_in=0 expired=15
+  inventory RBC=2 PLT=1 PLS=29 avg_travel=52.7m
+
+INVENTORY TIMELINE
+------------------------------------------------------------------------
+ Day      RBC      PLT      PLS   CumShort
+   0      179      115       42          0
+   0      173       98       38          0
+   0      172       91       36          1
+   1      144       91       36          1
+   1      136       92       35          1
+   1      126       88       36          1
+   1      128       90       39          1
+   2      135       91       47          1
+   2      147      101       56          1
+   2      147      100       64          1
+   2      167      105       72          1
+   3      163      109       78          2
+   3      179      120       78          2
+   3      192      123       84          2
+   3      213      126      102          2
+   4      224      131      115          2
+   4      217      133      117          2
+   4      220      129      127          2
+   4      209      106      133          2
+   5      199       74      142          2
+   5      182       78      140         13
+   5      179       79      145         13
+   5      202      114      162         13
+   6      193      133      173         20
+   6      179      139      177         28
+   6      172      137      187         28
+   6      165      128      181         30
+   7      168      115      182         37
+   7      194      104      188         37
+   7      208      102      195         38
+   7      233      110      207         38
+   8      248      122      224         38
+   8      256      122      235         38
+   8      247      146      256         38
+   8      239      127      278         38
+   9      243      123      294         38
+   9      249      118      307         38
+   9      224      127      328         38
+   9      226      115      337         40
+  10      225      111      332         40
+  10      216       90      341         40
+  10      199       95      345         40
+  10      195       93      348         40
+  11      185       88      361         40
+  11      187       79      374         40
+  11      180       72      387         40
+  11      192       85      392         45
+  12      195       92      405         45
+  12      192       71      414         51
+  12      201       73      416         54
+  12      200       68      422         54
+  13      193       67      425         58
+  13      199       50      429         62
+  13      148       37      426         62
+  13      126       38      430         62
+  14      105       33      427         66
+  14       83       34      433         74
+  14       88       14      435         81
+  14       85       13      438         90
+  15       80        9      444        114
+  15       78        5      439        153
+  15       69        7      441        180
+  15       68        4      440        216
+  16       76        9      434        225
+  16       70       10      436        236
+  16       68        9      439        270
+  16       67        6      440        305
+  17       77        8      445        333
+  17       76        6      443        345
+  17       76        6      441        367
+  17       65        4      438        402
+  18       56        9      439        428
+  18       58       12      436        452
+  18       60        7      424        466
+  18       60        7      426        497
+  19       58       12      419        549
+  19       62        9      416        562
+  19       65        8      422        588
+  19       59       10      421        615
+  20       56       15      419        667
+  20       57        8      425        689
+  20       56        9      407        717
+  20       50        8      411        741
+
+RECOMMENDATIONS
+------------------------------------------------------------------------
+Escalate action mix. The current intervention still leaves too many unmet units.
+Transfers are carrying too much of the load. More local collection capacity would reduce fragility.
+
+Report generated: 2026-04-12 22:26:31

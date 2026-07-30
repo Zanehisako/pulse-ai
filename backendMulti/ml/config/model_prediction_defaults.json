@@ -1,0 +1,289 @@
+{
+  "models": {
+    "donor_next_donation_hazard_model": {
+      "metadata": {
+        "description": "Discrete-time recurrent-style donor hazard model for next usable donation timing.",
+        "task": "donor_horizon"
+      },
+      "defaults": {
+        "prediction_source": "feast_online",
+        "forecast_selection": {
+          "enabled": true,
+          "target": "donation",
+          "primary_metric": "brier_score",
+          "direction": "minimize",
+          "fallback_metrics": ["log_loss", "average_precision", "roc_auc"]
+        },
+        "horizon_routing": {
+          "enabled": true,
+          "timeframes": ["short", "medium", "long"],
+          "min_days": 0,
+          "max_days": 365,
+          "priority": 150,
+          "target": "donation"
+        },
+        "feast": {
+          "feature_service": "quebec_donor_service",
+          "entity_keys": ["donor_id"],
+          "allow_direct_input": true,
+          "allow_feature_overrides": true,
+          "fail_open": false
+        },
+        "output": {
+          "name": "donation_probability",
+          "unit": "probability",
+          "task_type": "survival_hazard",
+          "clip_min": 0.0,
+          "clip_max": 1.0,
+          "apply_clipping": true
+        }
+      }
+    },
+    "ideal_donor_probability_model": {
+      "metadata": {
+        "description": "Bounded ideal donor probability score for donor profile suitability.",
+        "task": "donor_individual"
+      },
+      "defaults": {
+        "prediction_source": "direct_input",
+        "output": {
+          "name": "ideal_donor_probability",
+          "unit": "probability",
+          "task_type": "regression",
+          "clip_min": 0.0,
+          "clip_max": 1.0,
+          "apply_clipping": true
+        }
+      }
+    },
+    "donor_contact_propensity_model": {
+      "metadata": {
+        "description": "Proxy donor contact propensity model for engagement likelihood.",
+        "task": "donor_individual"
+      },
+      "defaults": {
+        "prediction_source": "feast_online",
+        "feast": {
+          "feature_service": "quebec_donor_service",
+          "entity_keys": ["donor_id"],
+          "allow_direct_input": true,
+          "allow_feature_overrides": true,
+          "fail_open": false
+        },
+        "output": {
+          "name": "contact_propensity",
+          "unit": "probability",
+          "task_type": "classification",
+          "clip_min": 0.0,
+          "clip_max": 1.0,
+          "apply_clipping": true
+        }
+      }
+    },
+    "donor_contact_response_model": {
+      "metadata": {
+        "description": "Shadow contact-response model using proxy labels until true contact outcomes exist.",
+        "task": "donor_individual"
+      },
+      "defaults": {
+        "prediction_source": "feast_online",
+        "feast": {
+          "feature_service": "quebec_donor_service",
+          "entity_keys": ["donor_id"],
+          "allow_direct_input": true,
+          "allow_feature_overrides": true,
+          "fail_open": false
+        },
+        "output": {
+          "name": "contact_response_score",
+          "unit": "probability",
+          "task_type": "classification",
+          "clip_min": 0.0,
+          "clip_max": 1.0,
+          "apply_clipping": true
+        }
+      }
+    },
+    "donor_priority_policy_model": {
+      "metadata": {
+        "description": "Expected-utility donor priority policy for constrained outreach ranking.",
+        "task": "donor_individual"
+      },
+      "defaults": {
+        "prediction_source": "direct_input",
+        "output": {
+          "name": "donor_priority_score",
+          "unit": "score",
+          "task_type": "policy",
+          "clip_min": 0.0,
+          "clip_max": 1.0,
+          "apply_clipping": true
+        }
+      }
+    },
+    "stockout_time_to_event_hazard_model": {
+      "metadata": {
+        "description": "Stockout hazard sentinel that complements the inventory simulator.",
+        "task": "inventory_forecast"
+      },
+      "defaults": {
+        "prediction_source": "feast_online",
+        "forecast_selection": {
+          "enabled": true,
+          "target": "stockout",
+          "primary_metric": "brier_score",
+          "direction": "minimize",
+          "fallback_metrics": ["log_loss", "average_precision", "roc_auc"]
+        },
+        "horizon_routing": {
+          "enabled": true,
+          "timeframes": ["short", "medium"],
+          "min_days": 0,
+          "max_days": 60,
+          "priority": 100,
+          "target": "stockout"
+        },
+        "feast": {
+          "feature_service": "quebec_arima_sarima_forecast_service",
+          "entity_keys": ["hospital_id", "blood_type", "component_type"],
+          "optional_entity_keys": ["blood_type", "component_type"],
+          "allow_direct_input": true,
+          "allow_feature_overrides": true,
+          "fail_open": false
+        },
+        "output": {
+          "name": "stockout_probability",
+          "unit": "probability",
+          "task_type": "survival_hazard",
+          "clip_min": 0.0,
+          "clip_max": 1.0,
+          "apply_clipping": true
+        }
+      }
+    },
+    "component_demand_quantile_forecast_model": {
+      "metadata": {
+        "description": "Component demand forecast used by the inventory simulator.",
+        "task": "inventory_forecast"
+      },
+      "defaults": {
+        "prediction_source": "feast_online",
+        "feast": {
+          "feature_service": "quebec_arima_sarima_forecast_service",
+          "entity_keys": ["hospital_id", "blood_type", "component_type"],
+          "optional_entity_keys": ["blood_type", "component_type"],
+          "allow_direct_input": true,
+          "allow_feature_overrides": true,
+          "fail_open": false
+        },
+        "output": {
+          "name": "demand_units",
+          "unit": "units",
+          "task_type": "regression",
+          "clip_min": 0.0,
+          "apply_clipping": true
+        }
+      }
+    },
+    "component_supply_forecast_model": {
+      "metadata": {
+        "description": "Component supply forecast used by the inventory simulator.",
+        "task": "inventory_forecast"
+      },
+      "defaults": {
+        "prediction_source": "feast_online",
+        "feast": {
+          "feature_service": "quebec_arima_sarima_forecast_service",
+          "entity_keys": ["hospital_id", "blood_type", "component_type"],
+          "optional_entity_keys": ["blood_type", "component_type"],
+          "allow_direct_input": true,
+          "allow_feature_overrides": true,
+          "fail_open": false
+        },
+        "output": {
+          "name": "supply_units",
+          "unit": "units",
+          "task_type": "regression",
+          "clip_min": 0.0,
+          "apply_clipping": true
+        }
+      }
+    },
+    "component_expiry_waste_model": {
+      "metadata": {
+        "description": "Expiry and waste forecast used by the inventory simulator.",
+        "task": "inventory_forecast"
+      },
+      "defaults": {
+        "prediction_source": "feast_online",
+        "feast": {
+          "feature_service": "quebec_arima_sarima_forecast_service",
+          "entity_keys": ["hospital_id", "blood_type", "component_type"],
+          "optional_entity_keys": ["blood_type", "component_type"],
+          "allow_direct_input": true,
+          "allow_feature_overrides": true,
+          "fail_open": false
+        },
+        "output": {
+          "name": "wastage_units",
+          "unit": "units",
+          "task_type": "regression",
+          "clip_min": 0.0,
+          "apply_clipping": true
+        }
+      }
+    },
+    "component_inventory_risk_simulator": {
+      "metadata": {
+        "description": "Primary stockout decision engine: probabilistic demand, supply, waste, and inventory simulation.",
+        "task": "inventory_forecast"
+      },
+      "defaults": {
+        "prediction_source": "direct_input",
+        "horizon_routing": {
+          "enabled": true,
+          "timeframes": ["short", "medium", "long"],
+          "min_days": 0,
+          "max_days": 180,
+          "priority": 160,
+          "target": "stockout"
+        },
+        "output": {
+          "name": "inventory_risk",
+          "unit": "probability_and_days",
+          "task_type": "multi_output_probability_and_timing",
+          "apply_clipping": true
+        },
+        "output_contract": {
+          "p_stockout_0_7d": {"type": "probability", "clip_min": 0.0, "clip_max": 1.0},
+          "p_stockout_0_30d": {"type": "probability", "clip_min": 0.0, "clip_max": 1.0},
+          "p_stockout_0_90d": {"type": "probability", "clip_min": 0.0, "clip_max": 1.0},
+          "p_stockout_0_180d": {"type": "probability", "clip_min": 0.0, "clip_max": 1.0},
+          "p_stockout_0_maxd": {"type": "probability", "clip_min": 0.0, "clip_max": 1.0},
+          "expected_days_until_stockout": {"type": "days", "clip_min": 0},
+          "p10_days_until_stockout": {"type": "days_or_null", "clip_min": 0},
+          "p50_days_until_stockout": {"type": "days_or_null", "clip_min": 0},
+          "p90_days_until_stockout": {"type": "days_or_null", "clip_min": 0},
+          "median_status": {"type": "string"}
+        }
+      }
+    },
+    "donor_uplift_model": {
+      "metadata": {
+        "description": "Disabled causal uplift placeholder pending randomized outreach holdout data.",
+        "task": "donor_individual"
+      },
+      "defaults": {
+        "enabled": false,
+        "output": {
+          "name": "uplift_score",
+          "unit": "probability_delta",
+          "task_type": "uplift",
+          "clip_min": -1.0,
+          "clip_max": 1.0,
+          "apply_clipping": true
+        }
+      }
+    }
+  }
+}

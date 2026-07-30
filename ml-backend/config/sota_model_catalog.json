@@ -1,0 +1,863 @@
+{
+  "version": "2026-05-11",
+  "models_dir_env": "PIOS_SOTA_MODELS_DIR",
+  "default_models_dir": "../models",
+  "target_alias": "challenger",
+  "mlflow_experiment_name": "pios_sota_models",
+  "neural_architecture": {
+    "hidden_dim": 256,
+    "n_transformer_layers": 2,
+    "n_heads": 8,
+    "dropout": 0.12,
+    "n_plr_bins": 48,
+    "ffn_multiplier": 1.333
+  },
+  "models": [
+    {
+      "id": "global_sota_demand_quantile_forecast_model",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "registered_model_name": "component_demand_quantile_forecast_model",
+      "artifact_filename": "global_sota_demand_quantile_forecast_model.joblib",
+      "metrics_filename": "global_sota_demand_quantile_forecast_model_metrics.json",
+      "task_type": "quantile",
+      "outputs": {
+        "primary": "demand_units"
+      },
+      "feature_types": {
+        "hospital_id": "string",
+        "hospital_name": "string",
+        "region_admin": "string",
+        "city": "string",
+        "supplier_context": "string",
+        "province": "string",
+        "blood_type": "string",
+        "component_type": "string",
+        "hospital_size_tier": "string"
+      },
+      "features": [
+        "hospital_id",
+        "hospital_name",
+        "region_admin",
+        "city",
+        "supplier_context",
+        "province",
+        "blood_type",
+        "component_type",
+        "hospital_size_tier",
+        "month",
+        "dow",
+        "weekend",
+        "holiday",
+        "flu_season_flag",
+        "major_event",
+        "supply_disruption",
+        "donor_shortfall",
+        "shelf_life_days",
+        "current_inventory",
+        "units_used",
+        "units_collected",
+        "wastage",
+        "incoming_supply_scheduled_7d",
+        "lead_time_days",
+        "route_disruption_score",
+        "trauma_cases",
+        "scheduled_surgeries",
+        "component_criticality_score",
+        "inventory_7d_mean",
+        "usage_7d_mean",
+        "wastage_7d_mean",
+        "collection_7d_mean",
+        "inventory_30d_mean",
+        "usage_30d_mean",
+        "collection_30d_mean",
+        "stockout_count_30d"
+      ],
+      "description": "Predicts future blood demand (units needed) per hospital, blood type, and component over 7/30 day horizons. Use for demand forecasting and supply planning.",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Forecast demand units for O+ red cells at hospital H001 over the next week.",
+          "why": "Direct inventory demand forecasting."
+        },
+        {
+          "kind": "good",
+          "user_query": "How many units of A- plasma will be needed next month?",
+          "why": "Demand quantity prediction."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can this donor donate blood?",
+          "why": "Donor eligibility is not demand forecasting."
+        }
+      ]
+    },
+    {
+      "id": "global_sota_supply_quantile_forecast_model",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "registered_model_name": "component_supply_forecast_model",
+      "artifact_filename": "global_sota_supply_quantile_forecast_model.joblib",
+      "metrics_filename": "global_sota_supply_quantile_forecast_model_metrics.json",
+      "task_type": "quantile",
+      "outputs": {
+        "primary": "supply_units"
+      },
+      "feature_types": {
+        "hospital_id": "string",
+        "hospital_name": "string",
+        "region_admin": "string",
+        "city": "string",
+        "supplier_context": "string",
+        "province": "string",
+        "blood_type": "string",
+        "component_type": "string",
+        "hospital_size_tier": "string"
+      },
+      "features": [
+        "hospital_id",
+        "hospital_name",
+        "region_admin",
+        "city",
+        "supplier_context",
+        "province",
+        "blood_type",
+        "component_type",
+        "hospital_size_tier",
+        "month",
+        "dow",
+        "weekend",
+        "holiday",
+        "flu_season_flag",
+        "major_event",
+        "supply_disruption",
+        "donor_shortfall",
+        "shelf_life_days",
+        "current_inventory",
+        "units_used",
+        "units_collected",
+        "wastage",
+        "incoming_supply_scheduled_7d",
+        "lead_time_days",
+        "route_disruption_score",
+        "trauma_cases",
+        "scheduled_surgeries",
+        "component_criticality_score",
+        "inventory_7d_mean",
+        "usage_7d_mean",
+        "wastage_7d_mean",
+        "collection_7d_mean",
+        "inventory_30d_mean",
+        "usage_30d_mean",
+        "collection_30d_mean",
+        "stockout_count_30d"
+      ],
+      "description": "Predicts future blood supply (units collected/incoming) per hospital, blood type, and component. Use for supply forecasting.",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Forecast incoming supply for A- platelets at hospital H002.",
+          "why": "Direct supply forecasting."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Is this donor eligible?",
+          "why": "Donor questions are not supply forecasting."
+        }
+      ]
+    },
+    {
+      "id": "global_sota_expiry_waste_model",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "registered_model_name": "component_expiry_waste_model",
+      "artifact_filename": "global_sota_expiry_waste_model.joblib",
+      "metrics_filename": "global_sota_expiry_waste_model_metrics.json",
+      "task_type": "regression",
+      "outputs": {
+        "primary": "wastage_units"
+      },
+      "feature_types": {
+        "hospital_id": "string",
+        "hospital_name": "string",
+        "region_admin": "string",
+        "city": "string",
+        "supplier_context": "string",
+        "province": "string",
+        "blood_type": "string",
+        "component_type": "string",
+        "hospital_size_tier": "string"
+      },
+      "features": [
+        "hospital_id",
+        "hospital_name",
+        "region_admin",
+        "city",
+        "supplier_context",
+        "province",
+        "blood_type",
+        "component_type",
+        "hospital_size_tier",
+        "month",
+        "dow",
+        "weekend",
+        "holiday",
+        "flu_season_flag",
+        "major_event",
+        "supply_disruption",
+        "donor_shortfall",
+        "shelf_life_days",
+        "current_inventory",
+        "wastage",
+        "units_used",
+        "units_collected",
+        "route_disruption_score",
+        "inventory_7d_mean",
+        "wastage_7d_mean",
+        "inventory_30d_mean",
+        "wastage_30d_mean",
+        "collection_adjusted_runway_days"
+      ],
+      "description": "Predicts daily expiry and wastage units per hospital, blood type, and component. Use for waste reduction planning.",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Estimate expiry waste for O- red cells at this hospital.",
+          "why": "Direct wastage forecast."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Will this donor donate again?",
+          "why": "Donor behavior is not wastage."
+        }
+      ]
+    },
+    {
+      "id": "global_sota_stockout_hazard_model",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "registered_model_name": "stockout_time_to_event_hazard_model",
+      "artifact_filename": "global_sota_stockout_hazard_model.joblib",
+      "metrics_filename": "global_sota_stockout_hazard_model_metrics.json",
+      "task_type": "classification",
+      "threshold": 0.34,
+      "outputs": {
+        "primary": "p_stockout_by_7d"
+      },
+      "feature_types": {
+        "hospital_id": "string",
+        "hospital_name": "string",
+        "region_admin": "string",
+        "city": "string",
+        "supplier_context": "string",
+        "province": "string",
+        "blood_type": "string",
+        "component_type": "string",
+        "hospital_size_tier": "string"
+      },
+      "features": [
+        "hospital_id",
+        "hospital_name",
+        "region_admin",
+        "city",
+        "supplier_context",
+        "province",
+        "blood_type",
+        "component_type",
+        "hospital_size_tier",
+        "month",
+        "dow",
+        "weekend",
+        "holiday",
+        "flu_season_flag",
+        "major_event",
+        "supply_disruption",
+        "donor_shortfall",
+        "shelf_life_days",
+        "current_inventory",
+        "units_used",
+        "units_collected",
+        "wastage",
+        "incoming_supply_scheduled_7d",
+        "lead_time_days",
+        "route_disruption_score",
+        "trauma_cases",
+        "scheduled_surgeries",
+        "component_criticality_score",
+        "inventory_7d_mean",
+        "usage_7d_mean",
+        "wastage_7d_mean",
+        "collection_7d_mean",
+        "inventory_30d_mean",
+        "usage_30d_mean",
+        "collection_30d_mean",
+        "stockout_count_30d",
+        "safety_threshold",
+        "stockout_count_7d",
+        "stockout_count_14d"
+      ],
+      "description": "Predicts probability of blood stockout within 7/30/90/180 day windows per hospital, blood type, and component. Use for stockout risk assessment.",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "What is the 7 day stockout probability for AB- platelets at hospital H001?",
+          "why": "Direct stockout risk."
+        },
+        {
+          "kind": "good",
+          "user_query": "Will we run out of O+ blood this week?",
+          "why": "Stockout risk question."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can a donor with BMI 24 donate?",
+          "why": "Donor eligibility is not stockout risk."
+        }
+      ]
+    },
+    {
+      "id": "global_sota_donor_next_donation_hazard_model",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "registered_model_name": "donor_next_donation_hazard_model",
+      "artifact_filename": "global_sota_donor_next_donation_hazard_model.joblib",
+      "metrics_filename": "global_sota_donor_next_donation_hazard_model_metrics.json",
+      "task_type": "classification",
+      "threshold": 0.42,
+      "serve_winner": "tabular_gbdt",
+      "outputs": {
+        "primary": "donation_probability"
+      },
+      "feature_types": {
+        "province": "string",
+        "supplier_context": "string",
+        "region_admin": "string",
+        "sex": "string",
+        "language_preference": "string",
+        "blood_type": "string"
+      },
+      "features": [
+        "province",
+        "supplier_context",
+        "region_admin",
+        "age",
+        "sex",
+        "language_preference",
+        "blood_type",
+        "digital_contactability_score",
+        "center_distance_km",
+        "public_transit_access_score",
+        "winter_route_risk_score",
+        "smoker",
+        "bmi",
+        "chronic_condition_flag",
+        "is_rare_type",
+        "snapshot_month",
+        "snapshot_is_winter",
+        "years_since_first_donation",
+        "lifetime_donation_count",
+        "recency_days",
+        "snapshot_days_until_eligible",
+        "snapshot_frequency_365",
+        "donation_velocity",
+        "is_regular_donor",
+        "eligible_to_donate",
+        "readiness_score",
+        "mobility_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "description": "Predicts whether a donor can donate blood now or is likely to donate within a future 3/6 month horizon based on their profile, eligibility, recency, and blood type. Use for donate-now, eligibility, and future donation likelihood questions, not explicit ideal-donor profile scoring.",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Can a 35 year old donor with BMI 24 donate blood now?",
+          "why": "Donate-now donor eligibility and donation likelihood question."
+        },
+        {
+          "kind": "good",
+          "user_query": "Can this person donate blood now?",
+          "why": "Donate-now donor eligibility question."
+        },
+        {
+          "kind": "good",
+          "user_query": "Is this O- donor likely to donate in the next six months?",
+          "why": "Direct donation probability prediction."
+        },
+        {
+          "kind": "good",
+          "user_query": "What is the donation probability for a 28 year old female donor over the next quarter?",
+          "why": "Future donor donation likelihood."
+        },
+        {
+          "kind": "good",
+          "user_query": "Will this regular donor donate again in the next 90 days?",
+          "why": "Future donation horizon question."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Is a 35 year old donor with BMI 24 an ideal donor?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Score this donor for outreach priority.",
+          "why": "Outreach ranking is donor_priority_policy_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Will this donor respond to a contact attempt?",
+          "why": "Contact response is donor_contact_response_model."
+        }
+      ]
+    },
+    {
+      "id": "global_sota_ideal_donor_probability_model",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "registered_model_name": "ideal_donor_probability_model",
+      "artifact_filename": "global_sota_ideal_donor_probability_model.joblib",
+      "task_type": "regression",
+      "serve_winner": "tabular_gbdt",
+      "outputs": {
+        "primary": "ideal_donor_probability"
+      },
+      "score_output_schema": {
+        "output_name": "ideal_donor_probability",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "not_ideal_reference": 0.0,
+        "good_enough_threshold": 0.7,
+        "ideal_endpoint": 1.0,
+        "near_ideal_review_threshold": 0.9,
+        "interpretation": "0 means not ideal; 0.70 or higher is good enough; 1.0 is the ideal donor endpoint."
+      },
+      "feature_types": {
+        "province": "string",
+        "supplier_context": "string",
+        "region_admin": "string",
+        "sex": "string",
+        "language_preference": "string",
+        "blood_type": "string"
+      },
+      "features": [
+        "province",
+        "supplier_context",
+        "region_admin",
+        "age",
+        "sex",
+        "language_preference",
+        "blood_type",
+        "digital_contactability_score",
+        "center_distance_km",
+        "public_transit_access_score",
+        "winter_route_risk_score",
+        "smoker",
+        "bmi",
+        "chronic_condition_flag",
+        "is_rare_type",
+        "snapshot_month",
+        "snapshot_is_winter",
+        "years_since_first_donation",
+        "lifetime_donation_count",
+        "recency_days",
+        "snapshot_days_until_eligible",
+        "snapshot_frequency_365",
+        "donation_velocity",
+        "is_regular_donor",
+        "eligible_to_donate",
+        "mobility_score"
+      ],
+      "description": "Predicts a bounded ideal-donor probability score from donor profile, eligibility, mobility, recency, and blood-type features. Use for explicit ideal donor profile and ideal candidate suitability questions; decision support only, not final medical eligibility.",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Is a 35 year old donor with BMI 24 an ideal donor?",
+          "why": "Direct ideal donor profile score from age and BMI."
+        },
+        {
+          "kind": "good",
+          "user_query": "What is this donor's ideal donor probability?",
+          "why": "Direct ideal donor probability scoring."
+        },
+        {
+          "kind": "good",
+          "user_query": "Rank this donor as an ideal blood donor candidate.",
+          "why": "Ideal donor candidate score."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can a 35 year old donor with BMI 24 donate blood now?",
+          "why": "Donate-now donor eligibility is donor_next_donation_hazard_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Is this O- donor likely to donate in the next six months?",
+          "why": "Future donation likelihood is donor_next_donation_hazard_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Will this donor respond to an outreach call?",
+          "why": "Contact response is donor_contact_response_model."
+        }
+      ]
+    },
+    {
+      "id": "global_sota_donor_contact_response_model",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "registered_model_name": "donor_contact_response_model",
+      "artifact_filename": "global_sota_donor_contact_response_model.joblib",
+      "metrics_filename": "global_sota_donor_contact_response_model_metrics.json",
+      "task_type": "classification",
+      "threshold": 0.42,
+      "serve_winner": "tabular_gbdt",
+      "outputs": {
+        "primary": "contact_response_score"
+      },
+      "feature_types": {
+        "province": "string",
+        "supplier_context": "string",
+        "region_admin": "string",
+        "sex": "string",
+        "language_preference": "string",
+        "blood_type": "string"
+      },
+      "features": [
+        "province",
+        "supplier_context",
+        "region_admin",
+        "age",
+        "sex",
+        "language_preference",
+        "blood_type",
+        "digital_contactability_score",
+        "center_distance_km",
+        "public_transit_access_score",
+        "winter_route_risk_score",
+        "smoker",
+        "bmi",
+        "chronic_condition_flag",
+        "is_rare_type",
+        "snapshot_month",
+        "snapshot_is_winter",
+        "years_since_first_donation",
+        "lifetime_donation_count",
+        "recency_days",
+        "snapshot_days_until_eligible",
+        "snapshot_frequency_365",
+        "donation_velocity",
+        "is_regular_donor",
+        "eligible_to_donate",
+        "readiness_score",
+        "mobility_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "description": "Predicts whether a donor will respond positively to an outreach/contact attempt (phone call, SMS, email). Use only for contact response scoring, NOT for donation eligibility.",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Will this donor respond if we call them?",
+          "why": "Contact response prediction."
+        },
+        {
+          "kind": "good",
+          "user_query": "Score this donor contact response likelihood.",
+          "why": "Direct contact response scoring."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can this donor donate blood?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        }
+      ]
+    },
+    {
+      "id": "global_sota_donor_contact_propensity_model",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "registered_model_name": "donor_contact_propensity_model",
+      "artifact_filename": "global_sota_donor_contact_propensity_model.joblib",
+      "metrics_filename": "global_sota_donor_contact_propensity_model_metrics.json",
+      "task_type": "classification",
+      "threshold": 0.42,
+      "serve_winner": "tabular_gbdt",
+      "outputs": {
+        "primary": "contact_propensity"
+      },
+      "feature_types": {
+        "province": "string",
+        "supplier_context": "string",
+        "region_admin": "string",
+        "sex": "string",
+        "language_preference": "string",
+        "blood_type": "string"
+      },
+      "features": [
+        "province",
+        "supplier_context",
+        "region_admin",
+        "age",
+        "sex",
+        "language_preference",
+        "blood_type",
+        "digital_contactability_score",
+        "center_distance_km",
+        "public_transit_access_score",
+        "winter_route_risk_score",
+        "smoker",
+        "bmi",
+        "chronic_condition_flag",
+        "is_rare_type",
+        "snapshot_month",
+        "snapshot_is_winter",
+        "years_since_first_donation",
+        "lifetime_donation_count",
+        "recency_days",
+        "snapshot_days_until_eligible",
+        "snapshot_frequency_365",
+        "donation_velocity",
+        "is_regular_donor",
+        "eligible_to_donate",
+        "readiness_score",
+        "mobility_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "description": "Predicts the propensity/likelihood that a donor should be contacted for a blood drive campaign. Use only for campaign targeting, NOT for donation eligibility.",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Should we include this donor in the next blood drive campaign?",
+          "why": "Campaign targeting propensity."
+        },
+        {
+          "kind": "good",
+          "user_query": "Score donor contact propensity for this donor profile.",
+          "why": "Direct contact propensity scoring."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can a 35 year old with BMI 24 donate blood?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Is this donor eligible to donate?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        }
+      ]
+    },
+    {
+      "id": "global_sota_donor_priority_policy_model",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "registered_model_name": "donor_priority_policy_model",
+      "artifact_filename": "global_sota_donor_priority_policy_model.joblib",
+      "metrics_filename": "global_sota_donor_priority_policy_model_metrics.json",
+      "task_type": "policy",
+      "outputs": {
+        "primary": "donor_priority_score",
+        "display_score": "display_donor_score",
+        "default_action": "do_not_contact_low_score"
+      },
+      "policy_formula": {
+        "operational_outreach_priority": 0.34,
+        "readiness_score": 0.26,
+        "response_readiness_index": 0.18,
+        "is_rare_type": 0.12,
+        "eligible_to_donate": 0.1
+      },
+      "action_thresholds": {
+        "urgent_contact": 0.85,
+        "high_priority_contact": 0.7,
+        "standard_contact": 0.4,
+        "low_priority": 0.1
+      },
+      "dashboard_profile": {
+        "enabled": true,
+        "fields": {
+          "eligible_to_donate": {"mode": 1},
+          "is_regular_donor": {"mode": 1},
+          "blood_type": {"mode": "High-need or rare type"},
+          "is_rare_type": {"mode": 1},
+          "center_distance_km": {"lower": 0, "upper": 20, "median": 10},
+          "travel_time_min": {"lower": 0, "upper": 30, "median": 15},
+          "response_readiness_index": {"lower": 0.7, "upper": 1.0, "median": 0.85},
+          "donor_momentum": {"lower": 0.6, "upper": 0.9, "median": 0.75},
+          "operational_outreach_priority": {"lower": 0.7, "upper": 1.0, "median": 0.85},
+          "readiness_score": {"lower": 0.7, "upper": 1.0, "median": 0.85}
+        }
+      },
+      "features": [
+        "eligible_to_donate",
+        "is_regular_donor",
+        "blood_type",
+        "is_rare_type",
+        "center_distance_km",
+        "travel_time_min",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority",
+        "readiness_score"
+      ],
+      "feature_types": {
+        "blood_type": "string"
+      },
+      "description": "Ranks donors by outreach priority score based on rarity, eligibility, and operational factors. Use for donor ranking and prioritization, NOT for eligibility.",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Rank this eligible rare-type donor for outreach priority.",
+          "why": "Direct donor priority ranking."
+        },
+        {
+          "kind": "good",
+          "user_query": "Which donors should we prioritize for outreach?",
+          "why": "Priority scoring."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can this donor donate blood?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        }
+      ]
+    },
+    {
+      "id": "global_sota_inventory_risk_simulator",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "registered_model_name": "component_inventory_risk_simulator",
+      "artifact_filename": "global_sota_inventory_risk_simulator.joblib",
+      "metrics_filename": "global_sota_inventory_risk_simulator_metrics.json",
+      "task_type": "simulator",
+      "outputs": {
+        "primary": "inventory_risk"
+      },
+      "simulator": {
+        "horizons_days": [
+          7,
+          30,
+          90,
+          180
+        ],
+        "stock_column": "current_inventory",
+        "demand_column": "units_used",
+        "supply_column": "units_collected",
+        "waste_column": "wastage",
+        "safety_threshold": 1.0
+      },
+      "feature_types": {
+        "hospital_id": "string",
+        "blood_type": "string",
+        "component_type": "string",
+        "event_timestamp": "datetime"
+      },
+      "features": [
+        "hospital_id",
+        "blood_type",
+        "component_type",
+        "event_timestamp",
+        "current_inventory",
+        "usage_today",
+        "current_stock_units",
+        "units_used",
+        "units_collected",
+        "wastage",
+        "reserved_units",
+        "substitution_available_units",
+        "safety_threshold_units",
+        "shelf_life_days"
+      ],
+      "description": "Monte Carlo inventory risk simulator. Estimates stockout probabilities and days-until-stockout using current inventory state. Use for inventory risk simulation.",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Simulate stockout risk for current inventory levels.",
+          "why": "Direct inventory simulation."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can this donor donate?",
+          "why": "Donor questions are not inventory simulation."
+        }
+      ]
+    },
+    {
+      "id": "global_sota_donor_time_to_donation_model",
+      "enabled": true,
+      "deployment_mode": "shadow",
+      "registered_model_name": "donor_next_donation_time_model",
+      "artifact_filename": "global_sota_donor_time_to_donation_model.joblib",
+      "metrics_filename": "global_sota_donor_time_to_donation_model_metrics.json",
+      "task_type": "quantile",
+      "outputs": {
+        "primary": "days_until_next_donation"
+      },
+      "feature_types": {
+        "province": "string",
+        "supplier_context": "string",
+        "region_admin": "string",
+        "sex": "string",
+        "language_preference": "string",
+        "blood_type": "string"
+      },
+      "features": [
+        "province",
+        "supplier_context",
+        "region_admin",
+        "age",
+        "sex",
+        "language_preference",
+        "blood_type",
+        "digital_contactability_score",
+        "center_distance_km",
+        "public_transit_access_score",
+        "winter_route_risk_score",
+        "smoker",
+        "bmi",
+        "chronic_condition_flag",
+        "is_rare_type",
+        "snapshot_month",
+        "snapshot_is_winter",
+        "years_since_first_donation",
+        "lifetime_donation_count",
+        "recency_days",
+        "snapshot_days_until_eligible",
+        "snapshot_frequency_365",
+        "donation_velocity",
+        "is_regular_donor",
+        "eligible_to_donate",
+        "readiness_score",
+        "mobility_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "description": "Predicts the number of days until a donor's next donation using quantile regression. Use for donation timing forecasts and scheduling.",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "How many days until this donor is likely to donate again?",
+          "why": "Direct time-to-donation prediction."
+        },
+        {
+          "kind": "good",
+          "user_query": "When will this O+ donor next donate?",
+          "why": "Donation timing forecast."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can this donor donate blood?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+.DS_Store
+.cache
+.pytest_cache
+__pycache__
+*.egg-info
+tests
+simulation_studio
+simulator/cache
+simulator/__pycache__
+simulator/ml-backend

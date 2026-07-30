@@ -1,0 +1,127 @@
+{
+  "task": "donor_days_until_next_donation",
+  "primary_model": "neural_ft_transformer",
+  "winner": "tabular_gbdt",
+  "selection_metric": "validation_wape",
+  "validation_protocol": "donor_group_holdout",
+  "validation_comparison": {
+    "neural_ft_transformer": {
+      "rmse": 17.480550151303397,
+      "mae": 13.902256965637207,
+      "r2": 0.897217869758606,
+      "wape": 0.07967436256540318,
+      "baseline_wape": 0.2517103404388893,
+      "wape_improvement_pct": 68.34680592522314,
+      "q10_pinball": 3.048583195428164,
+      "q50_pinball": 6.951129591975499,
+      "q90_pinball": 3.1196497372694587,
+      "q10_q90_coverage": 0.83075,
+      "coverage_error_vs_80pct": 0.030749999999999944,
+      "q10_q90_avg_width": 48.09375
+    },
+    "tabular_gbdt": {
+      "rmse": 16.849676333483497,
+      "mae": 13.43499236482855,
+      "r2": 0.9045028051711288,
+      "wape": 0.07699643910929883,
+      "baseline_wape": 0.2517103404388893,
+      "wape_improvement_pct": 69.41069684501414,
+      "q10_pinball": 2.9609942952683816,
+      "q50_pinball": 6.717496182414275,
+      "q90_pinball": 2.9659093047099105,
+      "q10_q90_coverage": 0.7931574074074074,
+      "coverage_error_vs_80pct": 0.006842592592592678,
+      "q10_q90_avg_width": 42.63895167325877
+    }
+  },
+  "test_comparison": {
+    "neural_ft_transformer": {
+      "rmse": 17.591308497266652,
+      "mae": 13.993415832519531,
+      "r2": 0.8954897522926331,
+      "wape": 0.08016131347943554,
+      "baseline_wape": 0.25088641187105404,
+      "wape_improvement_pct": 68.04876243332167,
+      "q10_pinball": 3.079682504785171,
+      "q50_pinball": 6.996707674269875,
+      "q90_pinball": 3.1263445772763747,
+      "q10_q90_coverage": 0.8283425925925926,
+      "coverage_error_vs_80pct": 0.02834259259259253,
+      "q10_q90_avg_width": 48.09375
+    },
+    "tabular_gbdt": {
+      "rmse": 16.963828020066266,
+      "mae": 13.533202586391294,
+      "r2": 0.9028125144212565,
+      "wape": 0.07752498356461822,
+      "baseline_wape": 0.25088641187105404,
+      "wape_improvement_pct": 69.09956861096842,
+      "q10_pinball": 2.989146242599171,
+      "q50_pinball": 6.766601293195647,
+      "q90_pinball": 2.981865356301853,
+      "q10_q90_coverage": 0.7899722222222222,
+      "coverage_error_vs_80pct": 0.010027777777777858,
+      "q10_q90_avg_width": 42.619417962184535
+    }
+  },
+  "sota_baselines": {
+    "availability": {
+      "tabpfn": {
+        "available": false,
+        "reason": "row_limit_exceeded",
+        "version": "8.0.2"
+      },
+      "autogluon": {
+        "available": false,
+        "reason": "row_limit_exceeded",
+        "version": null
+      },
+      "optuna": {
+        "available": true,
+        "reason": null,
+        "version": "4.8.0"
+      },
+      "tabm": {
+        "available": true,
+        "reason": "installed_but_adapter_disabled",
+        "version": "0.0.3"
+      },
+      "tabr": {
+        "available": false,
+        "reason": "research_reference_no_stable_notebook_adapter",
+        "version": null
+      }
+    },
+    "thresholds": {}
+  },
+  "neural_overall": {
+    "rmse": 17.591308497266652,
+    "mae": 13.993415832519531,
+    "r2": 0.8954897522926331,
+    "wape": 0.08016131347943554,
+    "baseline_wape": 0.25088641187105404,
+    "wape_improvement_pct": 68.04876243332167,
+    "q10_pinball": 3.079682504785171,
+    "q50_pinball": 6.996707674269875,
+    "q90_pinball": 3.1263445772763747,
+    "q10_q90_coverage": 0.8283425925925926,
+    "coverage_error_vs_80pct": 0.02834259259259253,
+    "q10_q90_avg_width": 48.09375
+  },
+  "tabular_overall": {
+    "rmse": 16.963828020066266,
+    "mae": 13.533202586391294,
+    "r2": 0.9028125144212565,
+    "wape": 0.07752498356461822,
+    "baseline_wape": 0.25088641187105404,
+    "wape_improvement_pct": 69.09956861096842,
+    "q10_pinball": 2.989146242599171,
+    "q50_pinball": 6.766601293195647,
+    "q90_pinball": 2.981865356301853,
+    "q10_q90_coverage": 0.7899722222222222,
+    "coverage_error_vs_80pct": 0.010027777777777858,
+    "q10_q90_avg_width": 42.619417962184535
+  },
+  "best_valid_loss": 4.374942991468641,
+  "epochs_ran": 31
+}

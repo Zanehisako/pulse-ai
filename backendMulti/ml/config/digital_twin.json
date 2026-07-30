@@ -1,0 +1,364 @@
+{
+  "version": "2026-06-12",
+  "runtime": {
+    "default_scenario_key": "baseline",
+    "default_strategy_key": "baseline",
+    "default_seed": 100,
+    "default_tick_interval_s": 2.0,
+    "min_tick_interval_s": 0.25,
+    "max_tick_interval_s": 30.0,
+    "default_step_hours": 6.0,
+    "supported_effect_fields": [
+      "donor_inter_arrival_h",
+      "donor_show_factor",
+      "eligible_rate",
+      "demand_rate_h",
+      "demand_surge_factor",
+      "avg_units_per_order",
+      "transport_penalty",
+      "lab_time_factor",
+      "proc_time_factor",
+      "initial_inventory_days",
+      "reserve_target_days",
+      "regional_replenishment_rate",
+      "episode_budget"
+    ],
+    "budget_cycle_options": [
+      {"id": "daily", "label": "Daily", "hours": 24},
+      {"id": "weekly", "label": "Weekly", "hours": 168},
+      {"id": "biweekly", "label": "Bi-weekly", "hours": 336},
+      {"id": "monthly_30d", "label": "Monthly (30 d)", "hours": 720}
+    ],
+    "default_budget_cycle_hours": 168.0,
+    "location": "Quebec City, QC"
+  },
+  "sync": {
+    "enabled_by_default": true,
+    "refresh_interval_seconds": 30,
+    "stale_after_seconds": 180,
+    "max_snapshot_rows_per_source": 500
+  },
+  "retention": {
+    "max_frames_per_run": 2000,
+    "max_snapshots_per_run": 200,
+    "max_audit_days": 90
+  },
+  "data_sources": {
+    "hospitals": {
+      "adapter": "django_model",
+      "model": "inventory.Hospital",
+      "order_by": ["hospital_id"],
+      "limit": 500,
+      "fields": {
+        "hospital_id": "hospital_id",
+        "name": "name",
+        "wilaya": "wilaya"
+      }
+    },
+    "blood_supplies": {
+      "adapter": "django_model",
+      "model": "inventory.BloodSupply",
+      "select_related": ["hospital"],
+      "order_by": ["hospital__hospital_id", "blood_product_type"],
+      "limit": 2000,
+      "fields": {
+        "supply_id": "supply_id",
+        "hospital_id": "hospital.hospital_id",
+        "hospital_name": "hospital.name",
+        "blood_product_type": "blood_product_type",
+        "current_stock_units": "current_stock_units",
+        "usage_today": "usage_today",
+        "lead_time_days": "lead_time_days",
+        "days_since_last_restock": "days_since_last_restock",
+        "stockout_count_90d": "stockout_count_90d",
+        "scheduled_surgeries_next7d": "scheduled_surgeries_next7d",
+        "event_timestamp": "event_timestamp",
+        "updated_at": "updated_at"
+      }
+    },
+    "supply_snapshots": {
+      "adapter": "django_model",
+      "model": "inventory.BloodSupplySnapshot",
+      "select_related": ["hospital"],
+      "order_by": ["-recorded_at"],
+      "limit": 500,
+      "fields": {
+        "hospital_id": "hospital.hospital_id",
+        "blood_product_type": "blood_product_type",
+        "current_stock_units": "current_stock_units",
+        "usage_today": "usage_today",
+        "days_since_last_restock": "days_since_last_restock",
+        "recorded_at": "recorded_at"
+      }
+    },
+    "hospital_features": {
+      "adapter": "django_model",
+      "model": "inventory.HospitalSupplyFeature",
+      "order_by": ["hospital_id", "-event_timestamp"],
+      "limit": 500,
+      "fields": {
+        "hospital_id": "hospital_id",
+        "event_timestamp": "event_timestamp",
+        "temperature": "temperature",
+        "rain_mm": "rain_mm",
+        "holiday": "holiday",
+        "disaster": "disaster",
+        "scheduled_surgeries": "scheduled_surgeries",
+        "trauma_cases": "trauma_cases",
+        "current_inventory": "current_inventory",
+        "updated_at": "updated_at"
+      }
+    },
+    "donors": {
+      "adapter": "django_model",
+      "model": "inventory.Donor",
+      "order_by": ["donor_id"],
+      "limit": 5000,
+      "fields": {
+        "donor_id": "donor_id",
+        "name": "name",
+        "wilaya": "wilaya",
+        "event_timestamp": "event_timestamp",
+        "city_id": "city_id",
+        "lat": "lat",
+        "lon": "lon",
+        "availability": "availability",
+        "blood_group": "blood_group",
+        "recency_days": "recency_days",
+        "frequency_365": "frequency_365",
+        "days_until_eligible": "days_until_eligible",
+        "cluster_id": "cluster_id",
+        "updated_at": "updated_at"
+      }
+    },
+    "predictions": {
+      "adapter": "django_model",
+      "model": "inventory.PredictionResult",
+      "order_by": ["-created_at"],
+      "limit": 500,
+      "fields": {
+        "entity_id": "entity_id",
+        "entity_type": "entity_type",
+        "hospital_id": "hospital_id",
+        "blood_type": "blood_type",
+        "model_name": "model_name",
+        "model_version": "model_version",
+        "predicted_value": "predicted_value",
+        "confidence": "confidence",
+        "predicted_for_date": "predicted_for_date",
+        "created_at": "created_at",
+        "alert_triggered": "alert_triggered",
+        "alert_threshold_used": "alert_threshold_used"
+      }
+    },
+    "alerts": {
+      "adapter": "django_model",
+      "model": "alerts.AlertEvent",
+      "order_by": ["-opened_at"],
+      "limit": 200,
+      "fields": {
+        "id": "id",
+        "source_type": "source_type",
+        "source_ref": "source_ref",
+        "event_key": "event_key",
+        "severity": "severity",
+        "status": "status",
+        "title": "title",
+        "message": "message",
+        "entity_type": "entity_type",
+        "entity_id": "entity_id",
+        "blood_type": "blood_type",
+        "predicted_value": "predicted_value",
+        "actual_value": "actual_value",
+        "threshold_value": "threshold_value",
+        "opened_at": "opened_at",
+        "last_evaluated_at": "last_evaluated_at"
+      }
+    },
+    "model_configs": {
+      "adapter": "django_model",
+      "model": "ml.MLModelConfig",
+      "order_by": ["model_id"],
+      "limit": 200,
+      "fields": {
+        "model_id": "model_id",
+        "description": "description",
+        "model_type": "model_type",
+        "is_active": "is_active",
+        "config_source_path": "config_source_path",
+        "updated_at": "updated_at"
+      }
+    },
+    "drift_reports": {
+      "adapter": "django_model",
+      "model": "ml.DriftReport",
+      "order_by": ["-checked_at"],
+      "limit": 100,
+      "fields": {
+        "model_id": "model_id",
+        "mlflow_run_id": "mlflow_run_id",
+        "drift_detected": "drift_detected",
+        "drift_score": "drift_score",
+        "severity": "severity",
+        "features_checked": "features_checked",
+        "features_drifted": "features_drifted",
+        "check_type": "check_type",
+        "checked_at": "checked_at"
+      }
+    }
+  },
+  "privacy": {
+    "redaction_enabled": true,
+    "donor_hash_salt": "pios-digital-twin-v1",
+    "redact_fields": ["donor_id", "name", "city_id"]
+  },
+  "state_schema": {
+    "hospitals": ["hospital_id", "name"],
+    "blood_supplies": ["supply_id", "hospital_id", "blood_product_type", "current_stock_units"],
+    "donors": ["donor_ref", "blood_group", "availability"],
+    "predictions": ["entity_id", "model_name", "predicted_value"],
+    "alerts": ["event_key", "severity", "status"]
+  },
+  "reconciliation": {
+    "thresholds": {
+      "inventory_delta_pct": 0.2,
+      "donor_count_delta": 25,
+      "alert_count_delta": 5
+    },
+    "rules": {
+      "inventory": "reset_on_divergence",
+      "donors": "observe_only",
+      "alerts": "observe_only",
+      "predictions": "observe_only"
+    }
+  },
+  "events": [
+    {
+      "id": "demand_surge",
+      "label": "Demand Surge",
+      "description": "Sudden spike in hospital demand for blood products.",
+      "min_severity": 0.0,
+      "max_severity": 1.0,
+      "default_severity": 0.6,
+      "duration_hours": 36.0,
+      "effects": {
+        "demand_surge_factor": 1.45,
+        "avg_units_per_order": 1.2
+      }
+    },
+    {
+      "id": "transport_disruption",
+      "label": "Transport Disruption",
+      "description": "Road closures or courier failures slow inter-centre delivery.",
+      "min_severity": 0.0,
+      "max_severity": 1.0,
+      "default_severity": 0.5,
+      "duration_hours": 18.0,
+      "effects": {
+        "transport_penalty": 2.0,
+        "regional_replenishment_rate": 0.6
+      }
+    },
+    {
+      "id": "eligibility_drop",
+      "label": "Eligibility Drop",
+      "description": "Illness wave temporarily reduces the eligible donor pool.",
+      "min_severity": 0.0,
+      "max_severity": 1.0,
+      "default_severity": 0.55,
+      "duration_hours": 72.0,
+      "effects": {
+        "eligible_rate": 0.8,
+        "donor_show_factor": 0.9
+      }
+    },
+    {
+      "id": "donation_drive",
+      "label": "Donation Drive",
+      "description": "A community campaign boosts donor arrivals for a short window.",
+      "min_severity": 0.0,
+      "max_severity": 1.0,
+      "default_severity": 0.35,
+      "duration_hours": 12.0,
+      "effects": {
+        "donor_inter_arrival_h": 0.6,
+        "donor_show_factor": 1.15
+      }
+    },
+    {
+      "id": "lab_slowdown",
+      "label": "Lab Slowdown",
+      "description": "Testing or processing delays slow component turnaround.",
+      "min_severity": 0.0,
+      "max_severity": 1.0,
+      "default_severity": 0.5,
+      "duration_hours": 24.0,
+      "effects": {
+        "lab_time_factor": 1.8,
+        "proc_time_factor": 1.5
+      }
+    }
+  ],
+  "actions": [
+    {
+      "id": "mass_campaign",
+      "label": "Targeted Donor Campaign",
+      "description": "Simulate outreach and registry callbacks.",
+      "permissions": ["simulate_twin_action"],
+      "promotion_eligible": false,
+      "recommendation_priority": 5,
+      "cost": 60,
+      "effects": {
+        "donor_inter_arrival_h": 0.5,
+        "donor_show_factor": 1.2,
+        "eligible_rate": 0.93
+      }
+    },
+    {
+      "id": "lab_fast_track",
+      "label": "Fast-Track Lab Workflow",
+      "description": "Simulate rapid testing and prioritized component release.",
+      "permissions": ["simulate_twin_action"],
+      "promotion_eligible": false,
+      "recommendation_priority": 3,
+      "cost": 75,
+      "effects": {
+        "lab_time_factor": 0.3,
+        "proc_time_factor": 0.18
+      }
+    },
+    {
+      "id": "emergency_network",
+      "label": "Emergency Sharing And Courier Routing",
+      "description": "Simulate emergency network sharing and courier prioritization.",
+      "permissions": ["simulate_twin_action"],
+      "promotion_eligible": false,
+      "recommendation_priority": 10,
+      "cost": 65,
+      "effects": {
+        "transport_penalty": 0.45,
+        "regional_replenishment_rate": 8.0
+      }
+    }
+  ],
+  "branches": {
+    "allowed_policies": [
+      "baseline",
+      "mass_campaign",
+      "lab_investment",
+      "emergency_network",
+      "full_response",
+      "ppo_continuous",
+      "sac_continuous",
+      "iql_offline",
+      "cql_offline",
+      "dreamerv3_official"
+    ],
+    "max_branches": 8,
+    "replications": 3
+  },
+  "promotion_targets": {
+    "enabled": false,
+    "targets": []
+  }
+}

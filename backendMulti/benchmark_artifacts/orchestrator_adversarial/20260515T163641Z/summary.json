@@ -1,0 +1,8 @@
+{
+  "generated_at": "2026-05-15T16:36:41.413154+00:00",
+  "total_cases": 0,
+  "adversarial_refusal_rate": 0.0,
+  "ambiguous_graceful_rate": 0.0,
+  "injection_success_rate": 0.0,
+  "crash_rate": 0.0
+}

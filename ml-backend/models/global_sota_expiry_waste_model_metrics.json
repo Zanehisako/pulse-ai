@@ -1,0 +1,626 @@
+{
+  "task": "expiry_waste_forecast",
+  "primary_model": "neural_ft_transformer",
+  "winner": "neural_ft_transformer",
+  "selection_metric": "validation_wape",
+  "validation_comparison": {
+    "neural_ft_transformer": {
+      "rmse": 3.3012428219647076,
+      "mae": 2.0325143337249756,
+      "r2": 0.9594042301177979,
+      "wape": 0.1023204903022651,
+      "baseline_wape": 0.6861931551757672,
+      "wape_improvement_pct": 85.08867517396675
+    },
+    "tabular_gbdt": {
+      "rmse": 3.2966394896960063,
+      "mae": 2.047797505569929,
+      "r2": 0.9595173537352716,
+      "wape": 0.10308986749740726,
+      "baseline_wape": 0.6861931551757672,
+      "wape_improvement_pct": 84.97655263392988
+    }
+  },
+  "test_comparison": {
+    "neural_ft_transformer": {
+      "rmse": 3.1560521126608756,
+      "mae": 1.913884162902832,
+      "r2": 0.9659316539764404,
+      "wape": 0.09523438601632468,
+      "baseline_wape": 0.679442225068355,
+      "wape_improvement_pct": 85.98344605286437
+    },
+    "tabular_gbdt": {
+      "rmse": 3.1027833107552287,
+      "mae": 1.922489335460765,
+      "r2": 0.967071974988422,
+      "wape": 0.09566257278299616,
+      "baseline_wape": 0.679442225068355,
+      "wape_improvement_pct": 85.92042571781992
+    }
+  },
+  "sota_baselines": {
+    "availability": {
+      "tabpfn": {
+        "available": false,
+        "reason": "row_limit_exceeded",
+        "version": "8.0.2"
+      },
+      "autogluon": {
+        "available": false,
+        "reason": "row_limit_exceeded",
+        "version": null
+      },
+      "optuna": {
+        "available": true,
+        "reason": null,
+        "version": "4.8.0"
+      },
+      "tabm": {
+        "available": true,
+        "reason": "installed_but_adapter_disabled",
+        "version": "0.0.3"
+      },
+      "tabr": {
+        "available": false,
+        "reason": "research_reference_no_stable_notebook_adapter",
+        "version": null
+      }
+    },
+    "thresholds": {}
+  },
+  "neural_overall": {
+    "rmse": 3.1560521126608756,
+    "mae": 1.913884162902832,
+    "r2": 0.9659316539764404,
+    "wape": 0.09523438601632468,
+    "baseline_wape": 0.679442225068355,
+    "wape_improvement_pct": 85.98344605286437
+  },
+  "tabular_overall": {
+    "rmse": 3.1027833107552287,
+    "mae": 1.922489335460765,
+    "r2": 0.967071974988422,
+    "wape": 0.09566257278299616,
+    "baseline_wape": 0.679442225068355,
+    "wape_improvement_pct": 85.92042571781992
+  },
+  "neural_by_product_group": {
+    "Plasma | A+": {
+      "rmse": 1.2297643866242896,
+      "mae": 0.9463313221931458,
+      "r2": 0.9336190223693848,
+      "wape": 0.13034551114459159,
+      "baseline_wape": 0.7194727801567751,
+      "wape_improvement_pct": 81.88319075584917,
+      "component_type": "Plasma",
+      "blood_type": "A+",
+      "rows": 3640
+    },
+    "Plasma | A-": {
+      "rmse": 1.1949500580773853,
+      "mae": 0.9238206148147583,
+      "r2": 0.9047459959983826,
+      "wape": 0.1522613689501817,
+      "baseline_wape": 0.9298868413511783,
+      "wape_improvement_pct": 83.62581744581551,
+      "component_type": "Plasma",
+      "blood_type": "A-",
+      "rows": 3640
+    },
+    "Plasma | AB+": {
+      "rmse": 1.1752136440338208,
+      "mae": 0.9119666218757629,
+      "r2": 0.9369275569915771,
+      "wape": 0.13674726340159152,
+      "baseline_wape": 0.8509238938216127,
+      "wape_improvement_pct": 83.92955417112084,
+      "component_type": "Plasma",
+      "blood_type": "AB+",
+      "rows": 3640
+    },
+    "Plasma | AB-": {
+      "rmse": 1.2644539517737277,
+      "mae": 0.9825968146324158,
+      "r2": 0.915494978427887,
+      "wape": 0.15131163832014075,
+      "baseline_wape": 0.8461094052550355,
+      "wape_improvement_pct": 82.11677622534735,
+      "component_type": "Plasma",
+      "blood_type": "AB-",
+      "rows": 3640
+    },
+    "Plasma | B+": {
+      "rmse": 1.2407217042740666,
+      "mae": 0.9433004856109619,
+      "r2": 0.9320929050445557,
+      "wape": 0.1318281833948974,
+      "baseline_wape": 0.7407129047308976,
+      "wape_improvement_pct": 82.20252643731233,
+      "component_type": "Plasma",
+      "blood_type": "B+",
+      "rows": 3640
+    },
+    "Plasma | B-": {
+      "rmse": 1.1531832174788847,
+      "mae": 0.8985296487808228,
+      "r2": 0.9422383308410645,
+      "wape": 0.1292033049501994,
+      "baseline_wape": 0.80906246356724,
+      "wape_improvement_pct": 84.03049075092068,
+      "component_type": "Plasma",
+      "blood_type": "B-",
+      "rows": 3640
+    },
+    "Plasma | O+": {
+      "rmse": 1.2718014495012326,
+      "mae": 0.9466469287872314,
+      "r2": 0.9400818347930908,
+      "wape": 0.13187454788319264,
+      "baseline_wape": 0.7892761486310219,
+      "wape_improvement_pct": 83.29170999124634,
+      "component_type": "Plasma",
+      "blood_type": "O+",
+      "rows": 3640
+    },
+    "Plasma | O-": {
+      "rmse": 1.2065835530501736,
+      "mae": 0.9315564632415771,
+      "r2": 0.9159653186798096,
+      "wape": 0.1443015278603467,
+      "baseline_wape": 0.8379034736960713,
+      "wape_improvement_pct": 82.77826356014268,
+      "component_type": "Plasma",
+      "blood_type": "O-",
+      "rows": 3640
+    },
+    "Platelets | A+": {
+      "rmse": 4.113400182219474,
+      "mae": 3.086864709854126,
+      "r2": 0.9485655426979065,
+      "wape": 0.10782940188645661,
+      "baseline_wape": 0.6781846427333037,
+      "wape_improvement_pct": 84.10028846246514,
+      "component_type": "Platelets",
+      "blood_type": "A+",
+      "rows": 3640
+    },
+    "Platelets | A-": {
+      "rmse": 5.213538850000238,
+      "mae": 3.626478910446167,
+      "r2": 0.8843096494674683,
+      "wape": 0.09656056396498956,
+      "baseline_wape": 0.7185877114219066,
+      "wape_improvement_pct": 86.56245265119826,
+      "component_type": "Platelets",
+      "blood_type": "A-",
+      "rows": 3640
+    },
+    "Platelets | AB+": {
+      "rmse": 5.835609686167854,
+      "mae": 3.6231632232666016,
+      "r2": 0.9032414555549622,
+      "wape": 0.11737838047746377,
+      "baseline_wape": 0.6867590028346878,
+      "wape_improvement_pct": 82.90835941094778,
+      "component_type": "Platelets",
+      "blood_type": "AB+",
+      "rows": 3640
+    },
+    "Platelets | AB-": {
+      "rmse": 4.952688029798062,
+      "mae": 3.475003957748413,
+      "r2": 0.8892700672149658,
+      "wape": 0.09156389900411975,
+      "baseline_wape": 0.7195551597396009,
+      "wape_improvement_pct": 87.2749298278598,
+      "component_type": "Platelets",
+      "blood_type": "AB-",
+      "rows": 3640
+    },
+    "Platelets | B+": {
+      "rmse": 4.199939645900279,
+      "mae": 3.1412906646728516,
+      "r2": 0.931334376335144,
+      "wape": 0.10800803682701457,
+      "baseline_wape": 0.6616332827700059,
+      "wape_improvement_pct": 83.6755435919387,
+      "component_type": "Platelets",
+      "blood_type": "B+",
+      "rows": 3640
+    },
+    "Platelets | B-": {
+      "rmse": 5.188182124462573,
+      "mae": 3.669499158859253,
+      "r2": 0.8916046023368835,
+      "wape": 0.09206252906533222,
+      "baseline_wape": 0.7310310012502691,
+      "wape_improvement_pct": 87.40648085951494,
+      "component_type": "Platelets",
+      "blood_type": "B-",
+      "rows": 3640
+    },
+    "Platelets | O+": {
+      "rmse": 5.196648123418658,
+      "mae": 3.5871448516845703,
+      "r2": 0.9322475790977478,
+      "wape": 0.12605398394662667,
+      "baseline_wape": 0.6992625370081587,
+      "wape_improvement_pct": 81.97329654095913,
+      "component_type": "Platelets",
+      "blood_type": "O+",
+      "rows": 3640
+    },
+    "Platelets | O-": {
+      "rmse": 5.046272406048557,
+      "mae": 3.6232855319976807,
+      "r2": 0.9000252485275269,
+      "wape": 0.09344961487341519,
+      "baseline_wape": 0.724029920310131,
+      "wape_improvement_pct": 87.0931280252359,
+      "component_type": "Platelets",
+      "blood_type": "O-",
+      "rows": 3640
+    },
+    "Red blood cells | A+": {
+      "rmse": 1.7117770418217353,
+      "mae": 1.2912975549697876,
+      "r2": 0.987601637840271,
+      "wape": 0.06445591262189639,
+      "baseline_wape": 0.6522470861770756,
+      "wape_improvement_pct": 90.11786882794942,
+      "component_type": "Red blood cells",
+      "blood_type": "A+",
+      "rows": 3640
+    },
+    "Red blood cells | A-": {
+      "rmse": 1.7960288860344293,
+      "mae": 1.2964586019515991,
+      "r2": 0.9803035855293274,
+      "wape": 0.0644482440614785,
+      "baseline_wape": 0.5772725497270321,
+      "wape_improvement_pct": 88.83573381551689,
+      "component_type": "Red blood cells",
+      "blood_type": "A-",
+      "rows": 3640
+    },
+    "Red blood cells | AB+": {
+      "rmse": 1.8150354801939421,
+      "mae": 1.2978426218032837,
+      "r2": 0.9823341965675354,
+      "wape": 0.06742330155684194,
+      "baseline_wape": 0.6170296297449723,
+      "wape_improvement_pct": 89.07292319418939,
+      "component_type": "Red blood cells",
+      "blood_type": "AB+",
+      "rows": 3640
+    },
+    "Red blood cells | AB-": {
+      "rmse": 1.8826662099268694,
+      "mae": 1.335204839706421,
+      "r2": 0.9735977649688721,
+      "wape": 0.06838953245753217,
+      "baseline_wape": 0.5397391251167234,
+      "wape_improvement_pct": 87.32915045898473,
+      "component_type": "Red blood cells",
+      "blood_type": "AB-",
+      "rows": 3640
+    },
+    "Red blood cells | B+": {
+      "rmse": 1.8445190952728236,
+      "mae": 1.31364107131958,
+      "r2": 0.9806497097015381,
+      "wape": 0.07107504874113439,
+      "baseline_wape": 0.5905398536808532,
+      "wape_improvement_pct": 87.96439422367155,
+      "component_type": "Red blood cells",
+      "blood_type": "B+",
+      "rows": 3640
+    },
+    "Red blood cells | B-": {
+      "rmse": 2.038827801950398,
+      "mae": 1.4606090784072876,
+      "r2": 0.9732030630111694,
+      "wape": 0.0734774371231762,
+      "baseline_wape": 0.5459944897264982,
+      "wape_improvement_pct": 86.54245811894863,
+      "component_type": "Red blood cells",
+      "blood_type": "B-",
+      "rows": 3640
+    },
+    "Red blood cells | O+": {
+      "rmse": 1.928360814763109,
+      "mae": 1.3298941850662231,
+      "r2": 0.9833570718765259,
+      "wape": 0.06443409092911018,
+      "baseline_wape": 0.6404646148465626,
+      "wape_improvement_pct": 89.9394768367419,
+      "component_type": "Red blood cells",
+      "blood_type": "O+",
+      "rows": 3640
+    },
+    "Red blood cells | O-": {
+      "rmse": 1.7915452613525984,
+      "mae": 1.2907946109771729,
+      "r2": 0.978528618812561,
+      "wape": 0.06799089446729581,
+      "baseline_wape": 0.5439912952299426,
+      "wape_improvement_pct": 87.5014738170477,
+      "component_type": "Red blood cells",
+      "blood_type": "O-",
+      "rows": 3640
+    }
+  },
+  "tabular_by_product_group": {
+    "Plasma | A+": {
+      "rmse": 1.25045847446905,
+      "mae": 0.9716032626331991,
+      "r2": 0.9313661327976682,
+      "wape": 0.13382640960807188,
+      "baseline_wape": 0.7194727801567751,
+      "wape_improvement_pct": 81.39937836440306,
+      "component_type": "Plasma",
+      "blood_type": "A+",
+      "rows": 3640
+    },
+    "Plasma | A-": {
+      "rmse": 1.1865257656757695,
+      "mae": 0.9276582002117117,
+      "r2": 0.9060843440640179,
+      "wape": 0.1528938565090098,
+      "baseline_wape": 0.9298868413511783,
+      "wape_improvement_pct": 83.55779975476949,
+      "component_type": "Plasma",
+      "blood_type": "A-",
+      "rows": 3640
+    },
+    "Plasma | AB+": {
+      "rmse": 1.192988196203762,
+      "mae": 0.9350853841945649,
+      "r2": 0.9350052630349173,
+      "wape": 0.14021386860608315,
+      "baseline_wape": 0.8509238938216127,
+      "wape_improvement_pct": 83.52216107408103,
+      "component_type": "Plasma",
+      "blood_type": "AB+",
+      "rows": 3640
+    },
+    "Plasma | AB-": {
+      "rmse": 1.257674330631548,
+      "mae": 0.9850259439594613,
+      "r2": 0.9163987286875467,
+      "wape": 0.15168570381477867,
+      "baseline_wape": 0.8461094052550355,
+      "wape_improvement_pct": 82.07256616311253,
+      "component_type": "Plasma",
+      "blood_type": "AB-",
+      "rows": 3640
+    },
+    "Plasma | B+": {
+      "rmse": 1.239921785319839,
+      "mae": 0.9517858280096244,
+      "r2": 0.9321804153383829,
+      "wape": 0.1330140249581918,
+      "baseline_wape": 0.7407129047308976,
+      "wape_improvement_pct": 82.04243181013351,
+      "component_type": "Plasma",
+      "blood_type": "B+",
+      "rows": 3640
+    },
+    "Plasma | B-": {
+      "rmse": 1.1690184968209838,
+      "mae": 0.9088833582205348,
+      "r2": 0.9406411327256572,
+      "wape": 0.1306921030149703,
+      "baseline_wape": 0.80906246356724,
+      "wape_improvement_pct": 83.84647553184766,
+      "component_type": "Plasma",
+      "blood_type": "B-",
+      "rows": 3640
+    },
+    "Plasma | O+": {
+      "rmse": 1.2482468365894397,
+      "mae": 0.9384676303025719,
+      "r2": 0.9422807080289882,
+      "wape": 0.13073511290421133,
+      "baseline_wape": 0.7892761486310219,
+      "wape_improvement_pct": 83.4360745436223,
+      "component_type": "Plasma",
+      "blood_type": "O+",
+      "rows": 3640
+    },
+    "Plasma | O-": {
+      "rmse": 1.214054112237498,
+      "mae": 0.9414606822048535,
+      "r2": 0.9149214926265162,
+      "wape": 0.14583572851283538,
+      "baseline_wape": 0.8379034736960713,
+      "wape_improvement_pct": 82.59516363268669,
+      "component_type": "Plasma",
+      "blood_type": "O-",
+      "rows": 3640
+    },
+    "Platelets | A+": {
+      "rmse": 4.037511188718124,
+      "mae": 3.103045782565687,
+      "r2": 0.9504458705134797,
+      "wape": 0.10839463303164242,
+      "baseline_wape": 0.6781846427333037,
+      "wape_improvement_pct": 84.01694373455922,
+      "component_type": "Platelets",
+      "blood_type": "A+",
+      "rows": 3640
+    },
+    "Platelets | A-": {
+      "rmse": 5.208750780510525,
+      "mae": 3.6468619372801934,
+      "r2": 0.8845220851170899,
+      "wape": 0.0971032976243436,
+      "baseline_wape": 0.7185877114219066,
+      "wape_improvement_pct": 86.48692482756208,
+      "component_type": "Platelets",
+      "blood_type": "A-",
+      "rows": 3640
+    },
+    "Platelets | AB+": {
+      "rmse": 5.430975482996298,
+      "mae": 3.521748733098741,
+      "r2": 0.9161944697843635,
+      "wape": 0.1140928871181198,
+      "baseline_wape": 0.6867590028346878,
+      "wape_improvement_pct": 83.38676498638002,
+      "component_type": "Platelets",
+      "blood_type": "AB+",
+      "rows": 3640
+    },
+    "Platelets | AB-": {
+      "rmse": 4.926598693773059,
+      "mae": 3.5229939107343693,
+      "r2": 0.8904335535985559,
+      "wape": 0.09282839946276991,
+      "baseline_wape": 0.7195551597396009,
+      "wape_improvement_pct": 87.09919618999557,
+      "component_type": "Platelets",
+      "blood_type": "AB-",
+      "rows": 3640
+    },
+    "Platelets | B+": {
+      "rmse": 4.1783253832346645,
+      "mae": 3.1141491035108007,
+      "r2": 0.9320393294605591,
+      "wape": 0.1070748205066017,
+      "baseline_wape": 0.6616332827700059,
+      "wape_improvement_pct": 83.8165909583145,
+      "component_type": "Platelets",
+      "blood_type": "B+",
+      "rows": 3640
+    },
+    "Platelets | B-": {
+      "rmse": 4.98982085798124,
+      "mae": 3.493995450096277,
+      "r2": 0.8997348041077217,
+      "wape": 0.08765939674458982,
+      "baseline_wape": 0.7310310012502691,
+      "wape_improvement_pct": 88.00879899830959,
+      "component_type": "Platelets",
+      "blood_type": "B-",
+      "rows": 3640
+    },
+    "Platelets | O+": {
+      "rmse": 5.0683975207618115,
+      "mae": 3.645609455934367,
+      "r2": 0.9355505146012549,
+      "wape": 0.12810847306836434,
+      "baseline_wape": 0.6992625370081587,
+      "wape_improvement_pct": 81.67948856283864,
+      "component_type": "Platelets",
+      "blood_type": "O+",
+      "rows": 3640
+    },
+    "Platelets | O-": {
+      "rmse": 5.051971428544066,
+      "mae": 3.6400137409181426,
+      "r2": 0.8997993314449202,
+      "wape": 0.09388105056203179,
+      "baseline_wape": 0.724029920310131,
+      "wape_improvement_pct": 87.0335399230713,
+      "component_type": "Platelets",
+      "blood_type": "O-",
+      "rows": 3640
+    },
+    "Red blood cells | A+": {
+      "rmse": 1.7451297449703886,
+      "mae": 1.3102436560536599,
+      "r2": 0.987113757261356,
+      "wape": 0.06540162058449503,
+      "baseline_wape": 0.6522470861770756,
+      "wape_improvement_pct": 89.97287654164552,
+      "component_type": "Red blood cells",
+      "blood_type": "A+",
+      "rows": 3640
+    },
+    "Red blood cells | A-": {
+      "rmse": 1.8565538064171392,
+      "mae": 1.3570801461186826,
+      "r2": 0.9789537001474701,
+      "wape": 0.06746180270581752,
+      "baseline_wape": 0.5772725497270321,
+      "wape_improvement_pct": 88.3136998740513,
+      "component_type": "Red blood cells",
+      "blood_type": "A-",
+      "rows": 3640
+    },
+    "Red blood cells | AB+": {
+      "rmse": 1.8675367043427358,
+      "mae": 1.3486978974601695,
+      "r2": 0.9812974239237164,
+      "wape": 0.07006525190419192,
+      "baseline_wape": 0.6170296297449723,
+      "wape_improvement_pct": 88.64475083098506,
+      "component_type": "Red blood cells",
+      "blood_type": "AB+",
+      "rows": 3640
+    },
+    "Red blood cells | AB-": {
+      "rmse": 1.900616850042051,
+      "mae": 1.372959884349809,
+      "r2": 0.9730918943830882,
+      "wape": 0.07032336224271632,
+      "baseline_wape": 0.5397391251167234,
+      "wape_improvement_pct": 86.97086074175033,
+      "component_type": "Red blood cells",
+      "blood_type": "AB-",
+      "rows": 3640
+    },
+    "Red blood cells | B+": {
+      "rmse": 1.8927016804070853,
+      "mae": 1.3428762309228504,
+      "r2": 0.9796255652436386,
+      "wape": 0.07265682790506711,
+      "baseline_wape": 0.5905398536808532,
+      "wape_improvement_pct": 87.69654114752885,
+      "component_type": "Red blood cells",
+      "blood_type": "B+",
+      "rows": 3640
+    },
+    "Red blood cells | B-": {
+      "rmse": 2.0541131828708163,
+      "mae": 1.4903329067766518,
+      "r2": 0.972799758392407,
+      "wape": 0.07497271524598344,
+      "baseline_wape": 0.5459944897264982,
+      "wape_improvement_pct": 86.26859489304753,
+      "component_type": "Red blood cells",
+      "blood_type": "B-",
+      "rows": 3640
+    },
+    "Red blood cells | O+": {
+      "rmse": 1.9075869161291892,
+      "mae": 1.3360399499901192,
+      "r2": 0.9837137160487482,
+      "wape": 0.06473185264947931,
+      "baseline_wape": 0.6404646148465626,
+      "wape_improvement_pct": 89.89298531894892,
+      "component_type": "Red blood cells",
+      "blood_type": "O+",
+      "rows": 3640
+    },
+    "Red blood cells | O-": {
+      "rmse": 1.8280313679836833,
+      "mae": 1.3331249755113255,
+      "r2": 0.9776451537607238,
+      "wape": 0.07022059873694234,
+      "baseline_wape": 0.5439912952299426,
+      "wape_improvement_pct": 87.09159515001791,
+      "component_type": "Red blood cells",
+      "blood_type": "O-",
+      "rows": 3640
+    }
+  },
+  "best_valid_loss": 10.900362253189087,
+  "epochs_ran": 18,
+  "lr": 0.0005,
+  "dropout": 0.15,
+  "hidden_dim": 384,
+  "n_layers": 3
+}

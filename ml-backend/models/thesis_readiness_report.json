@@ -1,0 +1,176 @@
+{
+  "THESIS_READY_STRUCTURALLY": true,
+  "THESIS_READY_FOR_REAL_OPERATIONS": false,
+  "THESIS_SOTA_CLAIM": "Best validated model in synthetic calibrated benchmark; real-operation claim blocked by missing real data",
+  "missing_artifacts": [],
+  "missing_sota_reference_baselines": [],
+  "tested_baselines": [
+    "autogluon",
+    "neural_ft_transformer",
+    "tabpfn",
+    "tabular_gbdt"
+  ],
+  "research_reference_status": {
+    "tabm": {
+      "available": true,
+      "reason": null,
+      "version": "0.0.3"
+    },
+    "tabr": {
+      "available": false,
+      "reason": "research_reference_no_stable_notebook_adapter",
+      "version": null
+    }
+  },
+  "metrics_load_info": {
+    "source": "memory",
+    "loaded": false
+  },
+  "data_context": {
+    "mode": "synthetic_calibrated",
+    "operational_readiness_eligible": false,
+    "real_data_paths": {
+      "inventory_features": "",
+      "inventory_labels": "",
+      "donor_features": "",
+      "donor_labels": ""
+    },
+    "notes": [
+      "No complete real-data path set was found; operational-readiness claims stay synthetic-only."
+    ]
+  },
+  "optional_package_status": {
+    "tabpfn": {
+      "available": true,
+      "reason": null,
+      "version": "8.0.2"
+    },
+    "autogluon": {
+      "available": true,
+      "reason": null,
+      "version": null
+    },
+    "optuna": {
+      "available": true,
+      "reason": null,
+      "version": "4.8.0"
+    },
+    "tabm": {
+      "available": true,
+      "reason": null,
+      "version": "0.0.3"
+    },
+    "tabr": {
+      "available": false,
+      "reason": "research_reference_no_stable_notebook_adapter",
+      "version": null
+    }
+  },
+  "readiness_gates": {
+    "global_sota_demand_quantile_forecast_model": {
+      "wape_pass": true,
+      "coverage_pass": true,
+      "worst_group_wape": 0.18629859184784145,
+      "worst_group_wape_pass": true
+    },
+    "global_sota_supply_quantile_forecast_model": {
+      "wape_pass": true,
+      "coverage_pass": true,
+      "worst_group_wape": 0.23579097838058458,
+      "worst_group_wape_pass": true
+    },
+    "global_sota_expiry_waste_model": {
+      "wape_pass": true,
+      "coverage_pass": true,
+      "worst_group_wape": 0.1522613689501817,
+      "worst_group_wape_pass": true
+    },
+    "global_sota_stockout_hazard_model": {
+      "auc_pass": true,
+      "average_precision_pass": true,
+      "brier_pass": true,
+      "ece_pass": true,
+      "worst_group_brier": 0.10521649224937794,
+      "worst_group_brier_pass": true
+    },
+    "global_sota_donor_next_donation_hazard_model": {
+      "auc_pass": true,
+      "average_precision_pass": true,
+      "brier_pass": true,
+      "ece_pass": true,
+      "worst_group_brier": null,
+      "worst_group_brier_pass": true
+    },
+    "global_sota_donor_contact_response_model": {
+      "operational_ready": false,
+      "reason": "proxy_only_without_real_contact_response_labels"
+    },
+    "global_sota_donor_contact_propensity_model": {
+      "operational_ready": false,
+      "reason": "proxy_only_without_real_contact_response_labels"
+    },
+    "global_sota_donor_priority_policy_model": {
+      "operational_ready": false,
+      "reason": "proxy_policy_requires_real_outreach_utility_validation"
+    },
+    "global_sota_donor_time_to_donation_model": {
+      "wape_pass": true,
+      "coverage_pass": true,
+      "worst_group_wape": null,
+      "worst_group_wape_pass": true
+    },
+    "global_sota_inventory_risk_simulator": {
+      "structural_pass": true,
+      "operational_ready": false,
+      "reason": "requires real operational data for deployment validation"
+    }
+  },
+  "validation_findings": [
+    {
+      "check": "donor_next_donation_hazard",
+      "proxy_derived_features": [
+        "readiness_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "allowed": false
+    },
+    {
+      "check": "donor_time_to_donation",
+      "proxy_derived_features": [
+        "readiness_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "allowed": false
+    },
+    {
+      "check": "donor_next_donation_hazard",
+      "proxy_derived_features": [
+        "readiness_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "allowed": false
+    },
+    {
+      "check": "donor_time_to_donation",
+      "proxy_derived_features": [
+        "readiness_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "allowed": false
+    }
+  ],
+  "architecture": "real_ops_sota_protocol_with_validation_first_selection_optional_foundation_and_automl_baselines",
+  "hardware": {
+    "device": "cuda:0",
+    "batch_size": 512,
+    "gradient_accumulation_steps": 2
+  }
+}

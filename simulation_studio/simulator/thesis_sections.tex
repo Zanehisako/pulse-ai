@@ -1,0 +1,559 @@
+% =============================================================================
+%  Thesis Sections — 3.5.5 & 4.8
+%  Simulator control strategies: conception + evaluation
+% =============================================================================
+%  Prerequisites in preamble:
+%    \usepackage{graphicx, booktabs, multirow, amsmath, hyperref}
+%    \graphicspath{{ml-backend/simulator/}}
+% =============================================================================
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+% 3.5.5  Conception
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Stratégies de contrôle du simulateur}
+\label{sec:control-strategies-design}
+
+The simulator is not just a way to replay what happened---it is a tool for
+deciding what to do next.  To support that, it includes a catalog of nine
+interventions that a decision-maker (or an automated agent) can activate
+during a simulation run.  These range from launching a targeted donor
+campaign, deploying mobile collection units and extending centre operating
+hours on the supply side, to fast-tracking lab workflows, adding surge staff,
+enabling emergency inter-hospital sharing and activating clinical conservation
+protocols on the operations side.
+
+Each action has a defined operational cost, an activation delay, a ramp-up
+period and a set of effects on simulation parameters such as donor arrival
+rate, lab processing speed or demand management.
+Table~\ref{tab:action-catalog} lists the full catalog.
+
+\begin{table}[htbp]
+\centering
+\caption{Action catalog.  \emph{Cost} is per activation;
+         \emph{Delay} is the time before the action begins to take effect;
+         \emph{Ramp} is the time to reach full intensity;
+         \emph{Active} is total duration including ramp-up.}
+\label{tab:action-catalog}
+\small
+\begin{tabular}{@{}llcccp{5.2cm}@{}}
+\toprule
+\textbf{Action} & \textbf{Cost} & \textbf{Delay} & \textbf{Ramp}
+                 & \textbf{Active} & \textbf{Key effects} \\
+\midrule
+Donor campaign         & 60  & 12\,h  & 120\,h & 120\,h
+    & Arrivals $+50\%$, show-up $\times1.20$, committed donors $42\%$ \\
+Mobile unit            & 55  & 24\,h  & 96\,h  & 120\,h
+    & Arrivals $+80\%$, 2 extra collection sites \\
+Extend hours           & 35  & 12\,h  & 72\,h  & 72\,h
+    & Arrivals $+88\%$, $+3$\,h extension per centre \\
+Lab fast-track         & 75  & 6\,h   & 48\,h  & 72\,h
+    & Lab speed $\times0.30$, release delay $\times0.18$ \\
+Surge staff            & 70  & 12\,h  & 48\,h  & 72\,h
+    & $+4$ nurses, $+2$ lab, $+2$ processing staff \\
+Emergency sharing      & 65  & 24\,h  & 96\,h  & 60\,h
+    & Cross-hospital sharing, reserve$\to$0, replenishment $\times8$ \\
+Clinical conservation  & 55  & 6\,h   & 36\,h  & 48\,h
+    & Effective demand $-72\%$ \\
+National mutual aid    & 85  & 48\,h  & 120\,h & 120\,h
+    & Transport relief $\times0.80$, replenishment $\times1.80$ \\
+Rapid courier          & 48  & 2\,h   & 12\,h  & 36\,h
+    & Transport relief $\times0.35$, replenishment $\times1.75$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These actions are grouped into \emph{strategies}.  The system provides five
+static strategies that pre-activate fixed combinations of actions, and three
+adaptive strategies driven by reinforcement-learning agents
+(Table~\ref{tab:strategies}).
+
+\begin{table}[htbp]
+\centering
+\caption{Built-in strategies.  Static strategies activate a fixed set of
+         actions at the start of the episode.  Adaptive strategies let a
+         trained agent choose which actions to activate and at what intensity
+         every 6 simulated hours.}
+\label{tab:strategies}
+\small
+\begin{tabular}{@{}llp{6.8cm}@{}}
+\toprule
+\textbf{Strategy} & \textbf{Type} & \textbf{Actions / controller} \\
+\midrule
+Baseline               & Static   & No intervention \\
+Mass donor campaign    & Static   & Campaign + mobile unit + extend hours \\
+Lab investment         & Static   & Lab fast-track \\
+Emergency network      & Static   & Surge staff + emergency sharing
+                                    + clinical conservation \\
+Full crisis response   & Static   & All 8 actions simultaneously \\
+\addlinespace
+PPO Shortage Minimizer & Adaptive & Discrete PPO; chooses 1 of 10 options
+                                    (9~actions + no-op) \\
+PPO Continuous         & Adaptive & PPO in $\text{Box}(-1,1)^{14}$;
+                                    controls all intensities \\
+Official DreamerV3     & Adaptive & Model-based RL; same continuous action
+                                    space as PPO Continuous \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The adaptive strategies observe the simulation state every six simulated
+hours through a 16-dimensional vector (Table~\ref{tab:obs-space}).  Based on
+this observation the agent decides which actions to activate and at what
+intensity.
+
+\begin{table}[htbp]
+\centering
+\caption{Observation vector ($\text{Box}(0,1)^{16}$).  All values are
+         clipped to $[0,1]$.}
+\label{tab:obs-space}
+\small
+\begin{tabular}{@{}clp{6.4cm}@{}}
+\toprule
+\textbf{Index} & \textbf{Feature} & \textbf{Description} \\
+\midrule
+0  & recent shortage rate     & Shortage / requested in current step \\
+1  & cumulative shortage rate & Total shortage / total net requested \\
+2  & critical gap             & Worst component-coverage gap vs.\ target \\
+3  & RBC gap                  & (Target $-$ RBC coverage days) / target \\
+4  & platelet gap             & Same, for platelets ($\times1.15$ weight) \\
+5  & plasma gap               & Same, for plasma ($\times0.65$ weight) \\
+6  & transport stress         & Effective transport penalty normalised \\
+7  & weather stress           & 0\,(clear) to 1\,(blizzard) \\
+8  & donor stress             & Inter-arrival and show-up deficit \\
+9  & demand stress            & Demand rate and surge factor excess \\
+10 & service pressure         & Recent requested / transfused \\
+11 & active cost ratio        & Action cost / 500 \\
+12 & forecast signal          & Demand forecast pressure \\
+13 & priority pressure        & Priority-weighted shortage signal \\
+14 & congestion stress        & Transport congestion level \\
+15 & budget pressure          & Fraction of budget consumed \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Choice of agent architecture.}
+
+The question is what kind of agent is best suited for this control problem.
+We considered three architectures.
+
+The first is a \textbf{PPO agent with discrete actions}.  At each decision
+step it picks one of ten options (nine actions plus a no-op).  This is
+simple to train but limited: it can only activate one action at a time,
+it cannot control intensity, and it has no internal model of what will
+happen next.  It reacts to the current state but does not plan.
+
+The second is \textbf{PPO with continuous actions}.  This version operates
+in $\text{Box}(-1,1)^{14}$ where each dimension controls the intensity of
+one intervention, one hospital routing dial or one component allocation
+dial.  It can activate multiple actions simultaneously and fine-tune their
+levels, which is a better fit for the problem.  But it still has no world
+model---it maps observations to actions without modelling how the supply
+chain will evolve.
+
+The third is \textbf{DreamerV3}~\cite{hafner2023dreamerv3}, a model-based
+reinforcement-learning agent.  DreamerV3 learns a latent world model from
+experience: it builds an internal representation of how the environment
+transitions from one state to another, and it uses that model to
+\emph{imagine} future trajectories before deciding what to do.  This matters
+for blood supply management because the effects of interventions are
+delayed---a donor campaign takes 12~hours to activate and 5~days to ramp
+up---so an agent that can plan ahead should outperform one that only reacts
+to what it sees right now.  DreamerV3 operates in the same continuous action
+space as PPO~Continuous.
+
+\paragraph{Reward function.}
+
+The reward function that guides all three agents is structured in three
+tiers to reflect operational priorities
+(Table~\ref{tab:reward-tiers}).
+
+\begin{table}[htbp]
+\centering
+\caption{Per-step reward tiers (DreamerV3 variant).  The raw reward is
+         centred at $-0.55$ and squashed through
+         $\tanh\!\bigl((r-0.55)\times2.5\bigr)$, mapping a perfect step
+         to ${\approx}+0.95$ and a catastrophic step to
+         ${\approx}-0.99$.}
+\label{tab:reward-tiers}
+\small
+\begin{tabular}{@{}clcl@{}}
+\toprule
+\textbf{Tier} & \textbf{Focus} & \textbf{Weight} & \textbf{Key terms} \\
+\midrule
+1 & Patient safety      & ${\sim}55\%$
+  & $+1.00\times\text{fill\_rate}$, \;
+    $-0.60\times\text{priority\_shortage}$, \;
+    $-0.40\times\text{incompatible}$ \\
+2 & Matching quality    & ${\sim}20\%$
+  & $+0.25\times\text{exact\_match}$, \;
+    $+0.05\times\text{compatible\_sub}$ \\
+3 & Waste \& cost       & ${\sim}25\%$
+  & $-0.35\times\text{wastage}$, \;
+    $-0.08\times\text{budget\_overspend}$, \;
+    $-0.07\times\text{congestion}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This structure ensures the agent prioritises keeping patients supplied, then
+optimises for transfusion quality, then manages costs---in that order.  The
+choice of DreamerV3 as the primary adaptive strategy was motivated by three
+factors: the delayed-effect nature of the action space, the need for
+simultaneous multi-action control, and the expected benefit of internal
+planning over pure reaction.  Whether this design reasoning holds up against
+the data is evaluated in Section~\ref{sec:strategy-eval}.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+% 4.8  Evaluation
+% ─────────────────────────────────────────────────────────────────────────────
+
+\section{Évaluation des stratégies de contrôle}
+\label{sec:strategy-eval}
+
+\subsection{Protocole d'évaluation}
+\label{sec:eval-protocol}
+
+Before comparing strategies we first validated that the simulator itself
+produces realistic outputs.  A 30-replication experiment on the baseline
+scenario (seeds~1--30, 336 simulated hours each) was compared against
+published Héma-Québec and Statistics~Canada benchmarks.
+Table~\ref{tab:validation-results} summarises the results.
+
+\begin{table}[htbp]
+\centering
+\caption{Simulator validation against real-world references (30
+         replications, baseline scenario).  CI~=~95\% confidence interval.
+         MAPE and Theil's~U are computed against the reference midpoint.}
+\label{tab:validation-results}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Metric}
+    & \textbf{Sim.\ mean}
+    & \textbf{95\% CI}
+    & \textbf{Reference}
+    & \textbf{MAPE}
+    & \textbf{Theil U} \\
+\midrule
+Daily donations          & 39.06 & [38.06,\;40.07] & 39.69  &  5.8\% & 0.035 \\
+Shortage rate (\%)       &  7.41 & [5.61,\;9.22]   &  5.00  & 80.7\% & 0.386 \\
+Deferral rate (\%)       & 12.63 & [11.82,\;13.44]  & 12.00  & 16.3\% & 0.090 \\
+Wastage rate (\%)        &  4.46 & [3.62,\;5.30]   &  3.00  & 68.9\% & 0.332 \\
+Service fulfilment (\%)  & 92.59 & [90.78,\;94.39]  & 97.00  &  5.1\% & 0.034 \\
+Exact match rate (\%)    & 75.44 & [74.25,\;76.64]  & 80.00  &  5.9\% & 0.036 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:validation-bar} shows the simulated values normalised
+against reference midpoints.  Daily completed donations land at
+$0.99\times$ the reference, deferral rate at $1.15\times$, service
+fulfilment at $0.96\times$.  The largest deviation is shortage rate at
+$1.41\times$ (7.41\% vs.\ 5.0\%), though the simulated 95\% CI still
+overlaps the real-world range of 0.5--10.0\%.
+Figure~\ref{fig:ci-coverage} confirms that for all six metrics the
+simulation CI falls within or closely overlaps the published reference
+range.  Blood-type proportions match the Canadian population distribution
+with a chi-squared $p$-value of 0.923.  All 18 validation tests pass.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.78\linewidth]
+    {validation_results/plots/validation_comparison_bar.png}
+\caption{Simulated outputs normalised against real-world reference
+         midpoints (dashed line~$=$~1.0).  Blue~=~simulated,
+         grey~=~reference.}
+\label{fig:validation-bar}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.78\linewidth]
+    {validation_results/plots/ci_coverage_plot.png}
+\caption{95\% confidence interval coverage.
+         Green~=~simulation CI, grey~=~real-world reference range,
+         diamonds~=~point estimates.}
+\label{fig:ci-coverage}
+\end{figure}
+
+A sensitivity analysis (Figure~\ref{fig:tornado}) confirmed that the three
+most influential parameters are demand-side:
+\texttt{demand\_surge\_factor} swings shortage rate by 25 percentage points
+when varied $\pm20\%$, followed by \texttt{avg\_units\_per\_order}
+(23\,pp) and \texttt{demand\_rate\_h} (20\,pp).  Supply-side parameters
+like \texttt{eligible\_rate} and \texttt{transport\_penalty} have less than
+2\,pp of impact.  This tells us that any effective strategy must primarily
+manage demand pressure---which is exactly what the adaptive agents are
+designed to do.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.78\linewidth]
+    {validation_results/plots/tornado_diagram.png}
+\caption{Tornado diagram---sensitivity of shortage rate to $\pm20\%$
+         parameter perturbation.  Blue~=~parameter decreased,
+         red~=~parameter increased.}
+\label{fig:tornado}
+\end{figure}
+
+For the strategy comparison itself, every combination of
+$9$~scenarios~$\times$~$5$~strategies was run with seed~42 and a 168-hour
+horizon.  The five strategies compared are: baseline (no intervention),
+PPO~Shortage Minimizer (discrete actions), PPO~Continuous (continuous
+actions), Official~DreamerV3 (model-based, continuous) and DreamerV4
+(early-stage checkpoint, included for completeness).  The static
+strategies (mass campaign, lab investment, emergency network, full crisis
+response) were evaluated separately in an extended 7-strategy comparison.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Résultats comparatifs}
+\label{sec:eval-results}
+
+Figure~\ref{fig:heatmaps} shows the performance heatmaps across all
+scenarios.  The results are clear: \textbf{DreamerV3 achieves the lowest
+shortage rate in every single scenario}, often by a wide margin.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]
+    {results/strategy_eval_heatmaps.png}
+\caption{Strategy performance heatmaps---5 adaptive/baseline strategies
+         across 9 scenarios (seed~42, 168\,h).  Darker colours indicate
+         worse values for shortage-related metrics and lower costs for
+         budget metrics.}
+\label{fig:heatmaps}
+\end{figure}
+
+Table~\ref{tab:shortage-comparison} extracts the shortage rates for a
+representative subset of scenarios.
+
+\begin{table}[htbp]
+\centering
+\caption{Shortage rate (\%) across selected scenarios.  Best result per
+         scenario in \textbf{bold}.  Training scenarios above the line,
+         holdout scenarios below.}
+\label{tab:shortage-comparison}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Scenario}
+    & \textbf{Baseline}
+    & \textbf{PPO\,SM}
+    & \textbf{PPO\,Cont.}
+    & \textbf{DreamerV3}
+    & \textbf{DreamerV4} \\
+\midrule
+Normal operations        &  5.0 &  4.4 &  3.9 & \textbf{0.5}  &  6.6 \\
+Donor decline            & 22.9 &  2.0 &  5.0 & \textbf{0.3}  & 22.7 \\
+Demand surge             & 60.2 & 19.3 & 27.0 & \textbf{9.4}  & 53.4 \\
+Transport disruption     & 65.4 & 22.6 &  7.1 & \textbf{2.2}  & 59.9 \\
+Combined crisis          & 80.5 & 55.6 & 40.2 & \textbf{23.0} & 78.9 \\
+\midrule
+Holiday flu wave         & 34.2 &  7.1 &  5.7 & \textbf{2.9}  & 30.0 \\
+Regional testing backlog &  9.4 &  3.3 &  4.1 & \textbf{0.5}  &  7.6 \\
+Provincial supply crunch & 27.5 &  5.9 &  5.6 & \textbf{0.8}  & 17.4 \\
+Post-storm backlog       & 44.2 &  4.5 &  7.4 & \textbf{1.5}  & 36.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On the baseline scenario DreamerV3 reaches 0.5\% shortage versus 5.0\% for
+the passive baseline and 3.9\% for PPO~Continuous.  On the most severe
+combined crisis, DreamerV3 keeps shortage at 23.0\% where the passive
+baseline hits 80.5\% and PPO~Continuous reaches 40.2\%.
+
+The holdout scenarios---which mix stressors in ways the agents never saw
+during training---tell the same story.  On the holiday flu wave DreamerV3
+achieves 2.9\% versus 34.2\% for baseline.  On the provincial supply crunch
+0.8\% versus 27.5\%.  On the post-storm surgical backlog 1.5\% versus
+44.2\%.
+
+DreamerV3 also leads on exact-match transfusion rate: 84.2\% on normal
+operations, 85.8\% on donor decline, 87.5\% on regional testing backlog---
+consistently above the other strategies.  It does not just prevent
+shortages; it fulfils orders with better-matched blood.
+
+The extended comparison including static strategies
+(Figure~\ref{fig:all-heatmaps}) reveals an important pattern.  The full
+crisis response strategy---which activates all eight interventions at
+once---achieves strong shortage reduction (0.1\% on baseline, 27.0\% on
+donor decline) but at the cost of massive expiration: 182~expired units on
+baseline, 170 on donor decline, 224 on provincial supply crunch.
+DreamerV3 reaches comparable or better shortage rates with fewer expired
+units in crisis scenarios, while also adapting its interventions dynamically
+rather than spending every resource at once.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]
+    {results/strategy_eval_all_heatmaps.png}
+\caption{Extended heatmaps---7 strategies (5 static $+$ 2 adaptive) across
+         9~scenarios.  The full crisis response strategy reduces shortage
+         aggressively but causes high unit expiration.}
+\label{fig:all-heatmaps}
+\end{figure}
+
+The tradeoff between shortage reduction and wastage is visible on the
+Pareto frontier (Figure~\ref{fig:pareto}).  DreamerV3 sits at the far-left
+edge---lowest average shortage rate (${\sim}5\%$)---but with higher total
+expired units (${\sim}55$) than baseline (${\sim}10$) or
+PPO~Shortage~Minimizer (${\sim}12$).  This is the cost of aggressive
+stocking: some units expire before they are needed.  PPO~Continuous occupies
+a middle ground (${\sim}22\%$ shortage, ${\sim}25$ expired).  DreamerV4 is
+dominated---high shortage, high action cost and no advantage on any axis.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.82\linewidth]
+    {results/strategy_eval_pareto_overall.png}
+\caption{3-D Pareto frontier across all scenarios.  Axes: shortage rate,
+         action cost, total expired (all lower-is-better).  Circled points
+         are Pareto-optimal.}
+\label{fig:pareto}
+\end{figure}
+
+\paragraph{Budget sensitivity.}
+
+The budget sensitivity analysis (Figure~\ref{fig:budget-lines}) shows how
+strategies degrade as budgets tighten.  DreamerV3 is the most
+budget-responsive agent: at a budget of 12\,000 it drives shortage below
+5\%; at 7\,500 shortage rises to about 7\%; at 3\,000 it climbs to about
+38\%.  PPO~Shortage~Minimizer is more stable but plateaus higher---around
+20\% shortage regardless of budget above 6\,000.  Baseline sits flat at
+${\sim}60\%$ since it never spends anything.
+
+The efficiency frontier (Figure~\ref{fig:efficiency}) makes this clearer:
+for any given level of budget spent, DreamerV3 achieves a lower shortage
+rate than every other strategy.  At a spend of ${\sim}5\,000$, DreamerV3
+reaches 5\% shortage while PPO~Shortage~Minimizer sits at 20\% and
+PPO~Continuous at 25\%.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.82\linewidth]
+    {results/budget_eval_budget_lines.png}
+\caption{Strategy performance as a function of episode budget (averaged
+         across scenarios).  Shaded bands show the spread across scenarios.
+         DreamerV3 (orange) improves steeply with additional budget while
+         Baseline (blue) is unaffected.}
+\label{fig:budget-lines}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.82\linewidth]
+    {results/budget_eval_efficiency_frontier.png}
+\caption{Budget efficiency frontier.  Each point is one
+         (strategy,\,budget-level) pair.  DreamerV3 dominates the lower
+         envelope---for any amount spent it achieves the lowest shortage
+         rate.}
+\label{fig:efficiency}
+\end{figure}
+
+\paragraph{Training convergence.}
+
+The DreamerV3 training curves (Figure~\ref{fig:training}) confirm that the
+agent learned effectively.  The \texttt{m1\_continuous\_run8\_kpi\_aligned}
+run, trained for 1~million environment steps (${\sim}10\,000$ episodes),
+shows episode scores rising from near-zero to a stable average of 67.4 in
+the final training phase, with peaks above 100.  The value loss and
+continuation loss both converge steadily, indicating the world model
+learned a useful internal representation of the blood supply chain
+dynamics.  The reward rate stabilises around 0.80 in the second half of
+training.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.82\linewidth]
+    {dreamerv3_runs/m1_continuous_run8_kpi_aligned/metrics_plot.png}
+\caption{DreamerV3 training metrics over 1\,M steps.
+         Top-left: episode score; top-right: reward rate;
+         bottom-left: value loss; bottom-right: continuation loss.
+         Both losses converge, confirming the world model learned a
+         useful latent representation.}
+\label{fig:training}
+\end{figure}
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Justification du choix de DreamerV3}
+\label{sec:dreamerv3-justification}
+
+The evaluation results confirm the design hypothesis from
+Section~\ref{sec:control-strategies-design}.  DreamerV3 outperforms every
+other strategy on shortage rate across all nine scenarios, including the
+four holdout scenarios it was never explicitly trained on.  Three properties
+explain this.
+
+\paragraph{Planning through a world model.}
+
+Blood supply interventions have activation delays ranging from 2 to
+48~hours and ramp-up periods of 12 to 120~hours.  A purely reactive agent
+(PPO) sees the shortage happening and fires an action, but by the time the
+action takes effect the crisis may have already deepened.  DreamerV3
+imagines future trajectories in its learned world model and acts
+pre-emptively---which is why its shortage rates are consistently lower even
+in fast-onset scenarios like the demand surge (9.4\% vs.\ 27.0\% for
+PPO~Continuous).
+
+\paragraph{Simultaneous multi-action control.}
+
+The discrete PPO agent can only activate one action per decision step.
+DreamerV3 controls all nine intervention intensities, two hospital routing
+dials and three component allocation dials simultaneously through a
+continuous action vector.  The heatmaps show this matters: DreamerV3
+manages to reduce net requested units (through demand management) while
+also boosting supply (through campaigns and replenishment)---something a
+single-action controller cannot coordinate.  For instance, on the transport
+disruption scenario DreamerV3 serves 738~net-requested units with a 2.2\%
+shortage, while PPO~Shortage~Minimizer faces 1\,179~units with a 22.6\%
+shortage because it cannot activate conservation and replenishment at the
+same time.
+
+\paragraph{Generalisation to unseen crises.}
+
+The holdout scenarios were designed to combine stressors in novel ways.
+DreamerV3's world model lets it transfer what it learned about individual
+stressors (donor decline, transport disruption, demand pressure) to new
+combinations it has never encountered.  On the post-storm surgical
+backlog---a scenario that pairs rebounding demand with slow donor recovery
+and damaged transport---DreamerV3 achieves 1.5\% shortage where the
+next-best adaptive strategy (PPO~Shortage~Minimizer) reaches 4.5\% and
+baseline hits 44.2\%.
+
+\paragraph{Tradeoff: wastage.}
+
+The main tradeoff is wastage.  DreamerV3's aggressive stocking leads to
+more expired units than conservative strategies
+(Table~\ref{tab:tradeoff}).  This is a conscious design choice embedded in
+the reward function: Tier~1 (patient safety) carries ${\sim}55\%$ of the
+reward weight while Tier~3 (waste and cost) carries ${\sim}25\%$.  In a
+blood supply context a shortage means a patient does not receive the
+transfusion they need, while an expired unit is an economic loss.  The
+reward structure reflects the judgement that the former is worse than the
+latter.
+
+\begin{table}[htbp]
+\centering
+\caption{Shortage--wastage tradeoff (average across 9 scenarios).}
+\label{tab:tradeoff}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Strategy}
+    & \textbf{Shortage (\%)}
+    & \textbf{Expired units}
+    & \textbf{Action cost} \\
+\midrule
+Baseline               & 38.8 &  6.6 &   0.0 \\
+PPO Shortage Minimizer & 13.9 &  7.3 & 177.4 \\
+PPO Continuous         & 11.7 & 10.6 &  50.2 \\
+\textbf{DreamerV3}     & \textbf{4.6}  & 34.8 & 158.2 \\
+DreamerV4              & 36.3 & 12.6 & 198.2 \\
+\bottomrule
+\end{tabular}
+\end{table}

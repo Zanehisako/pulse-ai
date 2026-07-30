@@ -1,0 +1,29 @@
+__pycache__/
+*.pyc
+*.ipynb
+
+models/
+catboost_info/
+notes/
+
+.git
+.gitignore
+# SonarQube
+.sonar/
+.scannerwork/
+coverage.xml
+htmlcov/
+.tox/
+.pytest_cache/
+.coverage
+
+# ML specific large files
+*.pkl
+*.gguf
+*.db
+*.parquet
+*.csv
+datasets/
+models/gguf/
+feast+MLFlow/mlruns/
+training_scripts/mlruns/

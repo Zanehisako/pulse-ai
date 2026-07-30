@@ -1,0 +1,138 @@
+{
+  "models": [],
+  "external_tools": [
+    {
+      "name": "db_tool",
+      "description": "Structured Postgres analytics tool over bounded local reference tables. Use it for descriptive analytics on stored donors and hospitals data: counts, averages, grouped summaries, top-N lookups, and historical comparisons. Do not use it for forecasting or prediction from feature inputs.",
+      "input_hints": "table(donors|hospitals), field, aggregate(count|distinct_count|avg|sum|min|max), group_by(optional), filters(object optional; exact field/value matches only; do not filter the aggregated field unless explicitly requested), limit(max 10), sort(optional asc|desc)",
+      "schema": {
+        "donors": {
+          "fields": [
+            "donor_id",
+            "age",
+            "sex",
+            "country_code",
+            "region",
+            "blood_type",
+            "is_rare_type",
+            "smoker",
+            "bmi",
+            "chronic_condition_flag",
+            "eligible_to_donate",
+            "deferral_reason",
+            "preferred_site",
+            "donation_count_last_12m",
+            "is_regular_donor",
+            "years_since_first_donation",
+            "lifetime_donation_count",
+            "first_donation_year",
+            "last_donation_date",
+            "recency_days",
+            "donor_age_at_first_donation",
+            "blood_type_country_prevalence",
+            "donation_propensity_score",
+            "eligibility_status",
+            "as_of_date"
+          ],
+          "notes": "Use age for oldest/youngest donor questions. There is no birthdate/date_of_birth/dob column."
+        },
+        "hospitals": {
+          "fields": [
+            "date",
+            "hospital_id",
+            "dow",
+            "weekend",
+            "month",
+            "holiday",
+            "temp_c",
+            "rain_mm",
+            "flu_index",
+            "trauma_cases",
+            "scheduled_surgeries",
+            "donation_campaign",
+            "supply_shock",
+            "blood_type",
+            "stock_start",
+            "units_collected",
+            "units_used",
+            "wastage",
+            "stock_end",
+            "critical_stock",
+            "heavy_demand"
+          ],
+          "notes": "Use stock_end for current inventory/available units questions."
+        }
+      },
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Show me the oldest donor in our database.",
+          "arguments": {
+            "table": "donors",
+            "field": "age",
+            "aggregate": "max",
+            "limit": 1,
+            "sort": "desc"
+          }
+        },
+        {
+          "kind": "good",
+          "user_query": "Average donor age by country code.",
+          "arguments": {
+            "table": "donors",
+            "field": "age",
+            "aggregate": "avg",
+            "group_by": "country_code",
+            "limit": 10,
+            "sort": "desc"
+          }
+        },
+        {
+          "kind": "good",
+          "user_query": "Which hospitals currently have the highest O+ stock?",
+          "arguments": {
+            "table": "hospitals",
+            "field": "stock_end",
+            "aggregate": "max",
+            "filters": {
+              "blood_type": "O+"
+            },
+            "limit": 10,
+            "sort": "desc"
+          }
+        },
+        {
+          "kind": "good",
+          "user_query": "In historical hospital data, what was the average stock_end when holiday was false, rain_mm was 0, trauma_cases was 10, and scheduled_surgeries was 50?",
+          "arguments": {
+            "table": "hospitals",
+            "field": "stock_end",
+            "aggregate": "avg",
+            "filters": {
+              "holiday": false,
+              "rain_mm": 0,
+              "trauma_cases": 10,
+              "scheduled_surgeries": 50
+            },
+            "limit": 1
+          }
+        },
+        {
+          "kind": "bad",
+          "user_query": "Give me every donor row in the table.",
+          "why": "Never request full-table dumps. Use bounded aggregates only."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Given temperature 30, rain 0, holiday false, trauma cases 10, and 50 scheduled surgeries, predict the future stock_end.",
+          "why": "This is a prediction/forecast request. Use the relevant hospital inventory model, not db_tool."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Find the oldest donor using birthdate.",
+          "why": "Donors table has age, not birthdate."
+        }
+      ]
+    }
+  ]
+}

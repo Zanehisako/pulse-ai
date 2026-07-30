@@ -1,0 +1,16 @@
+.venv
+.env
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+venv/
+node_modules/
+*.log
+dist/
+build/
+ml/models/

@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "PIOS Postgres",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "pios",
+      "Username": "admin",
+      "SSLMode": "prefer"
+    }
+  }
+}

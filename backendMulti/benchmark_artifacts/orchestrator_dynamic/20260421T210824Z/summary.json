@@ -1,0 +1,493 @@
+{
+  "generated_at": "2026-04-21T23:20:50.214897+00:00",
+  "models": [
+    "glm_4_9b_0414_ud_iq3_xxs",
+    "qwen2_7b_instruct_q4_0",
+    "xlam_7b_q2_k",
+    "xlam_7b_q4_k_m"
+  ],
+  "overall": [
+    {
+      "orchestrator_model_id": "glm_4_9b_0414_ud_iq3_xxs",
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "runs": 14,
+      "load_time_ms": 15598.07,
+      "planned_tool_match": 0.9285714286,
+      "executed_tool_match": 0.9285714286,
+      "execution_success": 1.0,
+      "menu_adherence": 1.0,
+      "argument_match": 1.0,
+      "case_score": 0.9642857143,
+      "median_latency_ms": 76509.135
+    },
+    {
+      "orchestrator_model_id": "qwen2_7b_instruct_q4_0",
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "runs": 14,
+      "load_time_ms": 22878.65,
+      "planned_tool_match": 0.9285714286,
+      "executed_tool_match": 0.9285714286,
+      "execution_success": 1.0,
+      "menu_adherence": 1.0,
+      "argument_match": 0.9285714286,
+      "case_score": 0.9535714286,
+      "median_latency_ms": 41716.76
+    },
+    {
+      "orchestrator_model_id": "xlam_7b_q4_k_m",
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "runs": 14,
+      "load_time_ms": 36434.29,
+      "planned_tool_match": 0.9285714286,
+      "executed_tool_match": 0.9285714286,
+      "execution_success": 1.0,
+      "menu_adherence": 1.0,
+      "argument_match": 0.9285714286,
+      "case_score": 0.9535714286,
+      "median_latency_ms": 69656.105
+    },
+    {
+      "orchestrator_model_id": "xlam_7b_q2_k",
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "runs": 14,
+      "load_time_ms": 253127.47,
+      "planned_tool_match": 0.8571428571,
+      "executed_tool_match": 0.8571428571,
+      "execution_success": 1.0,
+      "menu_adherence": 1.0,
+      "argument_match": 0.9285714286,
+      "case_score": 0.9178571429,
+      "median_latency_ms": 336400.785
+    }
+  ],
+  "family": [
+    {
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "category": "db_search",
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "case_score": 1.0,
+      "latency_ms": 82635.39
+    },
+    {
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "category": "db_search",
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "case_score": 0.9625,
+      "latency_ms": 41716.76
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "category": "db_search",
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "case_score": 0.9625,
+      "latency_ms": 477292.085
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "category": "db_search",
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "case_score": 0.9625,
+      "latency_ms": 69513.465
+    },
+    {
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "category": "predictive_model",
+      "planned_tool_match": 0.8333333333,
+      "executed_tool_match": 0.8333333333,
+      "case_score": 0.9166666667,
+      "latency_ms": 69718.115
+    },
+    {
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "category": "predictive_model",
+      "planned_tool_match": 0.8333333333,
+      "executed_tool_match": 0.8333333333,
+      "case_score": 0.9166666667,
+      "latency_ms": 39046.295
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "category": "predictive_model",
+      "planned_tool_match": 0.6666666667,
+      "executed_tool_match": 0.6666666667,
+      "case_score": 0.8333333333,
+      "latency_ms": 60743.785
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "category": "predictive_model",
+      "planned_tool_match": 0.8333333333,
+      "executed_tool_match": 0.8333333333,
+      "case_score": 0.9166666667,
+      "latency_ms": 77256.865
+    },
+    {
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "category": "simulation",
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "case_score": 1.0,
+      "latency_ms": 81596.18
+    },
+    {
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "category": "simulation",
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "case_score": 1.0,
+      "latency_ms": 41655.58
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "category": "simulation",
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "case_score": 1.0,
+      "latency_ms": 281068.02
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "category": "simulation",
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "case_score": 1.0,
+      "latency_ms": 59835.405
+    }
+  ],
+  "menus": [
+    {
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "menu_id": "models_plus_db",
+      "menu_label": "All predictive models + DB",
+      "runs": 2,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "menu_id": "models_plus_db",
+      "menu_label": "All predictive models + DB",
+      "runs": 2,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "menu_id": "models_plus_db",
+      "menu_label": "All predictive models + DB",
+      "runs": 2,
+      "planned_tool_match": 0.5,
+      "executed_tool_match": 0.5,
+      "menu_adherence": 1.0,
+      "case_score": 0.75
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "menu_id": "models_plus_db",
+      "menu_label": "All predictive models + DB",
+      "runs": 2,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "menu_id": "models_plus_simulation",
+      "menu_label": "All predictive models + simulation",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "menu_id": "models_plus_simulation",
+      "menu_label": "All predictive models + simulation",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "menu_id": "models_plus_simulation",
+      "menu_label": "All predictive models + simulation",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "menu_id": "models_plus_simulation",
+      "menu_label": "All predictive models + simulation",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "menu_id": "all_tools_all_models",
+      "menu_label": "All tools + all predictive models",
+      "runs": 6,
+      "planned_tool_match": 0.8333333333,
+      "executed_tool_match": 0.8333333333,
+      "menu_adherence": 1.0,
+      "case_score": 0.9166666667
+    },
+    {
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "menu_id": "all_tools_all_models",
+      "menu_label": "All tools + all predictive models",
+      "runs": 6,
+      "planned_tool_match": 0.8333333333,
+      "executed_tool_match": 0.8333333333,
+      "menu_adherence": 1.0,
+      "case_score": 0.8916666667
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "menu_id": "all_tools_all_models",
+      "menu_label": "All tools + all predictive models",
+      "runs": 6,
+      "planned_tool_match": 0.8333333333,
+      "executed_tool_match": 0.8333333333,
+      "menu_adherence": 1.0,
+      "case_score": 0.8916666667
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "menu_id": "all_tools_all_models",
+      "menu_label": "All tools + all predictive models",
+      "runs": 6,
+      "planned_tool_match": 0.8333333333,
+      "executed_tool_match": 0.8333333333,
+      "menu_adherence": 1.0,
+      "case_score": 0.8916666667
+    },
+    {
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "menu_id": "db_only",
+      "menu_label": "DB search only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "menu_id": "db_only",
+      "menu_label": "DB search only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "menu_id": "db_only",
+      "menu_label": "DB search only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "menu_id": "db_only",
+      "menu_label": "DB search only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "menu_id": "donor_only",
+      "menu_label": "Donor model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "menu_id": "donor_only",
+      "menu_label": "Donor model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "menu_id": "donor_only",
+      "menu_label": "Donor model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "menu_id": "donor_only",
+      "menu_label": "Donor model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "menu_id": "hospital_only",
+      "menu_label": "Hospital shortage model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "menu_id": "hospital_only",
+      "menu_label": "Hospital shortage model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "menu_id": "hospital_only",
+      "menu_label": "Hospital shortage model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "menu_id": "hospital_only",
+      "menu_label": "Hospital shortage model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "menu_id": "simulation_only",
+      "menu_label": "Simulation only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "menu_id": "simulation_only",
+      "menu_label": "Simulation only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "menu_id": "simulation_only",
+      "menu_label": "Simulation only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "menu_id": "simulation_only",
+      "menu_label": "Simulation only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Glm 4 9B 0414 Q3_XXS",
+      "menu_id": "stockout_only",
+      "menu_label": "Stockout-days model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "Qwen2 7B Instruct Q4_0",
+      "menu_id": "stockout_only",
+      "menu_label": "Stockout-days model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q2_K",
+      "menu_id": "stockout_only",
+      "menu_label": "Stockout-days model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "orchestrator_model_name": "xLAM 7B Q4_K_M",
+      "menu_id": "stockout_only",
+      "menu_label": "Stockout-days model only",
+      "runs": 1,
+      "planned_tool_match": 1.0,
+      "executed_tool_match": 1.0,
+      "menu_adherence": 1.0,
+      "case_score": 1.0
+    }
+  ],
+  "plot_files": [
+    "overall_quality_metrics.png",
+    "planned_accuracy_by_tool_family.png",
+    "dynamic_score_by_available_tool_count.png",
+    "menu_responsiveness_heatmap.png",
+    "latency_distribution.png",
+    "tool_family_confusion_matrices.png"
+  ],
+  "results_csv": "results.csv",
+  "results_json": "results.json"
+}

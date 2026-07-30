@@ -1,0 +1,167 @@
+{
+  "id": "donor_contact_propensity_model",
+  "name": "Donor Contact Propensity Model",
+  "enabled": true,
+  "type": "model",
+  "input_schema": {
+    "donor_id": "string",
+    "event_timestamp": "datetime",
+    "donor_features": "object"
+  },
+  "output_schema": {
+    "contact_propensity": "number",
+    "prediction": "number"
+  },
+  "adapter": "mlflow_pyfunc",
+  "entrypoint": "training_scripts.train_donor_contact_propensity",
+  "permissions": [
+    "read_donor_profile",
+    "read_donor_history",
+    "write_shadow_prediction"
+  ],
+  "timeout_seconds": 30,
+  "dataset_source": "quebec_donor",
+  "model_type": "classification",
+  "registered_model_name": "donor_contact_propensity_model",
+  "description": "Donor contact propensity model predicting likelihood of donor engagement and donation from behavioral features. Uses proxy scores (response_readiness_index, donor_momentum, digital_contactability_score) as a contact-likelihood estimator. Note: actual contact history data would improve this model; currently uses behavioral proxy features.",
+  "target": {
+    "column": "donated_next_6m",
+    "task_type": "classification",
+    "output_name": "contact_propensity"
+  },
+  "feature_engineering": {
+    "group_columns": [
+      "donor_id"
+    ],
+    "timestamp_column": "event_timestamp",
+    "static_features": [
+      "age",
+      "sex",
+      "region",
+      "city",
+      "urbanicity",
+      "blood_type",
+      "is_rare_type",
+      "blood_type_scarcity",
+      "center_distance_km",
+      "travel_time_min",
+      "route_feasibility_flag",
+      "public_transit_access_score",
+      "winter_route_risk_score",
+      "digital_contactability_score",
+      "eligible_to_donate",
+      "is_regular_donor"
+    ],
+    "sequence_features": [
+      "recency_days",
+      "snapshot_days_until_eligible",
+      "donation_count_last_12m",
+      "donation_velocity",
+      "readiness_score",
+      "mobility_score",
+      "travel_burden_score",
+      "commitment_score",
+      "response_readiness_index",
+      "donor_momentum",
+      "quebec_access_score",
+      "emergency_outreach_priority",
+      "operational_outreach_priority"
+    ],
+    "lag_steps": [0]
+  },
+  "training": {
+    "include_default_classifiers": false,
+    "forbidden_feature_groups": [
+      "donor_outcome_proxy_scores"
+    ],
+    "threshold_optimization": {
+      "enabled": true,
+      "metric": "balanced_accuracy",
+      "min_threshold": 0.05,
+      "max_threshold": 0.85,
+      "steps": 81
+    },
+    "classification_candidates": [
+      {
+        "name": "xgboost",
+        "family": "xgboost",
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 5,
+          "learning_rate": 0.035,
+          "subsample": 0.88,
+          "colsample_bytree": 0.78,
+          "scale_pos_weight": 1,
+          "objective": "binary:logistic",
+          "random_state": 42
+        }
+      },
+      {
+        "name": "catboost",
+        "family": "catboost",
+        "params": {
+          "iterations": 200,
+          "depth": 6,
+          "learning_rate": 0.035,
+          "auto_class_weights": "Balanced",
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "random_seed": 42,
+          "verbose": false
+        }
+      },
+      {
+        "name": "lightgbm",
+        "family": "lightgbm",
+        "params": {
+          "n_estimators": 200,
+          "learning_rate": 0.035,
+          "num_leaves": 31,
+          "class_weight": "balanced",
+          "random_state": 42,
+          "n_jobs": 4,
+          "verbosity": -1
+        }
+      }
+    ],
+    "ensemble": {
+      "enabled": true,
+      "name": "contact_propensity_ensemble",
+      "weighting": "validation_brier",
+      "min_members": 2
+    }
+  },
+  "selection": {
+    "primary_metric": "brier_score",
+    "direction": "minimize",
+    "fallback_metrics": [
+      "log_loss",
+      "average_precision",
+      "roc_auc"
+    ]
+  },
+  "prediction_defaults": {
+    "forecast_selection": {
+      "enabled": true,
+      "target": "donation",
+      "primary_metric": "brier_score",
+      "direction": "minimize",
+      "fallback_metrics": [
+        "log_loss",
+        "average_precision",
+        "roc_auc"
+      ]
+    },
+    "horizon_routing": {
+      "enabled": false
+    },
+    "output": {
+      "name": "contact_propensity",
+      "unit": "probability",
+      "task_type": "classification",
+      "clip_min": 0.0,
+      "clip_max": 1.0,
+      "apply_clipping": true
+    }
+  }
+}

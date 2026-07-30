@@ -1,0 +1,169 @@
+========================================================================
+QUEBEC CITY BLOOD SUPPLY CHAIN SIMULATION REPORT
+========================================================================
+
+SCENARIO
+------------------------------------------------------------------------
+Name: Normal Operations
+Duration: 336 h (~14.0 days)
+Description: Balanced Quebec City winter baseline using scaled real-world demand and donor flow.
+
+Narrative:
+  Baseline winter operations for the Quebec City blood network, calibrated from public Hema-Quebec and Statistics Canada data rather than hand-picked magic numbers.
+  
+    • Quebec City estimated completed donations: 39.7 per day
+    • Quebec City estimated hospital demand: 19.7 orders/day
+    • Quebec City estimated blood products consumed: 83.6 units/day
+    • Average units per order proxy: 4.23
+  
+  The simulator now treats the donor figure as successful completed donations, then backs into the required arrival pace. A routine provincial replenishment flow also tops up city inventory when reserves fall below target.
+
+REAL-WORLD CALIBRATION
+------------------------------------------------------------------------
+  • Quebec CMA population share: 839,311 / 8,501,833 = 9.87%
+  • Scaled blood-product demand: 83.6 labile products/day
+  • Scaled hospital-order cadence: 19.7 orders/day (~1 every 1.22 h)
+  • Scaled completed donations target: 39.7 successful donations/day
+  • Simulated donor arrivals needed to hit that target: 60.1 arrival attempts/day (~1 every 0.22 h during collection hours)
+
+INPUTS
+------------------------------------------------------------------------
+Donor inter-arrival: 0.22 h
+Donor show factor: 1.00
+Eligibility rate: 93%
+Demand inter-arrival: 1.22 h
+Demand surge factor: 1.00x
+Average units per order: 4.23
+Initial inventory buffer: 4.0 days
+Reserve target: 4.0 days
+Provincial replenishment rate: 45% of daily demand
+Transport penalty: 1.00x
+Effective transport penalty: 1.00x
+Forced weather: dynamic winter mix
+
+ACTIONS
+------------------------------------------------------------------------
+Selected strategy: PPO Shortage Minimizer
+Description: Adaptive PPO-style controller that watches live shortages, reserve coverage and transport pressure, then activates the least-cost shortage-mitigation actions as conditions worsen.
+Action cost: 500
+Controller: ppo_shortage_minimizer
+  (driven by a trained NumPy-PPO / SB3-PPO agent)
+Controller action space: campaign, lab_fast_track, emergency_share, clinical_conservation, national_mutual_aid
+  - Emergency sharing and courier routing: Allow deeper reserve use, prioritize hospital-bound transfers and unlock emergency provincial courier support when a hospital is at risk. (cost 65, activated at 6h)
+    activation after 24h from trigger, full effect by 126h
+  - Deploy one mobile unit: Stand up two temporary collection sites near dense neighbourhood demand. Access improves, but mobile collections take longer to release into inventory. (cost 55, activated at 12h)
+    activation after 24h from trigger, full effect by 132h
+  - Hospital blood conservation protocol: Activate restrictive transfusion thresholds, postpone elective cases and triage scarce blood to highest-acuity patients first. (cost 55, activated at 18h)
+    activation after 6h from trigger, full effect by 60h
+  - Extend donor-centre hours: Open fixed sites three extra hours on both ends. This captures more donors but also raises staffing fatigue unless surge staff are added. (cost 35, activated at 36h)
+    activation after 12h from trigger, full effect by 120h
+  - Targeted donor campaign: Trigger SMS, appointment outreach and registry callbacks. It sharply lifts arrivals and show-up, but also brings in more marginal first-time donors. (cost 60, activated at 78h)
+    activation after 12h from trigger, full effect by 210h
+  - Fast-track lab workflow: Fund rapid testing, prioritized component release and emergency QC lanes so fresh donations become usable much sooner. (cost 75, activated at 126h)
+    activation after 6h from trigger, full effect by 180h
+  - Add surge collection and lab staff: Staff all active collection sites with extra nurses, lab benches and processing staff to prevent campaign volume from clogging the system. (cost 70, activated at 204h)
+    activation after 12h from trigger, full effect by 264h
+  - Provincial and national mutual aid: Escalate beyond the local network to bring in sustained outside support, including inter-regional stock, extra courier lanes and coordinated reserve use. (cost 85, activated at 294h)
+    activation after 48h from trigger, full effect by 462h
+  - Donor arrival factor: 0.35x inter-arrival
+  - Donor show-up factor: 1.26x
+  - Donor eligibility factor: 0.93x
+  - Demand management factor: 0.28x
+  - Committed donor share: 42%
+  - Release delay factor: 0.18x
+  - Extra staffing per site: nurses +4, lab +2, processing +2
+  - Extra mobile units: 2
+  - Added hours per side: 3.0
+  - Replenishment cadence: every 4h
+  - Emergency transport relief: 55%
+  - Provincial replenishment boost: 700%
+  - Controller decision count: 47
+
+OUTPUTS
+------------------------------------------------------------------------
+Donor attempts: 1529
+Successful donations: 703
+Deferred/rejected: 540 (43.4%)
+No-shows: 286
+Base requested units: 1419
+Deferred/conserved units: 827
+Net requested units: 592
+Transfused units: 587
+Shortage units: 5
+Shortage rate: 0.8%
+Shortage vs base demand: 0.4%
+Expired units: 237
+Transfer units: 112
+Provincial inbound units: 291
+Remaining inventory: 1528
+Average donor travel: 27.6 min
+Average nurse wait: 0.0 min
+
+REWARD BREAKDOWN
+------------------------------------------------------------------------
+     fulfilled_units:   7044.0
+        shortage_rbc:   -400.0
+  shortage_platelets:     -0.0
+     shortage_plasma:     -0.0
+       expired_units:  -3555.0
+      transfer_units:   -784.0
+            avg_wait:     -0.0
+          avg_travel:     -0.8
+         action_cost:   -500.0
+        total_reward:   -504.7
+
+SHORTAGES BY COMPONENT
+------------------------------------------------------------------------
+         RBC: 5
+
+PER-CENTRE PERFORMANCE
+------------------------------------------------------------------------
+Héma-Québec Lebourgneuf [blood_bank]
+  donated=294 rejected=232 no_show=115 orders=0
+  transfused=0 shortage=0 transfers_in=0 expired=93
+  inventory RBC=337 PLT=54 PLS=302 avg_travel=34.2m
+
+CHU Enfant-Jésus [hospital]
+  donated=152 rejected=115 no_show=60 orders=163
+  transfused=338 shortage=2 transfers_in=69 expired=29
+  inventory RBC=93 PLT=33 PLS=130 avg_travel=23.5m
+
+Héma-Québec Sainte-Foy [blood_bank]
+  donated=155 rejected=85 no_show=57 orders=0
+  transfused=0 shortage=0 transfers_in=0 expired=72
+  inventory RBC=200 PLT=42 PLS=163 avg_travel=25.8m
+
+Hôtel-Dieu de Lévis [hospital]
+  donated=89 rejected=99 no_show=50 orders=146
+  transfused=249 shortage=3 transfers_in=43 expired=31
+  inventory RBC=41 PLT=14 PLS=74 avg_travel=18.2m
+
+Mobile Unit – Université Laval [mobile]
+  donated=13 rejected=9 no_show=4 orders=0
+  transfused=0 shortage=0 transfers_in=0 expired=12
+  inventory RBC=26 PLT=2 PLS=17 avg_travel=9.0m
+
+INVENTORY TIMELINE
+------------------------------------------------------------------------
+ Day      RBC      PLT      PLS   CumShort
+   1       95      106       36          0
+   2       55       99       44          5
+   3      110      123       57          5
+   4      203      136       83          5
+   5      222       73      120          5
+   6      244      123      153          5
+   7      285      123      196          5
+   8      370      136      291          5
+   9      447      150      378          5
+  10      493      154      439          5
+  11      540      140      496          5
+  12      586      145      558          5
+  13      646      138      622          5
+
+RECOMMENDATIONS
+------------------------------------------------------------------------
+Current action mix keeps shortage pressure within the playable target band.
+A large share of demand was deferred by blood conservation rules. Check whether that trade-off is acceptable.
+Expiry is too high relative to use. Consider reducing campaign intensity or moving stock earlier.
+
+Report generated: 2026-03-29 11:06:21

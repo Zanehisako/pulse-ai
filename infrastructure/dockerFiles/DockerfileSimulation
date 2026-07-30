@@ -1,0 +1,58 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PYTHONPATH=/app
+ENV PIOS_SIM_OFFLINE=1
+ENV XDG_CACHE_HOME=/tmp/.cache
+ENV MPLCONFIGDIR=/tmp/matplotlib
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y build-essential && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml /app/pyproject.toml
+
+RUN python - <<'PY'
+import subprocess
+import sys
+import tomllib
+
+with open("/app/pyproject.toml", "rb") as handle:
+    data = tomllib.load(handle)
+
+dependencies = data.get("project", {}).get("dependencies", [])
+if dependencies:
+    torch_dependencies = [
+        dep for dep in dependencies if dep.strip().startswith("torch")
+    ]
+    other_dependencies = [
+        dep for dep in dependencies if dep not in torch_dependencies
+    ]
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"]
+    )
+    if torch_dependencies:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "--index-url",
+                "https://download.pytorch.org/whl/cpu",
+                *torch_dependencies,
+            ]
+        )
+    if other_dependencies:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", *other_dependencies])
+PY
+
+COPY . /app/simulation_studio
+
+EXPOSE 8010
+
+CMD ["python", "-m", "uvicorn", "simulation_studio.app.main:app", "--host", "0.0.0.0", "--port", "8010"]

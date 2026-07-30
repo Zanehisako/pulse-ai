@@ -1,0 +1,216 @@
+% =============================================================================
+%  Thesis Chapter 4 — Realization
+%  Project-specific implementation chapter for PIOS
+% =============================================================================
+%  Suggested preamble packages:
+%    \usepackage{booktabs, longtable, array, hyperref}
+% =============================================================================
+
+\chapter{Réalisation}
+\label{chap:realization}
+
+\section{Introduction}
+\label{sec:realization-introduction}
+
+This chapter presents how the PIOS project was concretely implemented. Rather than describing a generic machine-learning prototype, it focuses on the software system that was actually developed in the repository: a Django backend for operational services, a dedicated ML backend for training and model lifecycle tasks, a discrete-event blood-supply simulator, and a standalone simulation interface for experimentation and validation.
+
+The realization phase therefore combines several complementary concerns. The first is application engineering: authentication, alerts, notifications, dashboards, and prediction APIs had to be integrated into a coherent backend. The second is data and model engineering: feature preparation, experiment tracking, scheduled retraining, promotion logic, and drift detection had to be made reproducible. The third is decision-support experimentation: the simulator had to support scenario execution, reinforcement-learning agents, and statistical validation against real-world references. The goal of this chapter is to show that the proposed architecture was not left at design level, but was translated into an operational and testable platform.
+
+\section{Environnement de réalisation}
+\label{sec:realization-environment}
+
+\subsection{Matériel}
+\label{sec:hardware-environment}
+
+The project was implemented in a realistic local-development setting rather than on a dedicated cluster. This constraint influenced the technical choices in a positive way: services had to remain runnable on a workstation, the deployment flow had to stay simple, and heavy training tasks had to be separated from lighter serving and simulation tasks. In practice, this led to a modular organization in which the main backend, the simulator, and the model-training utilities can be started independently.
+
+From a hardware perspective, the most demanding workloads were the reinforcement-learning experiments and the larger validation runs. Standard backend execution, API serving, and tabular-model inference remain CPU-friendly, but the model-based DreamerV3 path benefits from hardware acceleration when available. For that reason, the codebase explicitly supports accelerated local execution for the official DreamerV3 workflow, including optional JAX Metal support on Apple Silicon. At the same time, the implementation remains functional in CPU-only mode, which preserves portability and reproducibility.
+
+Another important practical decision concerns network and storage usage. The simulator can operate in an offline mode to avoid blocking on live map downloads, and model artifacts, checkpoints, experiment logs, and validation outputs are stored locally or through lightweight containerized services. This local-first strategy was appropriate for an academic realization because it reduced infrastructure overhead while still preserving realistic deployment practices.
+
+\begin{table}[htbp]
+\centering
+\caption{Practical execution environment used during realization}
+\label{tab:hardware-environment}
+\small
+\begin{tabular}{@{}lp{9.7cm}@{}}
+\toprule
+\textbf{Aspect} & \textbf{Implementation choice in PIOS} \\
+\midrule
+Execution model & Local workstation execution with independently runnable services \\
+Primary objective & Keep backend serving, simulation, and experimentation feasible without requiring a remote cluster \\
+Heavy workloads & Reinforcement-learning training, multi-replication validation, and notebook-based model training \\
+Lightweight workloads & Django API serving, FastAPI simulation endpoints, tabular-model inference, dashboards, and rule-based alerts \\
+Acceleration path & Optional Apple Silicon acceleration already integrated for the official DreamerV3 path through JAX Metal when available \\
+Storage mode & Local filesystem for source code, checkpoints, reports, and artifacts; Docker volumes for PostgreSQL and MLflow services \\
+Connectivity mode & Offline simulator mode supported to avoid dependence on live OpenStreetMap downloads during demos and tests \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Logiciel}
+\label{sec:software-environment}
+
+The realization relies on a Python-centered stack, but the final platform is not limited to one framework. The operational backend is implemented with Django~5 and Django REST Framework, while real-time features use Channels and Daphne. The simulation interface is a separate FastAPI microservice with Pydantic schemas and WebSocket endpoints. This separation was deliberate: the main backend handles business workflows and persistent configuration, whereas the simulation service remains optimized for rapid scenario execution and interactive experimentation.
+
+On the data-science side, the project uses the classical Python stack for tabular learning, including \texttt{pandas}, \texttt{numpy}, and \texttt{scikit-learn}, together with gradient-boosting libraries such as \texttt{CatBoost}, \texttt{LightGBM}, and \texttt{XGBoost}. Feature management and experiment tracking are implemented with Feast and MLflow. This MLOps layer is not only theoretical: the repository contains a feature repository, MLflow integration, scheduled retraining logic, model-promotion scripts, and drift-detection utilities.
+
+For the simulation and control part, the core engine is built with SimPy, OSMnx, and NetworkX. Reinforcement-learning experiments rely on Gymnasium-style environments, Stable-Baselines3 for PPO baselines, and JAX for the official DreamerV3 path. For quality assurance and deployment support, the project also uses pytest, Django test utilities, Docker, Docker Compose, and SonarQube. Finally, the user-facing interfaces extend beyond the Python backends: the repository includes a React/Vite web dashboard, while the simulation studio deliberately uses a simpler standalone frontend served directly by FastAPI.
+
+\begin{table}[htbp]
+\centering
+\caption{Software stack effectively used in the project}
+\label{tab:software-environment}
+\small
+\begin{tabular}{@{}lp{9.5cm}@{}}
+\toprule
+\textbf{Software element} & \textbf{Role in the realized system} \\
+\midrule
+Python~3.11 & Common runtime across the backend, ML backend, simulator, and automation scripts \\
+Django~5 + DRF + drf-spectacular & Main operational backend, REST APIs, and OpenAPI documentation \\
+Channels + Daphne & Real-time communication for notifications, dashboard updates, and WebSocket support in the Django backend \\
+FastAPI + Pydantic + WebSocket routes & Standalone simulation interface for scenario execution, comparison, and live simulation playback \\
+PostgreSQL & Main relational database for the operational backend and MLflow backend store \\
+Docker + Docker Compose & Reproducible local services for PostgreSQL, MLflow, and SonarQube \\
+pandas + numpy + scikit-learn & Core data preparation and classical machine-learning workflows \\
+CatBoost / LightGBM / XGBoost & Tabular-model experimentation and runtime model support \\
+Feast & Feature-store layer for consistent training and serving features \\
+MLflow & Experiment tracking, artifact storage, model registry integration, and serving-time model loading \\
+APScheduler & Automated retraining scheduler for long-running ML backend processes \\
+SimPy & Discrete-event engine for blood-supply simulation \\
+OSMnx + NetworkX & City graph construction and travel-network representation for the simulator \\
+Gymnasium + Stable-Baselines3 & Environment abstraction and PPO-based training baselines \\
+JAX & Runtime and training support for the official DreamerV3 path \\
+pytest + Django test framework + SonarQube & Verification, regression testing, coverage, and code-quality follow-up \\
+React + Vite + TypeScript & Web dashboard for the broader platform \\
+Vanilla JavaScript frontend served by FastAPI & Lightweight interactive interface dedicated to Simulation Studio \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Réalisation de l'architecture logicielle}
+\label{sec:realization-architecture}
+
+\subsection{Organisation générale du projet}
+\label{sec:project-organization}
+
+The implementation is organized as a multi-component repository rather than a single monolithic application. This structure reflects the real needs of the platform. Operational workflows, simulation experiments, and model-training pipelines do not evolve at the same pace and do not have the same runtime requirements. Separating them into dedicated modules made the project easier to develop, test, and demonstrate.
+
+\begin{table}[htbp]
+\centering
+\caption{Main implementation modules in the repository}
+\label{tab:repository-modules}
+\small
+\begin{tabular}{@{}lp{3.1cm}p{6.0cm}@{}}
+\toprule
+\textbf{Module} & \textbf{Main technologies} & \textbf{Realized responsibility} \\
+\midrule
+\texttt{backendMulti} & Django, DRF, Channels, PostgreSQL & Authentication, alerts, notifications, dashboard cache, ML configuration, prediction logs, and operational APIs \\
+\texttt{ml-backend} & Python, Feast, MLflow, APScheduler & Feature preparation, notebook and script-based training, model scoring, retraining automation, and drift monitoring \\
+\texttt{ml-backend/simulator} & SimPy, OSMnx, NetworkX, Gymnasium, JAX & Discrete-event simulation, scenario logic, validation suite, and reinforcement-learning environments and agents \\
+\texttt{simulation\_studio} & FastAPI, Pydantic, WebSockets, vanilla JS & Interactive simulation dashboard, batch comparison, custom scenarios, and live step-by-step playback \\
+\texttt{web-app/pios-web} & React, Vite, TypeScript & General dashboard-oriented web interface for the larger platform \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This organization also improved dependency management. The Django backend could remain focused on operational services, while the simulator and its experimental dependencies evolved independently. The result is closer to a realistic platform architecture than to a classroom prototype: each service has a clear role, but shared data and model concepts remain aligned across the project.
+
+\subsection{Backend applicatif central}
+\label{sec:core-backend-realization}
+
+The central application backend is implemented in the \texttt{backendMulti} module. It groups several Django applications such as authentication, communications, notifications, alerts, dashboard, and machine-learning support. This backend plays the role of operational core: it stores users and business data, exposes REST endpoints, logs model predictions, and provides the administrative interfaces needed to manage configurations.
+
+The machine-learning integration inside Django is more than a simple inference wrapper. The backend maintains model metadata, orchestrator variants, prediction logs, model statistics, and drift reports. It also exposes endpoints for health checking, model listing, configuration reload, natural-language prediction, and orchestrator status. This is important for the thesis because it shows that the ML component was operationalized into an application context rather than left as an isolated notebook.
+
+Real-time communication is supported through Channels and Daphne. This choice allows alerts, notifications, and dashboard updates to move beyond request-response interactions. In development mode, the project uses an in-memory channel layer, which keeps the setup lightweight while preserving the architectural pattern required for WebSocket-based features.
+
+Another notable point is the integration of a local LLM orchestrator around xLAM GGUF variants through \texttt{llama-cpp-python}. This component enables natural-language access to the prediction layer. In practical terms, it means that the realized platform supports both structured model calls and higher-level user interactions, which is consistent with the decision-support objective of PIOS.
+
+\subsection{Chaîne MLOps et prédiction}
+\label{sec:mlops-realization}
+
+The \texttt{ml-backend} module implements the training and model-lifecycle layer. Its realization is centered on two elements: a Feast feature-store workflow and MLflow-based experiment tracking. The command-line interface exposes concrete actions such as database initialization, feature preparation, Feast repository application, online materialization, notebook-driven training, scoring, and entity discovery. This provides an executable bridge between data preparation, training, and deployment-oriented tasks.
+
+The training workflow is not restricted to manual runs. A background scheduler based on APScheduler can trigger training scripts according to a defined schedule. After training, a champion/challenger promotion gate determines whether a newly trained model should replace the current production candidate. A registry synchronization step then propagates the selected model metadata back into the Django-side runtime catalog. This automation is particularly valuable because it translates the MLOps design choices into an actual maintenance process.
+
+The realized prediction layer also includes safeguards for serving. Runtime model loading is integrated with MLflow, but the codebase includes local artifact fallbacks when registry artifacts are unavailable. Threading constraints for OpenMP-based libraries are explicitly handled in the serving process, which reduces deadlock risks when models such as XGBoost or LightGBM are loaded in an application context. These implementation details matter because they reflect practical deployment issues that are usually invisible in purely conceptual architectures.
+
+Finally, the project implements a statistical drift-detection module. Instead of relying on a vague monitoring statement, the code defines explicit methods such as the Kolmogorov--Smirnov test, Population Stability Index, chi-squared comparison, and Jensen--Shannon divergence. This gives the platform a concrete post-deployment monitoring capability and supports the thesis objective of building a decision-support system that remains observable over time.
+
+\subsection{Réalisation du simulateur}
+\label{sec:simulator-realization}
+
+The simulation core is implemented in \texttt{ml-backend/simulator}. It models a blood-supply network as a discrete-event system in which donors, blood units, centres, hospitals, inventory movements, and operational actions evolve over simulated time. SimPy provides the event engine, while OSMnx and NetworkX provide the geographic and transport-network layer used to represent city-scale travel behaviour.
+
+The simulator is not limited to a single baseline scenario. It includes a catalog of crisis and stress scenarios such as donor decline, demand surge, transport disruption, combined crisis, holiday flu wave, regional testing backlog, provincial supply crunch, and post-storm backlog. This breadth is important because the simulator is used both for demonstration and for policy comparison. A system that only reproduces one baseline case would not be sufficient for the intended decision-support role.
+
+The implementation also includes practical measures that improve robustness. For example, the environment variable controlling offline execution allows the simulator to avoid live OpenStreetMap requests during tests or demonstrations. This reduces startup fragility and makes the experimental workflow more reproducible. In other words, the simulator was engineered not only for realism, but also for repeated use under development constraints.
+
+\subsection{Interfaces de simulation et exploration interactive}
+\label{sec:simulation-studio-realization}
+
+To make the simulator accessible beyond command-line experimentation, the project adds a separate module called Simulation Studio. This component is a FastAPI application that wraps the simulator and exposes both REST endpoints and WebSocket-driven live simulation sessions. It supports scenario comparison, single-run execution, cached summary loading, validation endpoints, and custom scenario creation.
+
+One of the most interesting realization choices is that the Simulation Studio frontend is intentionally lightweight. Instead of introducing another heavy frontend stack, the interface is served directly by FastAPI and implemented with plain HTML, CSS, and JavaScript. This decision fits the exploratory nature of the tool: the goal is to iterate quickly on simulation controls and visualization rather than to couple experimentation to the main dashboard stack.
+
+This separation also clarifies the role of each interface in the project. The React/Vite dashboard belongs to the broader application ecosystem, whereas Simulation Studio is a specialist interface dedicated to what-if analysis and live experimentation. Such a distinction is useful in practice because the two interfaces do not serve the same users or the same interaction rhythm.
+
+\subsection{Agents adaptatifs et apprentissage par renforcement}
+\label{sec:rl-realization}
+
+The realization of adaptive control strategies goes beyond one algorithm. The repository includes PPO-based agents as strong reactive baselines together with the official DreamerV3 integration as a model-based alternative. This combination reflects an experimental strategy in which simpler controllers remain available while a planning-oriented agent is explored for delayed-effect decision problems.
+
+From an implementation perspective, the PPO path provides strong baseline controllers and fast experimentation loops through Gymnasium-compatible environments and Stable-Baselines3 tooling. The DreamerV3 path introduces model-based planning through the official JAX implementation, which is particularly relevant when actions have delayed effects and the agent must reason beyond the current observation.
+
+This is a strong realization point for the thesis: the control strategy discussion is not abstract. The repository contains training scripts, evaluation scripts, checkpoint management, and simulator-compatible runtime integration for these agents. Consequently, the simulator can be used not only to evaluate fixed strategies, but also to host adaptive policies that act during the episode.
+
+\section{Vérification, validation et reproductibilité}
+\label{sec:verification-realization}
+
+\subsection{Tests logiciels}
+\label{sec:software-testing-realization}
+
+The project includes automated tests across its main components. On the Django side, test suites cover alert rules, prediction logic, configuration endpoints, feature-store integration, and registry metadata. On the simulator side, the repository contains tests for the engine, graph loading, strategy evaluation, PPO training, Dreamer-related paths, and plotting utilities. Simulation Studio also includes integration tests for its API layer. This breadth of testing is important because it reduces the risk that changes in one subsystem silently break another.
+
+In addition to automated tests, the project supports reproducibility through containerized infrastructure and explicit service definitions. Dockerfiles are provided for the Django backend and the ML backend, while Docker Compose starts PostgreSQL, MLflow, and SonarQube locally. This means that the realization is not tied to one developer machine: its essential services can be restarted in a consistent manner.
+
+\subsection{Validation du simulateur et suivi expérimental}
+\label{sec:sim-validation-realization}
+
+The simulator itself is accompanied by a dedicated validation suite. The script \texttt{run\_validation.py} automates replications, statistical comparisons with external references, sensitivity analysis, plot generation, and report export. This is a significant realization outcome because it transforms verification from an informal inspection step into a documented workflow.
+
+The current validation outputs in the repository show a standard 30-replication baseline experiment over 336 simulated hours. The generated report indicates that all 18 validation checks passed, with a 100\% overall scorecard. This does not mean that the simulator is perfect, but it does show that the model was subjected to structured plausibility testing rather than being accepted on visual intuition alone.
+
+\begin{table}[htbp]
+\centering
+\caption{Illustrative validation results already generated in the repository}
+\label{tab:validation-artifacts}
+\small
+\begin{tabular}{@{}lccp{5.4cm}@{}}
+\toprule
+\textbf{Metric} & \textbf{Simulated mean} & \textbf{95\% CI} & \textbf{Reference / interpretation} \\
+\midrule
+Daily completed donations & 39.06 & [38.06,\;40.07] & Very close to the scaled reference of 39.69 donations/day \\
+Shortage rate (\%) & 7.41 & [5.61,\;9.22] & Higher than the 5\% midpoint, but still inside the practical reference range used in validation \\
+Deferral rate (\%) & 12.63 & [11.82,\;13.44] & Consistent with the 10--15\% operational range \\
+Service fulfillment (\%) & 92.59 & [90.78,\;94.39] & Slightly below the 97\% midpoint, but treated as acceptable in the validation scorecard \\
+Exact ABO/Rh match rate (\%) & 75.44 & [74.25,\;76.64] & Inside the literature-based 70--90\% range \\
+Blood-type distribution test & $\chi^2 = 2.55$ & $p = 0.923$ & Strong agreement with the target population proportions \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Experimental tracking is also reinforced by MLflow. Training runs, metrics, and artifacts are stored in a central tracking service, and the Dockerized MLflow server uses PostgreSQL as backend store plus a dedicated artifact directory. This is valuable for reproducibility because it creates a traceable history of experiments instead of leaving results dispersed across notebooks and local folders.
+
+\subsection{Code quality and practical maintainability}
+\label{sec:quality-realization}
+
+Beyond model accuracy and simulation realism, the realization also pays attention to maintainability. SonarQube integration is available in the project scripts for code-quality analysis, and the test configuration includes coverage reporting. API documentation is exposed automatically through OpenAPI endpoints in both Django and FastAPI services. These elements do not directly improve prediction accuracy, but they improve the long-term usability of the platform and make the implementation more credible as an engineering artifact.
+
+\section{Conclusion}
+\label{sec:realization-conclusion}
+
+The realization of PIOS resulted in a concrete multi-service platform rather than an isolated proof of concept. The project combines an operational Django backend, a reproducible ML and MLOps layer, a validated discrete-event simulator, and interactive interfaces for experimentation. Just as importantly, the implementation remains practical: it runs in a local development environment, uses containerized supporting services where needed, and includes testing, validation, and experiment-tracking mechanisms.
+
+This chapter therefore confirms the feasibility of the proposed architecture. The platform was realized with tools that are accessible, interoperable, and appropriate for academic development while remaining sufficiently structured for realistic decision-support demonstrations.

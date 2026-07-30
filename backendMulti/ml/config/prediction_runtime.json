@@ -1,0 +1,117 @@
+{
+  "mlflow": {
+    "subprocess": {
+      "enabled": true,
+      "timeout_seconds": 180,
+      "env": {
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "BLIS_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    "tracking_uri": "../mlflow_artifacts",
+    "local_artifact_roots": [
+      "../mlflow_artifacts",
+      "ml/artifacts/training_scripts/mlruns"
+    ],
+    "local_load_python_paths": [
+      "../ml-backend",
+      "../ml-backend/training_scripts"
+    ],
+    "preflight_failure_policy": {
+      "use_local_before_remote": true
+    },
+    "http_timeout_seconds": 10,
+    "missing_datetime_policy": {
+      "action": "fill",
+      "source": "request_time"
+    },
+    "artifact_preferences": {
+      "default": [
+        "model",
+        "best_estimator"
+      ]
+    },
+    "run_metadata_sources": {
+      "feature_service": [
+        {
+          "type": "text",
+          "path": "tags/feast_feature_service"
+        },
+        {
+          "type": "json",
+          "path": "artifacts/prediction_defaults.json",
+          "json_path": [
+            "feast",
+            "feature_service"
+          ]
+        }
+      ]
+    }
+  },
+  "model_loading": {
+    "default_policy": {
+      "primary": "mlflow_registry",
+      "fallbacks": ["local_registry"],
+      "default_model_version": "champion",
+      "fail_if_all_unavailable": true,
+      "record_source_metadata": true
+    },
+    "source_aliases": {
+      "mlflow_registry": {
+        "adapter": "mlflow",
+        "uri_template": "models:/{model_id}@{model_version}"
+      },
+      "local_registry": {
+        "adapter": "registry",
+        "match_by": ["model_id", "aliases", "catalog_model_id"]
+      }
+    }
+  },
+  "model_discovery": {
+    "enabled": true,
+    "models_dir_env": "PIOS_MODELS_DIR",
+    "default_models_dir": "../ml-backend/models",
+    "include_globs": [
+      "*.joblib",
+      "*.pkl"
+    ],
+    "exclude_globs": [
+      "gguf/**",
+      "*registry*.joblib"
+    ],
+    "catalog_path": "../ml-backend/config/sota_model_catalog.json",
+    "default_adapter": "sota_joblib",
+    "supported_adapters": [
+      "sota_joblib"
+    ],
+    "deactivate_missing_artifacts": true,
+    "upsert_enabled": true
+  },
+  "sota_model_stats": {
+    "enabled": true,
+    "models_dir_env": "PIOS_MODELS_DIR",
+    "default_models_dir": "../ml-backend/models",
+    "catalog_path_env": "PIOS_SOTA_CATALOG_PATH",
+    "catalog_path": "../ml-backend/config/sota_model_catalog.json",
+    "datasets_dir_env": "PIOS_SOTA_DATASETS_DIR",
+    "datasets_dir": "../ml-backend/datasets_featues_labels_seperated",
+    "generate_missing_datasets": true,
+    "donor_feature_markers": [
+      "donor_id",
+      "eligible_to_donate",
+      "is_regular_donor",
+      "blood_type",
+      "is_rare_type",
+      "center_distance_km",
+      "travel_time_min",
+      "response_readiness_index",
+      "donor_momentum",
+      "operational_outreach_priority",
+      "readiness_score"
+    ]
+  }
+}

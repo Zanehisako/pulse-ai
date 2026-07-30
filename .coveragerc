@@ -1,0 +1,48 @@
+[run]
+branch = True
+relative_files = True
+omit =
+    */tests/*
+    */test_*.py
+    */tests.py
+    */migrations/*
+    */__init__.py
+    */settings.py
+    */asgi.py
+    */wsgi.py
+    */manage.py
+    */sitecustomize.py
+    */.venv/*
+    */venv/*
+    */build/*
+    */dist/*
+    */__pycache__/*
+    */notebooks/*
+    */datasets/*
+    */datasets_featues_labels_seperated/*
+    */data/*
+    backendMulti/ml/models/*
+    ml-backend/models/*
+    ml-backend/artifacts/models/*
+    */old_training_scripts/*
+    */training_scripts/archived/*
+    */results/*
+    */reports/*
+    */dreamerv3_runs/*
+    */dreamerv4_runs/*
+    */mlflow_artifacts/*
+    */static/*
+
+[report]
+show_missing = True
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+
+[xml]
+output = coverage.xml

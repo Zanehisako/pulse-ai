@@ -1,0 +1,37 @@
+{
+  "required_fields": [
+    "id",
+    "name",
+    "type",
+    "enabled",
+    "description",
+    "input_schema",
+    "output_schema",
+    "adapter",
+    "entrypoint",
+    "permissions",
+    "timeout_seconds"
+  ],
+  "supported_types": [
+    "model"
+  ],
+  "supported_adapters": [
+    "mlflow_pyfunc",
+    "policy_pyfunc",
+    "composite_pyfunc",
+    "disabled_placeholder"
+  ],
+  "supported_permissions": [
+    "read_donor_profile",
+    "read_donor_history",
+    "read_contact_history",
+    "read_campaign_context",
+    "read_inventory_state",
+    "read_inventory_history",
+    "read_supply_forecast",
+    "read_demand_forecast",
+    "read_waste_forecast",
+    "write_shadow_prediction",
+    "disabled_until_holdout_data"
+  ]
+}

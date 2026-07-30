@@ -1,0 +1,255 @@
+{
+  "id": "quebec_operational_anchors",
+  "enabled": true,
+  "sources": {
+    "hema_quebec_2024_2025": {
+      "url": "https://www.hemaquebec.ca/sites/default/files/public/document/corporate-presentation-2024-2025.pdf",
+      "registered_donors": 177047,
+      "blood_products_delivered": 309113,
+      "blood_drives": 1981,
+      "collection_site_visits": 435173,
+      "whole_blood_donations_per_donor_year": 1.62
+    },
+    "hema_quebec_age_weight": {
+      "url": "https://www.hemaquebec.ca/en/blood-donation/eligibility-blood/age-weight-blood",
+      "minimum_age": 18,
+      "minimum_weight_kg": 50
+    },
+    "hema_quebec_whole_blood_interval": {
+      "url": "https://www.hemaquebec.ca/don-sang",
+      "male_interval_days": 56,
+      "female_interval_days": 84
+    },
+    "blood_product_shelf_life": {
+      "url": "https://www.hemaquebec.ca/sites/default/files/public/document/en/transfusion-route-blood.pdf"
+    },
+    "blood_type_distribution": {
+      "url": "https://www.blood.ca/fr/sang/don-de-sang/groupes-sanguins"
+    },
+    "regional_population": {
+      "url": "https://statistique.quebec.ca/en/document/population-and-age-and-sex-structure-administrative-regions"
+    },
+    "weather_api": {
+      "url": "https://api.weather.gc.ca/?f=html"
+    }
+  },
+  "simulation_scale": {
+    "default_donors": 12000,
+    "full_donors": 60000,
+    "default_snapshots": 6,
+    "full_snapshots": 10,
+    "snapshot_step_days": 45,
+    "default_inventory_days": 500,
+    "full_inventory_days": 1000
+  },
+  "donor_network": {
+    "registered_donors": 177047,
+    "blood_products_delivered_per_year": 309113,
+    "blood_drives_per_year": 1981,
+    "collection_site_visits_per_year": 435173,
+    "whole_blood_donations_per_donor_year": 1.62
+  },
+  "blood_type_distribution": {
+    "O+": 0.37,
+    "A+": 0.31,
+    "B+": 0.12,
+    "O-": 0.08,
+    "A-": 0.06,
+    "AB+": 0.04,
+    "B-": 0.02,
+    "AB-": 0.01
+  },
+  "component_shelf_life_days": {
+    "RBC": 42,
+    "PLATELETS": 7,
+    "PLASMA": 365,
+    "CRYOPRECIPITATE": 365
+  },
+  "component_pressure": {
+    "blood_type_demand_multiplier": {
+      "O-": 1.35,
+      "O+": 1.08,
+      "A-": 1.12,
+      "B-": 1.08,
+      "AB-": 1.06
+    },
+    "blood_type_inventory_multiplier": {
+      "O-": 0.82,
+      "A-": 0.9,
+      "B-": 0.92,
+      "AB-": 0.9
+    },
+    "component_demand_multiplier": {
+      "RBC": 1.0,
+      "PLATELETS": 1.35,
+      "PLASMA": 0.45
+    },
+    "component_inventory_multiplier": {
+      "RBC": 1.0,
+      "PLATELETS": 0.72,
+      "PLASMA": 0.88
+    },
+    "component_wastage_multiplier": {
+      "RBC": 1.0,
+      "PLATELETS": 2.7,
+      "PLASMA": 0.35
+    }
+  },
+  "donor_eligibility": {
+    "minimum_age": 18,
+    "minimum_weight_kg": 50,
+    "whole_blood_interval_days_by_sex": {
+      "M": 56,
+      "F": 84,
+      "X": 84
+    },
+    "hemoglobin_deferral_probability": 0.075,
+    "temporary_health_deferral_probability": 0.035,
+    "travel_deferral_probability": 0.018,
+    "underweight_noise_probability": 0.012,
+    "temporary_deferral_days": {
+      "hemoglobin": 42,
+      "travel": 56,
+      "health": 21
+    }
+  },
+  "regional_population_weights": [
+    {
+      "region": "Montréal",
+      "city": "Montréal",
+      "latitude": 45.5017,
+      "longitude": -73.5673,
+      "population_weight": 2078000,
+      "urbanicity": "metro",
+      "latitude_jitter": 0.07,
+      "longitude_jitter": 0.09,
+      "rurality": 0.04,
+      "transit_mean": 0.84
+    },
+    {
+      "region": "Montérégie",
+      "city": "Longueuil",
+      "latitude": 45.5369,
+      "longitude": -73.5107,
+      "population_weight": 1595000,
+      "urbanicity": "suburban",
+      "latitude_jitter": 0.12,
+      "longitude_jitter": 0.16,
+      "rurality": 0.18,
+      "transit_mean": 0.68
+    },
+    {
+      "region": "Capitale-Nationale",
+      "city": "Québec",
+      "latitude": 46.8139,
+      "longitude": -71.208,
+      "population_weight": 770000,
+      "urbanicity": "urban",
+      "latitude_jitter": 0.08,
+      "longitude_jitter": 0.11,
+      "rurality": 0.14,
+      "transit_mean": 0.72
+    },
+    {
+      "region": "Laval",
+      "city": "Laval",
+      "latitude": 45.6066,
+      "longitude": -73.7124,
+      "population_weight": 455000,
+      "urbanicity": "suburban",
+      "latitude_jitter": 0.08,
+      "longitude_jitter": 0.11,
+      "rurality": 0.08,
+      "transit_mean": 0.7
+    },
+    {
+      "region": "Outaouais",
+      "city": "Gatineau",
+      "latitude": 45.4765,
+      "longitude": -75.7013,
+      "population_weight": 410000,
+      "urbanicity": "urban",
+      "latitude_jitter": 0.16,
+      "longitude_jitter": 0.18,
+      "rurality": 0.28,
+      "transit_mean": 0.61
+    },
+    {
+      "region": "Estrie",
+      "city": "Sherbrooke",
+      "latitude": 45.4042,
+      "longitude": -71.8929,
+      "population_weight": 505000,
+      "urbanicity": "regional",
+      "latitude_jitter": 0.18,
+      "longitude_jitter": 0.2,
+      "rurality": 0.34,
+      "transit_mean": 0.56
+    },
+    {
+      "region": "Mauricie",
+      "city": "Trois-Rivières",
+      "latitude": 46.3432,
+      "longitude": -72.543,
+      "population_weight": 285000,
+      "urbanicity": "regional",
+      "latitude_jitter": 0.2,
+      "longitude_jitter": 0.22,
+      "rurality": 0.42,
+      "transit_mean": 0.5
+    },
+    {
+      "region": "Saguenay-Lac-Saint-Jean",
+      "city": "Saguenay",
+      "latitude": 48.4284,
+      "longitude": -71.0685,
+      "population_weight": 280000,
+      "urbanicity": "remote",
+      "latitude_jitter": 0.25,
+      "longitude_jitter": 0.28,
+      "rurality": 0.55,
+      "transit_mean": 0.42
+    }
+  ],
+  "seasonality": {
+    "winter_months": [12, 1, 2, 3],
+    "summer_low_donation_months": [6, 7, 8],
+    "surgery_rebound_months": [2, 3, 9, 10, 11],
+    "trauma_high_months": [6, 7, 8, 12],
+    "flu_season_months": [11, 12, 1, 2, 3],
+    "holiday_low_collection_dates": ["01-01", "06-24", "07-01", "12-25", "12-26"]
+  },
+  "weather": {
+    "provider": "eccc_public_climate_api",
+    "winter_disruption_base_probability": 0.045,
+    "ice_storm_inventory_delay_days": 1.8,
+    "snowfall_route_disruption_weight": 0.32,
+    "rain_route_disruption_weight": 0.18
+  },
+  "horizons": {
+    "donor": {
+      "short_days": 30,
+      "medium_days": 90,
+      "long_days": 180
+    },
+    "stockout": {
+      "urgent_days": 7,
+      "short_days": 30,
+      "medium_days": 90,
+      "long_days": 180
+    }
+  },
+  "inventory": {
+    "simulation_paths": 1000,
+    "safety_thresholds": {
+      "default": 1.0
+    },
+    "age_buckets_days": [7, 14, 21, 28],
+    "remaining_shelf_life_buckets_days": [2, 7, 14]
+  },
+  "donor_policy": {
+    "contact_frequency_cap_days": 30,
+    "fatigue_penalty_enabled": true,
+    "min_days_between_contacts": 14
+  }
+}

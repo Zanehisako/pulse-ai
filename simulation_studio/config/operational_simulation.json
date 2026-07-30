@@ -1,0 +1,81 @@
+{
+  "version": "2026-06-13",
+  "enabled": true,
+  "max_hospitals": 12,
+  "min_hospitals": 1,
+  "include_blood_banks": true,
+  "blood_bank_center_names": [
+    "H\u00e9ma-Qu\u00e9bec Lebourgneuf",
+    "H\u00e9ma-Qu\u00e9bec Sainte-Foy"
+  ],
+  "include_mobile_from_strategy": true,
+  "hospital_capacity": {
+    "nurses": 3,
+    "lab": 2,
+    "processing": 1
+  },
+  "hospital_hours": [
+    0.0,
+    24.0
+  ],
+  "geo_bbox": {
+    "north": 46.86,
+    "south": 46.76,
+    "east": -71.17,
+    "west": -71.31
+  },
+  "component_split": {
+    "RBC": 0.58,
+    "PLATELETS": 0.27,
+    "PLASMA": 0.15
+  },
+  "fallback_to_default_centers": true,
+  "demand_weight_from_usage": true,
+  "usage_demand_weight_floor": 1.0,
+  "usage_demand_weight_cap": 2.5,
+  "use_django_centers": true,
+  "max_django_centers": 50,
+  "django_center_type_map": {
+    "fixe": "blood_bank",
+    "mobile": "mobile",
+    "hopital": "hospital",
+    "clinique": "hospital",
+    "*": "blood_bank"
+  },
+  "django_capacity_divisors": {
+    "nurses": 30,
+    "lab": 60,
+    "processing": 90
+  },
+  "django_default_capacity": {
+    "hospital": {
+      "nurses": 4,
+      "lab": 3,
+      "processing": 2
+    },
+    "blood_bank": {
+      "nurses": 4,
+      "lab": 2,
+      "processing": 2
+    },
+    "mobile": {
+      "nurses": 2,
+      "lab": 1,
+      "processing": 1
+    }
+  },
+  "django_default_hours": {
+    "hospital": [
+      0,
+      24
+    ],
+    "blood_bank": [
+      7.25,
+      19.75
+    ],
+    "mobile": [
+      9,
+      18
+    ]
+  }
+}

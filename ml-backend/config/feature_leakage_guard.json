@@ -1,0 +1,50 @@
+{
+  "blocked_exact": [
+    "blood_shortage",
+    "ideal_donor_probability",
+    "stockout_next_day",
+    "heavy_demand_next_day",
+    "last_donation_date",
+    "as_of_date"
+  ],
+  "blocked_prefixes": [
+    "days_until_",
+    "stockout_within_",
+    "donated_within_",
+    "shortage_risk_next_",
+    "future_",
+    "next_donation_",
+    "wastage_next_"
+  ],
+  "blocked_suffixes": [
+    "_target",
+    "_label",
+    "_next_6m",
+    "_date",
+    "_after_prediction_"
+  ],
+  "blocked_substrings": [
+    "_next_day",
+    "snapshot_y_",
+    "future",
+    "future_stock",
+    "future_demand",
+    "future_issue",
+    "future_transfer",
+    "future_waste",
+    "future_expiry"
+  ],
+  "diagnostics": {
+    "enabled": true,
+    "high_correlation_threshold": 0.95
+  },
+  "allowed_entity_features": [
+    "blood_type"
+  ],
+  "allowed_known_future_fields": [
+    "known_expiry_date",
+    "scheduled_delivery_date",
+    "scheduled_collection_date",
+    "planned_appointment_date"
+  ]
+}

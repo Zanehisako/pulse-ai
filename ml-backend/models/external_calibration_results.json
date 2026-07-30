@@ -1,0 +1,107 @@
+{
+  "blood_type_distribution": {
+    "O+": {
+      "synthetic": 0.3813,
+      "real_quebec": 0.39,
+      "abs_error": 0.0087
+    },
+    "A+": {
+      "synthetic": 0.3388,
+      "real_quebec": 0.33,
+      "abs_error": 0.0088
+    },
+    "B+": {
+      "synthetic": 0.0904,
+      "real_quebec": 0.09,
+      "abs_error": 0.0004
+    },
+    "AB+": {
+      "synthetic": 0.0315,
+      "real_quebec": 0.03,
+      "abs_error": 0.0015
+    },
+    "O-": {
+      "synthetic": 0.0695,
+      "real_quebec": 0.07,
+      "abs_error": 0.0005
+    },
+    "A-": {
+      "synthetic": 0.0595,
+      "real_quebec": 0.06,
+      "abs_error": 0.0005
+    },
+    "B-": {
+      "synthetic": 0.0192,
+      "real_quebec": 0.02,
+      "abs_error": 0.0008
+    },
+    "AB-": {
+      "synthetic": 0.0098,
+      "real_quebec": 0.01,
+      "abs_error": 0.0002
+    }
+  },
+  "shelf_life_match": true,
+  "wastage_rates": {
+    "Red blood cells": {
+      "synthetic_rate": 0.0207,
+      "real_range": [
+        0.015,
+        0.03
+      ],
+      "in_range": "True"
+    },
+    "Plasma": {
+      "synthetic_rate": 0.0076,
+      "real_range": [
+        0.005,
+        0.01
+      ],
+      "in_range": "True"
+    },
+    "Platelets": {
+      "synthetic_rate": 0.083,
+      "real_range": [
+        0.05,
+        0.12
+      ],
+      "in_range": "True"
+    }
+  },
+  "donor_return_rate": {
+    "synthetic_6m": 0.5181,
+    "real_12m": 0.5,
+    "plausible": true
+  },
+  "rare_type_shortage_frequency": {
+    "synthetic_shortage_signal_days_year": 226.3,
+    "real_critical_days_range": [
+      5,
+      15
+    ],
+    "in_range": false,
+    "note": "Synthetic uses 7d-forward stockout probability; real is critical shortage days. Failing this check blocks real-operation claims."
+  },
+  "donor_age": {
+    "synthetic_mean": 41.7,
+    "synthetic_range": [
+      18,
+      70
+    ],
+    "real_eligible_range": [
+      18,
+      70
+    ],
+    "compliant": true
+  },
+  "inter_donation_interval": {
+    "synthetic_mean_recency": 259.0,
+    "real_min_interval": 56,
+    "compliant": true
+  },
+  "summary": {
+    "total_checks": 7,
+    "passed": "6",
+    "calibration_score": 0.86
+  }
+}

@@ -1,0 +1,69 @@
+% =============================================================================
+%  Thesis Section — 3.5  Conception des modèles
+%  Design-level description: forecasting horizons, multi-horizon strategy,
+%  ensemble learning, and anomaly detection
+% =============================================================================
+%  Prerequisites in preamble:
+%    \usepackage{booktabs, amsmath, hyperref}
+% =============================================================================
+
+\section{Model Design}
+\label{sec:model-conception}
+
+The model design adopted in PIOS was guided by a practical objective: support decision-making at different temporal scales in blood supply management. In this context, immediate operational actions, short planning cycles, and broader strategic adjustments do not rely on the same type of information. For this reason, the system was not conceived around a single universal predictor. Instead, it was structured as a set of complementary modelling components, each serving a distinct role within the overall decision process.
+
+This design aims not only to improve predictive performance, but also to produce outputs that are interpretable, operationally relevant, and robust under changing conditions. Four main principles structure this approach: the distinction between forecasting horizons, the coordination of these horizons within a multi-horizon strategy, the use of ensemble learning, and the integration of anomaly detection.
+
+\subsection{Short-, Medium-, and Long-Term Models}
+\label{sec:short-medium-long-models}
+
+A first design decision was to distinguish between short-, medium-, and long-term forecasting. This separation reflects the fact that prediction needs vary with time scale. The useful signals, the acceptable level of uncertainty, and the type of action supported by the model are not the same for the next few hours, the next few days, or a longer planning period.
+
+The \textbf{short-term} horizon is intended for immediate operational support. Its role is to identify near-term risks such as shortages, sudden demand increases, or local disruptions. At this level, the model must remain sensitive to recent changes and react quickly to emerging patterns.
+
+The \textbf{medium-term} horizon supports tactical planning. It is used to anticipate pressure over the coming days, adjust collection efforts, and prepare resource allocation decisions. Compared with short-term forecasting, the emphasis here is less on immediate reaction and more on balancing responsiveness with stability.
+
+The \textbf{long-term} horizon is designed for strategic orientation. Its purpose is not to capture fine-grained short-term variation, but rather to reveal broader tendencies such as recurring pressure periods, seasonal effects, or structural capacity needs. In this sense, long-term forecasting provides direction rather than immediate operational guidance.
+
+This three-level structure improves clarity and avoids assigning incompatible objectives to a single model. Each horizon is therefore associated with a distinct design logic: responsiveness for the short term, balance for the medium term, and stability for the long term.
+
+\subsection{Multi-Horizon Strategy}
+\label{sec:multi-horizon-strategy}
+
+Defining several forecasting horizons is useful only if they can be combined coherently. This led to the adoption of a multi-horizon strategy in which predictions are treated as complementary views of the same system rather than as isolated outputs.
+
+In this framework, short-term forecasts provide immediate warning signals, medium-term forecasts add context and continuity, and long-term forecasts offer a broader strategic perspective. The objective is not to make these horizons compete, but to organise them according to their role in decision-making.
+
+Such a strategy addresses two common issues. First, it reduces the risk of overreacting to short-term noise. Second, it helps interpret situations in which short-term and long-term signals appear to diverge. For example, a temporary operational tension may occur within an otherwise stable long-term trend. By combining horizons, the system can distinguish between urgent local variation and more persistent structural change.
+
+This design also improves interpretability. A recommendation can be explained in terms of whether it is driven by an immediate risk, a developing trend, or a broader long-term pattern. In a healthcare-related setting, this distinction is important because model outputs must remain understandable to non-technical users.
+
+\subsection{Ensemble Learning (Stacking, Weighting)}
+\label{sec:ensemble-learning}
+
+To further improve robustness, the modelling strategy incorporates \textbf{ensemble learning}. The underlying idea is that different models capture different aspects of the data, and that combining them can produce more reliable predictions than relying on a single model.
+
+This choice is particularly relevant in PIOS because blood supply dynamics are influenced by multiple interacting factors, including demand variability, donor behaviour, logistics, and temporal effects. No single modelling approach can be expected to represent all these dimensions equally well in every situation.
+
+Two combination principles were retained: \textbf{stacking} and \textbf{weighting}.
+
+\textbf{Stacking} follows a two-level logic. Several base models first generate their own predictions, and a higher-level model then learns how to combine these outputs into a final estimate. Conceptually, this allows the system to exploit model diversity in a structured way.
+
+\textbf{Weighting} is a simpler and more transparent approach in which each model contributes to the final prediction according to an assigned weight. These weights may reflect past performance, stability, or relevance for a given horizon. This method is especially useful when interpretability is a priority.
+
+From a design perspective, these two approaches are complementary rather than exclusive. Weighting offers simplicity and transparency, while stacking provides greater flexibility when relationships between model outputs become more complex. In both cases, the objective is the same: reduce dependence on any single model and improve the robustness of the final prediction.
+
+\subsection{Anomaly Detection}
+\label{sec:anomaly-detection}
+
+The final component of the model design is \textbf{anomaly detection}. In a sensitive application such as blood supply management, prediction alone is not sufficient. The system must also be able to identify situations that deviate from expected behaviour.
+
+In PIOS, anomaly detection was conceived as a complementary monitoring layer. Its role is to flag unusual situations such as abrupt demand changes, abnormal stock levels, unexpected logistical disruptions, or shifts in the statistical structure of the data. This function is important both for operational safety and for model reliability.
+
+Two categories of anomalies were considered. The first concerns \textbf{operational anomalies}, which correspond to unusual events in the functioning of the system itself, such as sudden shortages or atypical demand surges. The second concerns \textbf{data anomalies}, which reflect changes in the input data distribution and are related to the broader issue of data drift.
+
+Distinguishing between these two categories is important because they do not require the same response. An operational anomaly may justify an alert or immediate intervention, whereas a data anomaly may indicate the need for closer monitoring, model reassessment, or retraining.
+
+Overall, anomaly detection strengthens the modelling framework by adding a layer of caution and continuous surveillance. It helps ensure that the system remains reliable not only under normal conditions, but also when the environment becomes unstable or unusual.
+
+In summary, the model design in PIOS is based on four complementary principles: separating forecasting horizons, coordinating them through a multi-horizon strategy, combining models through ensemble learning, and monitoring abnormal situations through anomaly detection. Together, these choices form a coherent design aimed at producing predictions that are not only accurate, but also interpretable, robust, and useful for decision-making.

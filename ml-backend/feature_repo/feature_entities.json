@@ -1,0 +1,8 @@
+{
+  "entity_suffixes": ["_id"],
+  "dataset_entities": {
+    "hospital_long_term_shortage_features": ["hospital_id", "blood_type"],
+    "hospital_shortage_features": ["hospital_id", "blood_type"],
+    "stockout_sequence_features": ["hospital_id", "blood_type"]
+  }
+}

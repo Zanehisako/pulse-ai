@@ -1,0 +1,47 @@
+{
+  "version": "2026-06-15",
+  "enabled": true,
+  "ml_config_root": "../backendMulti/ml/config",
+  "scheduled_predictions_file": "scheduled_predictions.json",
+  "simulation_config_file": "simulation_config.json",
+  "model_catalog_file": "config.json",
+  "digital_twin_config_file": "digital_twin.json",
+  "entity_source_map": {
+    "inventory.tasks.stockout_supply_entities": "simulation_studio.app.standalone_entities.supply_entities",
+    "inventory.tasks.donor_entities": "simulation_studio.app.standalone_entities.donor_entities"
+  },
+  "job_ids": [],
+  "refresh": {
+    "use_digital_twin_sync_defaults": true,
+    "advance_operational_tick_before_predict": true
+  },
+  "studio_twin": {
+    "always_run_predictions_for_ui": true,
+    "persist_twin_run_to_django": true,
+    "description": "When Django is running, the digital twin reads predictions from Postgres via digital_twin.capture_operational_rows (same as the main app). Standalone in-process ML runs only if Django is unavailable. persist_twin_run_to_django creates a TwinRun row for frame/event persistence."
+  },
+  "scheduled_predictions": {
+    "default_loading_policy": {
+      "primary": "local_registry",
+      "fallbacks": ["mlflow_registry"],
+      "default_model_version": "champion",
+      "fail_if_all_unavailable": true,
+      "record_source_metadata": true
+    }
+  },
+  "ml_runtime": {
+    "require_django_setup": true,
+    "django_settings_module": "backendMulti.settings",
+    "env": {
+      "PIOS_MLFLOW_HTTP_TIMEOUT_SECONDS": "30"
+    }
+  },
+  "model_catalog_filter": {
+    "exclude_types": ["tool", "orchestrator"],
+    "require_enabled": true
+  },
+  "audit": {
+    "log_job_summary": true,
+    "log_entity_counts": true
+  }
+}

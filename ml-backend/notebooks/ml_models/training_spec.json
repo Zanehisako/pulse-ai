@@ -1,0 +1,39 @@
+{
+  "models": [
+    {
+      "id": "donor_prediction",
+      "dataset_csv": "datasets/blood_registry_sythentic/data/blood_donation_registry_ml_ready.csv",
+      "target_column": "donated_next_6m",
+      "task": "classification",
+      "algorithm": "logistic_regression",
+      "timestamp_column": "as_of_date",
+      "entity_column": "donor_id",
+      "feature_view_name": "donor_prediction_features",
+      "feature_service_name": "donor_prediction_v1",
+      "model_registry_name": "pios_donor_prediction",
+      "test_size": 0.2,
+      "random_state": 42
+    },
+    {
+      "id": "xgb_demand_forecast_j+30",
+      "dataset_csv": "datasets/synthetic_bloodbank_daily.csv",
+      "target_column": "heavy_demand_next_day",
+      "task": "classification",
+      "algorithm": "xgboost_classifier",
+      "timestamp_column": "date",
+      "entity_columns": [
+        "hospital",
+        "blood_type"
+      ],
+      "group_by_columns": [
+        "hospital",
+        "blood_type"
+      ],
+      "feature_view_name": "xgb_demand_forecast_j30_features",
+      "feature_service_name": "xgb_demand_forecast_j30_v1",
+      "model_registry_name": "pios_xgb_demand_forecast_j30",
+      "test_size": 0.2,
+      "random_state": 42
+    }
+  ]
+}

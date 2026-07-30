@@ -1,0 +1,379 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: pios-postgres
+    networks:
+      - default
+      - sonar-network
+    environment:
+      POSTGRES_DB: pios
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      # These are consumed by init-db.sh
+      CORE_DB_USER: core_user
+      CORE_DB_PASSWORD: core_pass
+      ML_DB_USER: ml_user
+      ML_DB_PASSWORD: ml_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../config/postgres:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d pios"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.22.4
+    mem_limit: 1g
+    container_name: pios-mlflow
+    networks:
+      - default
+    ports:
+      - "8889:8889"
+    volumes:
+      - ../../mlflow_artifacts:/mlflow/artifacts
+    entrypoint: bash -c "pip install psycopg2-binary -q && mlflow server \
+      --backend-store-uri postgresql://admin:admin@postgres:5432/mlflow \
+      --artifacts-destination /mlflow/artifacts \ --serve-artifacts \ --host
+      0.0.0.0 \ --port 8889"
+    #entrypoint: bash -c "pip install psycopg2-binary -q && mlflow server --backend-store-uri postgresql://admin:admin@postgres:5432/mlflow --artifacts-destination /mlflow/artifacts --default-artifact-root mlflow-artifacts:/ --serve-artifacts --host 0.0.0.0 --port 8889"
+    #entrypoint: bash -c "pip install psycopg2-binary -q && mlflow server --backend-store-uri postgresql://admin:admin@postgres:5432/mlflow --default-artifact-root /mlflow/artifacts --serve-artifacts --host 0.0.0.0 --port 8889"
+    depends_on:
+      postgres:
+        condition: service_healthy
+  sonarqube:
+    image: sonarqube:9.9.8-community
+    profiles: ["sonar"]
+    container_name: sonarqube
+    depends_on:
+      sonar-db:
+        condition: service_healthy
+    ports:
+      - "9000:9000"
+    environment:
+      # Database connection
+      - SONAR_JDBC_URL=jdbc:postgresql://sonar-db:5432/sonarqube
+      - SONAR_JDBC_USERNAME=sonar
+      #- SONAR_JDBC_PASSWORD=${POSTGRES_PASSWORD}
+      - SONAR_JDBC_PASSWORD=admin
+      - SONAR_ADMIN_PASSWORD=admin123
+      # Java options for better performance in limited environments
+      - SONAR_WEB_JAVAOPTS=-Xmx512m -Xms128m
+      - SONAR_CE_JAVAOPTS=-Xmx512m -Xms128m
+      - SONAR_SEARCH_JAVAOPTS=-Xmx512m -Xms512m
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:9000/api/system/status | grep -q 'UP'",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    networks:
+      - sonar-network
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 131072
+        hard: 131072
+  scanner:
+    image: sonarsource/sonar-scanner-cli:5
+    container_name: pios-sonar-scanner
+    depends_on:
+      sonarqube:
+        condition: service_healthy
+    volumes:
+      #- ../../backendMulti:/usr/src
+      - ../../:/usr/src
+    environment:
+      - SONAR_HOST_URL=http://sonarqube:9000
+      - SONAR_TOKEN=${SONAR_TOKEN}
+    networks:
+      - sonar-network
+    profiles:
+      - scan # Only run when explicitly requested
+  sonar-db:
+    image: postgres:16
+    profiles: ["sonar"]
+    container_name: pios-sonar-db
+    environment:
+      POSTGRES_USER: sonar
+      #POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: sonarqube
+    volumes:
+      - sonar_postgres_data:/var/lib/postgresql/data
+    # healthcheck:
+    #   test: ["CMD-SHELL", "pg_isready -U sonar"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "sonar", "-d", "sonarqube"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - sonar-network
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6.0
+    container_name: keycloak
+    command: start-dev --import-realm --db=postgres
+    environment:
+      # KEYCLOAK_ADMIN: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      # KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: admin
+      KC_DB_PASSWORD: admin
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../config/keycloak-export:/opt/keycloak/data/import:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+  backend-multi:
+    build:
+      context: ../../backendMulti # points to your Django app
+      dockerfile: ../infrastructure/dockerFiles/DockerfileBackend
+      args:
+        PIOS_PYPROJECT_OPTIONAL_GROUPS: ${PIOS_BACKEND_PYPROJECT_OPTIONAL_GROUPS-training}
+        APP_VERSION: ${APP_VERSION:-dev}
+    image: pios-backend:${APP_VERSION:-dev}
+    container_name: pios-backend
+    networks:
+      - default
+    volumes:
+      - xlam_models:/app/models/gguf
+      - ../../ml-backend/models:/app/ml/models
+      - ../../ml-backend/config:/ml-backend/config:ro
+      - ../../ml-backend/datasets:/ml-backend/datasets
+      - ../../ml-backend/datasets_featues_labels_seperated:/ml-backend/datasets_featues_labels_seperated
+    ports:
+      - "8000:8000"
+    shm_size: "2gb"
+    mem_limit: 8g
+    environment:
+      DJANGO_SETTINGS_MODULE: backendMulti.settings
+      DJANGO_DEBUG: "1"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: pios
+      DB_USER: admin
+      DB_PASSWORD: admin
+      MLFLOW_TRACKING_URI: http://mlflow:8889
+      PIOS_MODELS_DIR: /app/ml/models
+      PIOS_SOTA_CATALOG_PATH: /ml-backend/config/sota_model_catalog.json
+      PIOS_SOTA_DATASETS_DIR: /ml-backend/datasets_featues_labels_seperated
+      PIOS_XLAM_MODEL_DIR: /app/models/gguf
+      PIOS_ORCH_DB_SUPPLY_CSV_PATH: /ml-backend/datasets_featues_labels_seperated/hospital_supply_features.parquet
+      PIOS_ORCH_DB_DONOR_CSV_PATH: /ml-backend/datasets/blood_registry_sythentic/data/blood_donation_registry_ml_ready.csv
+      PIOS_ORCH_SIMULATION_BASE_URL: http://simulation-studio:8010
+      PIOS_XLAM_CPU_THREADS: 4
+      PIOS_XLAM_N_CTX: 4096
+      # keycloak settings for backend authentication
+      KEYCLOAK_SERVER_URL: http://keycloak:8080/
+      KEYCLOAK_REALM_NAME: pios
+      KEYCLOAK_CLIENT_ID: django-backend
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD:-admin}
+      PIOS_API_DOCS_AUTO_AUTH_ENABLED: ${PIOS_API_DOCS_AUTO_AUTH_ENABLED:-1}
+      PIOS_API_DOCS_TOKEN_ROUTE: ${PIOS_API_DOCS_TOKEN_ROUTE:-api/docs/auth-token/}
+      PIOS_API_DOCS_SECURITY_SCHEME: "${PIOS_API_DOCS_SECURITY_SCHEME:-Bearer Authentication}"
+      PIOS_API_DOCS_KEYCLOAK_CLIENT_ID: ${PIOS_API_DOCS_KEYCLOAK_CLIENT_ID:-pios-react}
+      PIOS_API_DOCS_KEYCLOAK_CLIENT_SECRET: ${PIOS_API_DOCS_KEYCLOAK_CLIENT_SECRET:-}
+      # PIOS_XLAM_MODEL_ID: xlam_7b_q2_k
+      # PIOS_XLAM_INIT_MODE: background
+      # PIOS_XLAM_DISABLE_LLM: 0
+      # Simulation overrides (leave unset to use simulation_config.json defaults)
+      # PIOS_SIMULATION_ENABLED: "1"       # "1" = on, "0" = off
+      # PIOS_SIMULATION_TICK_MINUTES: "5"  # tick interval in minutes
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      simulation-studio:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+  # celery-worker:
+  #   build:
+  #     context: ../../backendMulti
+  #     dockerfile: ../infrastructure/dockerFiles/DockerfileBackend
+  #     args:
+  #       PIOS_PYPROJECT_OPTIONAL_GROUPS: ${PIOS_BACKEND_PYPROJECT_OPTIONAL_GROUPS:-}
+  #   container_name: pios-celery-worker
+  #   networks:
+  #     - default
+  #   volumes:
+  #     - xlam_models:/app/models/gguf
+  #     - ../../ml-backend/models:/app/ml/models
+  #     - ../../ml-backend/datasets:/ml-backend/datasets
+  #   command: celery -A backendMulti worker --loglevel=info
+  #   environment:
+  #     DJANGO_SETTINGS_MODULE: backendMulti.settings
+  #     DB_HOST: postgres
+  #     DB_PORT: 5432
+  #     DB_NAME: pios
+  #     DB_USER: admin
+  #     DB_PASSWORD: admin
+  #     CELERY_BROKER_URL: redis://redis:6379/0
+  #     CELERY_RESULT_BACKEND: redis://redis:6379/0
+  #     MLFLOW_TRACKING_URI: http://mlflow:8889
+  #     PIOS_MODELS_DIR: /app/ml/models
+  #     PIOS_XLAM_MODEL_DIR: /app/models/gguf
+  #     PIOS_ORCH_DB_SUPPLY_CSV_PATH: /ml-backend/datasets/synthetic_bloodbank_daily.csv
+  #     PIOS_ORCH_DB_DONOR_CSV_PATH: /ml-backend/datasets/blood_registry_sythentic/data/blood_donation_registry_ml_ready.csv
+  #     PIOS_ORCH_SIMULATION_BASE_URL: http://simulation-studio:8010
+  #     PIOS_XLAM_CPU_THREADS: 4
+  #     PIOS_XLAM_N_CTX: 4096
+  #     KEYCLOAK_SERVER_URL: http://keycloak:8080/
+  #     KEYCLOAK_REALM_NAME: pios
+  #     KEYCLOAK_CLIENT_ID: django-backend
+  #     KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+  #     KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME:-admin}
+  #     KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD:-admin}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_started
+  #     keycloak:
+  #       condition: service_started
+  #     simulation-studio:
+  #       condition: service_healthy
+  #     backend-multi:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  # celery-beat:
+  #   build:
+  #     context: ../../backendMulti
+  #     dockerfile: ../infrastructure/dockerFiles/DockerfileBackend
+  #     args:
+  #       PIOS_PYPROJECT_OPTIONAL_GROUPS: ${PIOS_BACKEND_PYPROJECT_OPTIONAL_GROUPS:-}
+  #   container_name: pios-celery-beat
+  #   networks:
+  #     - default
+  #   volumes:
+  #     - xlam_models:/app/models/gguf
+  #     - ../../ml-backend/models:/app/ml/models
+  #     - ../../ml-backend/datasets:/ml-backend/datasets
+  #     - celery_beat_schedule:/app/celery-beat-schedule
+  #   command: celery -A backendMulti beat --loglevel=info --schedule /app/celery-beat-schedule/celerybeat-schedule
+  #   environment:
+  #     DJANGO_SETTINGS_MODULE: backendMulti.settings
+  #     DB_HOST: postgres
+  #     DB_PORT: 5432
+  #     DB_NAME: pios
+  #     DB_USER: admin
+  #     DB_PASSWORD: admin
+  #     CELERY_BROKER_URL: redis://redis:6379/0
+  #     CELERY_RESULT_BACKEND: redis://redis:6379/0
+  #     MLFLOW_TRACKING_URI: http://mlflow:8889
+  #     PIOS_MODELS_DIR: /app/ml/models
+  #     PIOS_XLAM_MODEL_DIR: /app/models/gguf
+  #     PIOS_ORCH_DB_SUPPLY_CSV_PATH: /ml-backend/datasets/synthetic_bloodbank_daily.csv
+  #     PIOS_ORCH_DB_DONOR_CSV_PATH: /ml-backend/datasets/blood_registry_sythentic/data/blood_donation_registry_ml_ready.csv
+  #     PIOS_ORCH_SIMULATION_BASE_URL: http://simulation-studio:8010
+  #     PIOS_XLAM_CPU_THREADS: 4
+  #     PIOS_XLAM_N_CTX: 4096
+  #     KEYCLOAK_SERVER_URL: http://keycloak:8080/
+  #     KEYCLOAK_REALM_NAME: pios
+  #     KEYCLOAK_CLIENT_ID: django-backend
+  #     KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+  #     KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME:-admin}
+  #     KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD:-admin}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_started
+  #     keycloak:
+  #       condition: service_started
+  #     simulation-studio:
+  #       condition: service_healthy
+  #     mongodb:
+  #       condition: service_healthy
+  #     backend-multi:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  simulation-studio:
+    build:
+      context: ../../simulation_studio
+      dockerfile: ../infrastructure/dockerFiles/DockerfileSimulation
+    container_name: pios-simulation-studio
+    healthcheck:
+      test: [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8010/api/health',
+          timeout=5).read()",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - default
+    ports:
+      - "8010:8010"
+    environment:
+      PIOS_SIM_OFFLINE: "1"
+      XDG_CACHE_HOME: /tmp/.cache
+      MPLCONFIGDIR: /tmp/matplotlib
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pios-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com # Change as desired
+      PGADMIN_DEFAULT_PASSWORD: admin # Change as desired
+    ports:
+      - "5050:80" # Host port 5050 maps to pgAdmin's web interface
+    depends_on:
+      - postgres
+    networks:
+      - default
+      - sonar-network
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ../config/pgadmin/servers.json:/pgadmin4/servers.json:ro
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonar_postgres_data:
+  postgres_data:
+  pgadmin_data:
+  xlam_models:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../../ml-backend/models/gguf
+
+networks:
+  sonar-network:
+    driver: bridge

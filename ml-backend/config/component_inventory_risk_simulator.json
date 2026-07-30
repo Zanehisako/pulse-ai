@@ -1,0 +1,147 @@
+{
+  "id": "component_inventory_risk_simulator",
+  "name": "Component Inventory Risk Simulator",
+  "enabled": true,
+  "type": "model",
+  "input_schema": {
+    "hospital_id": "string",
+    "blood_type": "string",
+    "component_type": "string",
+    "event_timestamp": "datetime",
+    "current_inventory": "number",
+    "reserved_units": "number",
+    "substitution_available_units": "number",
+    "safety_threshold_units": "number"
+  },
+  "output_schema": {
+    "p_stockout_0_7d": "number",
+    "p_stockout_0_30d": "number",
+    "p_stockout_0_90d": "number",
+    "p_stockout_0_180d": "number",
+    "expected_days_until_stockout": "number",
+    "p50_days_until_stockout": "number_or_null",
+    "median_status": "string"
+  },
+  "adapter": "composite_pyfunc",
+  "entrypoint": "pios_ml_backend.inventory.simulation_pyfunc.InventoryRiskSimulatorPyfunc",
+  "permissions": [
+    "read_inventory_state",
+    "read_inventory_history",
+    "read_demand_forecast",
+    "read_supply_forecast",
+    "read_waste_forecast",
+    "write_shadow_prediction"
+  ],
+  "timeout_seconds": 45,
+  "model_type": "composite_pyfunc",
+  "registered_model_name": "component_inventory_risk_simulator",
+  "description": "Composite pyfunc model that wraps demand, supply, and waste child models with a Monte Carlo inventory simulator. Produces stockout probabilities across horizons and days-until-stockout estimates. Primary stockout engine; replaces direct classifiers and regressors.",
+  "sub_models": {
+    "demand": {
+      "registered_model_name": "component_demand_quantile_forecast_model",
+      "alias": "champion",
+      "role": "demand_forecast",
+      "output_column": "demand_units"
+    },
+    "supply": {
+      "registered_model_name": "component_supply_forecast_model",
+      "alias": "champion",
+      "role": "supply_forecast",
+      "output_column": "supply_units"
+    },
+    "waste": {
+      "registered_model_name": "component_expiry_waste_model",
+      "alias": "champion",
+      "role": "waste_forecast",
+      "output_column": "wastage_units"
+    }
+  },
+  "simulation": {
+    "n_paths": 500,
+    "horizons_days": [7, 30, 90, 180],
+    "demand_cv": 0.15,
+    "supply_cv": 0.20,
+    "waste_cv": 0.15,
+    "safety_threshold": 1.0,
+    "stock_column": "current_inventory",
+    "seed": null
+  },
+  "inventory_policy": {
+    "reserved_units_column": "reserved_units",
+    "substitution_credit_column": "substitution_available_units",
+    "safety_threshold_column": "safety_threshold_units",
+    "age_bucket_waste_weights": {
+      "age_bucket_expiring_0_3d": 1.0,
+      "age_bucket_expiring_4_7d": 0.5
+    },
+    "issue_policy": "fefo",
+    "substitution_policy": "configured_credit_only"
+  },
+  "output_contract": {
+    "p_stockout_0_7d": {
+      "type": "probability",
+      "clip_min": 0.0,
+      "clip_max": 1.0
+    },
+    "p_stockout_0_30d": {
+      "type": "probability",
+      "clip_min": 0.0,
+      "clip_max": 1.0
+    },
+    "p_stockout_0_90d": {
+      "type": "probability",
+      "clip_min": 0.0,
+      "clip_max": 1.0
+    },
+    "p_stockout_0_180d": {
+      "type": "probability",
+      "clip_min": 0.0,
+      "clip_max": 1.0
+    },
+    "p_stockout_0_maxd": {
+      "type": "probability",
+      "clip_min": 0.0,
+      "clip_max": 1.0
+    },
+    "expected_days_until_stockout": {
+      "type": "days",
+      "clip_min": 0
+    },
+    "p10_days_until_stockout": {
+      "type": "days_or_null",
+      "clip_min": 0
+    },
+    "p50_days_until_stockout": {
+      "type": "days_or_null",
+      "clip_min": 0
+    },
+    "p90_days_until_stockout": {
+      "type": "days_or_null",
+      "clip_min": 0
+    },
+    "median_status": {
+      "type": "string"
+    }
+  },
+  "prediction_defaults": {
+    "forecast_selection": {
+      "enabled": false
+    },
+    "horizon_routing": {
+      "enabled": true,
+      "routes": {
+        "urgent_stockout": "p_stockout_0_7d",
+        "short_stockout": "p_stockout_0_30d",
+        "medium_stockout": "p_stockout_0_90d",
+        "long_stockout": "p_stockout_0_180d",
+        "days_estimate": "expected_days_until_stockout"
+      }
+    },
+    "output": {
+      "name": "inventory_risk",
+      "unit": "probability_and_days",
+      "task_type": "multi_output_probability_and_timing",
+      "apply_clipping": true
+    }
+  }
+}

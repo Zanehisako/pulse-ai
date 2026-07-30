@@ -1,0 +1,593 @@
+{
+  "demand": {
+    "Plasma | A+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.1706991463027896,
+      "tabular_metric": 0.16880019069309377,
+      "metric": "wape"
+    },
+    "Plasma | A-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.1601955612643832,
+      "tabular_metric": 0.1573286434972677,
+      "metric": "wape"
+    },
+    "Plasma | AB+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.17419404275999506,
+      "tabular_metric": 0.17308908931563,
+      "metric": "wape"
+    },
+    "Plasma | AB-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.1646185769683292,
+      "tabular_metric": 0.16308877560207302,
+      "metric": "wape"
+    },
+    "Plasma | B+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.16551617370528904,
+      "tabular_metric": 0.16487707965874518,
+      "metric": "wape"
+    },
+    "Plasma | B-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.17605165217287103,
+      "tabular_metric": 0.1753864332237986,
+      "metric": "wape"
+    },
+    "Plasma | O+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.15841795175765808,
+      "tabular_metric": 0.1562792447899114,
+      "metric": "wape"
+    },
+    "Plasma | O-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.17095134088915068,
+      "tabular_metric": 0.16984669268180375,
+      "metric": "wape"
+    },
+    "Platelets | A+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.18089813556559117,
+      "tabular_metric": 0.17958629353716737,
+      "metric": "wape"
+    },
+    "Platelets | A-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.1855548459715384,
+      "tabular_metric": 0.18629859184784145,
+      "metric": "wape"
+    },
+    "Platelets | AB+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.1764375928192179,
+      "tabular_metric": 0.17395214704568862,
+      "metric": "wape"
+    },
+    "Platelets | AB-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.17374625503511215,
+      "tabular_metric": 0.17072958286993603,
+      "metric": "wape"
+    },
+    "Platelets | B+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.18225933964230034,
+      "tabular_metric": 0.1809079460560062,
+      "metric": "wape"
+    },
+    "Platelets | B-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.16852763263313023,
+      "tabular_metric": 0.16630900671183227,
+      "metric": "wape"
+    },
+    "Platelets | O+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.1747479830393789,
+      "tabular_metric": 0.1746001294766606,
+      "metric": "wape"
+    },
+    "Platelets | O-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.18349563859604,
+      "tabular_metric": 0.18273986744858126,
+      "metric": "wape"
+    },
+    "Red blood cells | A+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.13747340112499268,
+      "tabular_metric": 0.13493866291443268,
+      "metric": "wape"
+    },
+    "Red blood cells | A-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.13221906454362828,
+      "tabular_metric": 0.12979790912982758,
+      "metric": "wape"
+    },
+    "Red blood cells | AB+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.12871586690785247,
+      "tabular_metric": 0.12453183544255668,
+      "metric": "wape"
+    },
+    "Red blood cells | AB-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.13468506896655852,
+      "tabular_metric": 0.1299044342953424,
+      "metric": "wape"
+    },
+    "Red blood cells | B+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.13301393745465145,
+      "tabular_metric": 0.13228655991164884,
+      "metric": "wape"
+    },
+    "Red blood cells | B-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.13866396786238566,
+      "tabular_metric": 0.13392980558710607,
+      "metric": "wape"
+    },
+    "Red blood cells | O+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.1380528688461056,
+      "tabular_metric": 0.13370320783803866,
+      "metric": "wape"
+    },
+    "Red blood cells | O-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.13124141149082758,
+      "tabular_metric": 0.1298104182964874,
+      "metric": "wape"
+    }
+  },
+  "supply": {
+    "Plasma | A+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.23273712006613123,
+      "tabular_metric": 0.22914920837077896,
+      "metric": "wape"
+    },
+    "Plasma | A-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.23600802604079593,
+      "tabular_metric": 0.23579097838058458,
+      "metric": "wape"
+    },
+    "Plasma | AB+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.23287943950556755,
+      "tabular_metric": 0.23092051853820056,
+      "metric": "wape"
+    },
+    "Plasma | AB-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.2333104053490314,
+      "tabular_metric": 0.2333120402159177,
+      "metric": "wape"
+    },
+    "Plasma | B+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.23245306917843114,
+      "tabular_metric": 0.2313233148495276,
+      "metric": "wape"
+    },
+    "Plasma | B-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.23319839014624819,
+      "tabular_metric": 0.23092388322674828,
+      "metric": "wape"
+    },
+    "Plasma | O+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.23580648719682157,
+      "tabular_metric": 0.23472101175228466,
+      "metric": "wape"
+    },
+    "Plasma | O-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.2341385998822297,
+      "tabular_metric": 0.23190923466827482,
+      "metric": "wape"
+    },
+    "Platelets | A+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.2167958684959835,
+      "tabular_metric": 0.21176740583950446,
+      "metric": "wape"
+    },
+    "Platelets | A-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.19542790243250885,
+      "tabular_metric": 0.19432183745057421,
+      "metric": "wape"
+    },
+    "Platelets | AB+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.21588823235630636,
+      "tabular_metric": 0.217061775908874,
+      "metric": "wape"
+    },
+    "Platelets | AB-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.19644048443152667,
+      "tabular_metric": 0.19547816171484983,
+      "metric": "wape"
+    },
+    "Platelets | B+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.21258202667240586,
+      "tabular_metric": 0.21274483744874192,
+      "metric": "wape"
+    },
+    "Platelets | B-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.18614682276538244,
+      "tabular_metric": 0.18917953171289556,
+      "metric": "wape"
+    },
+    "Platelets | O+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.2378242603628936,
+      "tabular_metric": 0.23464204067282285,
+      "metric": "wape"
+    },
+    "Platelets | O-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.1987086402052627,
+      "tabular_metric": 0.19809993883296936,
+      "metric": "wape"
+    },
+    "Red blood cells | A+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.17672581392915798,
+      "tabular_metric": 0.17338500467020954,
+      "metric": "wape"
+    },
+    "Red blood cells | A-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.17834453134320707,
+      "tabular_metric": 0.17812949575151565,
+      "metric": "wape"
+    },
+    "Red blood cells | AB+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.17885178364469015,
+      "tabular_metric": 0.17707658998858103,
+      "metric": "wape"
+    },
+    "Red blood cells | AB-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.18215005939451617,
+      "tabular_metric": 0.1824097761231756,
+      "metric": "wape"
+    },
+    "Red blood cells | B+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.18241258111660688,
+      "tabular_metric": 0.18055841061233457,
+      "metric": "wape"
+    },
+    "Red blood cells | B-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.1890935155820563,
+      "tabular_metric": 0.19081493388278117,
+      "metric": "wape"
+    },
+    "Red blood cells | O+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.1888969447264425,
+      "tabular_metric": 0.18724734866448522,
+      "metric": "wape"
+    },
+    "Red blood cells | O-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.17288720867172697,
+      "tabular_metric": 0.1764427541225748,
+      "metric": "wape"
+    }
+  },
+  "waste": {
+    "Plasma | A+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.13034551114459159,
+      "tabular_metric": 0.13382640960807188,
+      "metric": "wape"
+    },
+    "Plasma | A-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.1522613689501817,
+      "tabular_metric": 0.1528938565090098,
+      "metric": "wape"
+    },
+    "Plasma | AB+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.13674726340159152,
+      "tabular_metric": 0.14021386860608315,
+      "metric": "wape"
+    },
+    "Plasma | AB-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.15131163832014075,
+      "tabular_metric": 0.15168570381477867,
+      "metric": "wape"
+    },
+    "Plasma | B+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.1318281833948974,
+      "tabular_metric": 0.1330140249581918,
+      "metric": "wape"
+    },
+    "Plasma | B-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.1292033049501994,
+      "tabular_metric": 0.1306921030149703,
+      "metric": "wape"
+    },
+    "Plasma | O+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.13187454788319264,
+      "tabular_metric": 0.13073511290421133,
+      "metric": "wape"
+    },
+    "Plasma | O-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.1443015278603467,
+      "tabular_metric": 0.14583572851283538,
+      "metric": "wape"
+    },
+    "Platelets | A+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.10782940188645661,
+      "tabular_metric": 0.10839463303164242,
+      "metric": "wape"
+    },
+    "Platelets | A-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.09656056396498956,
+      "tabular_metric": 0.0971032976243436,
+      "metric": "wape"
+    },
+    "Platelets | AB+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.11737838047746377,
+      "tabular_metric": 0.1140928871181198,
+      "metric": "wape"
+    },
+    "Platelets | AB-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.09156389900411975,
+      "tabular_metric": 0.09282839946276991,
+      "metric": "wape"
+    },
+    "Platelets | B+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.10800803682701457,
+      "tabular_metric": 0.1070748205066017,
+      "metric": "wape"
+    },
+    "Platelets | B-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.09206252906533222,
+      "tabular_metric": 0.08765939674458982,
+      "metric": "wape"
+    },
+    "Platelets | O+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.12605398394662667,
+      "tabular_metric": 0.12810847306836434,
+      "metric": "wape"
+    },
+    "Platelets | O-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.09344961487341519,
+      "tabular_metric": 0.09388105056203179,
+      "metric": "wape"
+    },
+    "Red blood cells | A+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.06445591262189639,
+      "tabular_metric": 0.06540162058449503,
+      "metric": "wape"
+    },
+    "Red blood cells | A-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.0644482440614785,
+      "tabular_metric": 0.06746180270581752,
+      "metric": "wape"
+    },
+    "Red blood cells | AB+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.06742330155684194,
+      "tabular_metric": 0.07006525190419192,
+      "metric": "wape"
+    },
+    "Red blood cells | AB-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.06838953245753217,
+      "tabular_metric": 0.07032336224271632,
+      "metric": "wape"
+    },
+    "Red blood cells | B+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.07107504874113439,
+      "tabular_metric": 0.07265682790506711,
+      "metric": "wape"
+    },
+    "Red blood cells | B-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.0734774371231762,
+      "tabular_metric": 0.07497271524598344,
+      "metric": "wape"
+    },
+    "Red blood cells | O+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.06443409092911018,
+      "tabular_metric": 0.06473185264947931,
+      "metric": "wape"
+    },
+    "Red blood cells | O-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.06799089446729581,
+      "tabular_metric": 0.07022059873694234,
+      "metric": "wape"
+    }
+  },
+  "stockout": {
+    "Plasma | A+": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.9814536406072141,
+      "tabular_metric": 0.9813002638946882,
+      "metric": "auc"
+    },
+    "Plasma | A-": {
+      "selected": "neural_ft_transformer",
+      "neural_metric": 0.9656693056242783,
+      "tabular_metric": 0.9652304139864752,
+      "metric": "auc"
+    },
+    "Plasma | AB+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9748232406890779,
+      "tabular_metric": 0.9766638478169898,
+      "metric": "auc"
+    },
+    "Plasma | AB-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9706165089935144,
+      "tabular_metric": 0.9719286042790302,
+      "metric": "auc"
+    },
+    "Plasma | B+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9830729729967378,
+      "tabular_metric": 0.9843284356397337,
+      "metric": "auc"
+    },
+    "Plasma | B-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9666723837347486,
+      "tabular_metric": 0.9682291606444742,
+      "metric": "auc"
+    },
+    "Plasma | O+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9877681201881039,
+      "tabular_metric": 0.9878319924214208,
+      "metric": "auc"
+    },
+    "Plasma | O-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9649652747032758,
+      "tabular_metric": 0.9677860634269222,
+      "metric": "auc"
+    },
+    "Platelets | A+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9362198650462531,
+      "tabular_metric": 0.9421577618076963,
+      "metric": "auc"
+    },
+    "Platelets | A-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.8599399457584307,
+      "tabular_metric": 0.8727797775222255,
+      "metric": "auc"
+    },
+    "Platelets | AB+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9322161482834372,
+      "tabular_metric": 0.9397098558645497,
+      "metric": "auc"
+    },
+    "Platelets | AB-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.8948938346544346,
+      "tabular_metric": 0.9010129375188045,
+      "metric": "auc"
+    },
+    "Platelets | B+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9452718028182654,
+      "tabular_metric": 0.9481229964650622,
+      "metric": "auc"
+    },
+    "Platelets | B-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9114742535198385,
+      "tabular_metric": 0.9135538132811267,
+      "metric": "auc"
+    },
+    "Platelets | O+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9577110402626352,
+      "tabular_metric": 0.9600471448501469,
+      "metric": "auc"
+    },
+    "Platelets | O-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9080939271464055,
+      "tabular_metric": 0.9194612559969655,
+      "metric": "auc"
+    },
+    "Red blood cells | A+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9700836548850132,
+      "tabular_metric": 0.9714452847661676,
+      "metric": "auc"
+    },
+    "Red blood cells | A-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.970750651843229,
+      "tabular_metric": 0.9732620910903981,
+      "metric": "auc"
+    },
+    "Red blood cells | AB+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9684615960197793,
+      "tabular_metric": 0.969833189388953,
+      "metric": "auc"
+    },
+    "Red blood cells | AB-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9575095385174419,
+      "tabular_metric": 0.9577037911821705,
+      "metric": "auc"
+    },
+    "Red blood cells | B+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9667731173287879,
+      "tabular_metric": 0.9672810472354146,
+      "metric": "auc"
+    },
+    "Red blood cells | B-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.93196536130892,
+      "tabular_metric": 0.9363354865132419,
+      "metric": "auc"
+    },
+    "Red blood cells | O+": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9740483039053203,
+      "tabular_metric": 0.9766046633307838,
+      "metric": "auc"
+    },
+    "Red blood cells | O-": {
+      "selected": "tabular_gbdt",
+      "neural_metric": 0.9557835406443933,
+      "tabular_metric": 0.9586305256557475,
+      "metric": "auc"
+    }
+  },
+  "donor": {
+    "next_donation": "tabular_gbdt",
+    "time_to_donation": "tabular_gbdt",
+    "contact_response": "proxy_global_model",
+    "contact_propensity": "proxy_global_model",
+    "priority_policy": "policy_model"
+  }
+}

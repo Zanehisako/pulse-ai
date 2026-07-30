@@ -1,0 +1,76 @@
+{
+  "enabled": true,
+  "default_target": "stockout",
+  "routing_terms": [
+    "forecast",
+    "predict",
+    "probability",
+    "risk",
+    "horizon",
+    "within",
+    "next"
+  ],
+  "feature_keys": [
+    "prediction_horizon_days",
+    "forecast_horizon_days",
+    "horizon_days",
+    "prediction_timeframe",
+    "forecast_timeframe",
+    "timeframe",
+    "hospital_id",
+    "blood_type",
+    "component_type",
+    "donor_id"
+  ],
+  "targets": [
+    {
+      "target": "stockout",
+      "terms": [
+        "stock",
+        "stockout",
+        "shortage",
+        "hospital",
+        "inventory",
+        "demand",
+        "supply",
+        "units",
+        "wastage",
+        "trauma",
+        "surgery",
+        "surgeries",
+        "blood bank",
+        "blood supply"
+      ],
+      "feature_keys": [
+        "hospital_id",
+        "supply_id",
+        "current_inventory",
+        "current_stock_units",
+        "stock_end",
+        "units_used",
+        "units_collected",
+        "scheduled_surgeries",
+        "trauma_cases"
+      ]
+    },
+    {
+      "target": "donation",
+      "terms": [
+        "donor",
+        "donation",
+        "donate",
+        "next donation",
+        "donation probability",
+        "donor forecast",
+        "donor horizon"
+      ],
+      "feature_keys": [
+        "donor_id",
+        "recency_days",
+        "donation_count_last_12m",
+        "eligible_to_donate",
+        "readiness_score"
+      ]
+    }
+  ]
+}

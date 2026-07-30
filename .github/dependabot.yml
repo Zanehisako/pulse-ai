@@ -1,0 +1,38 @@
+version: 2
+updates:
+  # Django backend + ML runtime (canonical source for shared ML deps)
+  - package-ecosystem: "pip"
+    directory: "/backendMulti"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      ml-libs:
+        patterns: ["xgboost", "catboost", "lightgbm", "scikit-learn", "numpy", "pandas"]
+      django-stack:
+        patterns: ["Django*", "djangorestframework*", "drf-*", "daphne", "channels*"]
+      mlops:
+        patterns: ["mlflow*", "feast*", "pyarrow*", "pyspark*"]
+
+  # Training-only deps (torch, transformers, LLM fine-tuning stack, etc.)
+  # Shared deps are intentionally absent here — they are tracked via /backendMulti
+  - package-ecosystem: "pip"
+    directory: "/ml-backend"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "python"
+      - "ml-training"
+
+  # Simulation Studio FastAPI backend
+  - package-ecosystem: "pip"
+    directory: "/simulation_studio"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "python"
+      - "simulation"

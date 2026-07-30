@@ -1,0 +1,82 @@
+{
+  "selection_env_var": "PIOS_TRAINING_PROFILE",
+  "default_profile": "default",
+  "profiles": {
+    "default": {
+      "enabled": true,
+      "description": "Default training behavior with no local resource overrides.",
+      "environment": {},
+      "retry_on_exit_codes": [],
+      "retry_profiles": [],
+      "training_overrides": {}
+    },
+    "local_m1_quality": {
+      "enabled": true,
+      "description": "Apple Silicon 8GB quality-preserving profile: keep current data and candidates, cap native threads, skip non-predictive diagnostics.",
+      "environment": {
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "PIOS_TORCH_NUM_THREADS": "1",
+        "PIOS_TREE_MODEL_THREADS": "4"
+      },
+      "retry_on_exit_codes": [-11, -6],
+      "retry_profiles": [
+        "local_m1_quality_retry_2",
+        "local_m1_quality_retry_1"
+      ],
+      "training_overrides": {
+        "*": {
+          "resource": {
+            "thread_env_var": "PIOS_TREE_MODEL_THREADS",
+            "tree_model_threads": 4,
+            "override_configured_thread_params": true,
+            "candidate_thread_params": {
+              "catboost": ["thread_count"],
+              "lightgbm": ["n_jobs"],
+              "random_forest": ["n_jobs"],
+              "xgboost": ["n_jobs"]
+            }
+          },
+          "explainability": {
+            "shap": {
+              "enabled": false
+            }
+          },
+          "mlflow": {
+            "evaluate": {
+              "enabled": false
+            },
+            "input_example": {
+              "enabled": false
+            }
+          }
+        }
+      }
+    },
+    "local_m1_quality_retry_2": {
+      "inherits": "local_m1_quality",
+      "enabled": true,
+      "description": "Retry local M1 quality profile with two tree-model threads after a native-library segfault.",
+      "environment": {
+        "PIOS_TREE_MODEL_THREADS": "2"
+      },
+      "retry_on_exit_codes": [-11, -6],
+      "retry_profiles": [
+        "local_m1_quality_retry_1"
+      ]
+    },
+    "local_m1_quality_retry_1": {
+      "inherits": "local_m1_quality",
+      "enabled": true,
+      "description": "Final retry local M1 quality profile with one tree-model thread after repeated native-library segfaults.",
+      "environment": {
+        "PIOS_TREE_MODEL_THREADS": "1"
+      },
+      "retry_on_exit_codes": [],
+      "retry_profiles": []
+    }
+  }
+}

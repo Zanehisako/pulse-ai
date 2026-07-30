@@ -1,0 +1,58 @@
+{
+  "id": "donor_uplift_model",
+  "name": "Donor Uplift Model",
+  "enabled": false,
+  "type": "model",
+  "input_schema": {
+    "donor_id": "string",
+    "event_timestamp": "datetime",
+    "treatment_assignment": "object"
+  },
+  "output_schema": {
+    "uplift_score": "number"
+  },
+  "adapter": "disabled_placeholder",
+  "entrypoint": "training_scripts.train_donor_uplift",
+  "permissions": [
+    "disabled_until_holdout_data"
+  ],
+  "timeout_seconds": 30,
+  "reason": "Enable only when randomized outreach holdout data exists. Uplift claims require treatment/control groups with measurable donation outcomes.",
+  "uplift_is_causal_flag": false,
+  "model_type": "classification",
+  "registered_model_name": "donor_uplift_model",
+  "description": "Placeholder for causal uplift estimation. Requires randomized treatment assignment (contacted vs not contacted) with holdout groups. Currently disabled pending data availability.",
+  "data_requirements": {
+    "treatment_assignment": "randomized",
+    "control_holdout_required": true,
+    "minimum_holdout_size": 500,
+    "outcome_window_days": 180
+  },
+  "target": {
+    "column": "donated_next_6m",
+    "task_type": "classification"
+  },
+  "feature_engineering": {
+    "group_columns": ["donor_id"],
+    "timestamp_column": "event_timestamp",
+    "uplift_specific_features": [
+      "treatment_assignment_flag",
+      "treatment_channel",
+      "days_since_treatment",
+      "prior_treatment_count",
+      "prior_response_count"
+    ]
+  },
+  "training": {
+    "include_default_classifiers": false
+  },
+  "prediction_defaults": {
+    "output": {
+      "name": "uplift_score",
+      "unit": "probability_delta",
+      "task_type": "classification",
+      "clip_min": -1.0,
+      "clip_max": 1.0
+    }
+  }
+}

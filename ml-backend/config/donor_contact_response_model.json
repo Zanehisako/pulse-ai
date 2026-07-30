@@ -1,0 +1,166 @@
+{
+  "id": "donor_contact_response_model",
+  "name": "Donor Contact Response Model",
+  "enabled": true,
+  "type": "model",
+  "input_schema": {
+    "donor_id": "string",
+    "event_timestamp": "datetime",
+    "contact_proxy_features": "object"
+  },
+  "output_schema": {
+    "contact_response_score": "number",
+    "prediction": "number"
+  },
+  "adapter": "mlflow_pyfunc",
+  "entrypoint": "training_scripts.train_donor_contact_response",
+  "permissions": [
+    "read_donor_profile",
+    "read_donor_history",
+    "read_contact_history",
+    "write_shadow_prediction"
+  ],
+  "timeout_seconds": 30,
+  "dataset_source": "quebec_donor",
+  "model_type": "classification",
+  "registered_model_name": "donor_contact_response_model",
+  "description": "Architectural contact-response model using behavioral proxy features. Predicts donor engagement likelihood using donated_next_6m as temporary proxy target. True contact response targets (p_contact_response, p_appointment_if_contacted, p_usable_donation_if_contacted) require labeled contact event history (SMS/email/call logs with response outcomes) which is not currently available. Uplift claims are not supported.",
+  "uplift_is_causal_flag": false,
+  "data_availability_note": "Contact-response architecture is in place. Currently using donated_next_6m as proxy target with contact-proxy features (digital_contactability_score, operational_outreach_priority, emergency_outreach_priority, response_readiness_index, donor_momentum). True p_contact_response requires labeled contact event history with response outcomes.",
+  "target": {
+    "column": "donated_next_6m",
+    "task_type": "classification",
+    "output_name": "contact_response_score"
+  },
+  "feature_engineering": {
+    "group_columns": [
+      "donor_id"
+    ],
+    "timestamp_column": "event_timestamp",
+    "static_features": [
+      "age",
+      "sex",
+      "region",
+      "urbanicity",
+      "blood_type",
+      "is_rare_type",
+      "blood_type_scarcity",
+      "center_distance_km",
+      "travel_time_min",
+      "route_feasibility_flag",
+      "public_transit_access_score",
+      "digital_contactability_score",
+      "eligible_to_donate"
+    ],
+    "sequence_features": [
+      "recency_days",
+      "snapshot_days_until_eligible",
+      "donation_count_last_12m",
+      "donation_velocity",
+      "readiness_score",
+      "mobility_score",
+      "travel_burden_score",
+      "commitment_score",
+      "response_readiness_index",
+      "donor_momentum",
+      "emergency_outreach_priority",
+      "operational_outreach_priority"
+    ],
+    "lag_steps": [0]
+  },
+  "training": {
+    "include_default_classifiers": false,
+    "forbidden_feature_groups": [
+      "donor_outcome_proxy_scores"
+    ],
+    "threshold_optimization": {
+      "enabled": true,
+      "metric": "balanced_accuracy",
+      "min_threshold": 0.05,
+      "max_threshold": 0.85,
+      "steps": 81
+    },
+    "classification_candidates": [
+      {
+        "name": "xgboost",
+        "family": "xgboost",
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 5,
+          "learning_rate": 0.035,
+          "subsample": 0.88,
+          "colsample_bytree": 0.78,
+          "scale_pos_weight": 1,
+          "objective": "binary:logistic",
+          "random_state": 42
+        }
+      },
+      {
+        "name": "catboost",
+        "family": "catboost",
+        "params": {
+          "iterations": 200,
+          "depth": 6,
+          "learning_rate": 0.035,
+          "auto_class_weights": "Balanced",
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "random_seed": 42,
+          "verbose": false
+        }
+      },
+      {
+        "name": "lightgbm",
+        "family": "lightgbm",
+        "params": {
+          "n_estimators": 200,
+          "learning_rate": 0.035,
+          "num_leaves": 31,
+          "class_weight": "balanced",
+          "random_state": 42,
+          "n_jobs": 4,
+          "verbosity": -1
+        }
+      }
+    ],
+    "ensemble": {
+      "enabled": true,
+      "name": "contact_response_ensemble",
+      "weighting": "validation_brier",
+      "min_members": 2
+    }
+  },
+  "selection": {
+    "primary_metric": "brier_score",
+    "direction": "minimize",
+    "fallback_metrics": [
+      "log_loss",
+      "average_precision",
+      "roc_auc"
+    ]
+  },
+  "prediction_defaults": {
+    "forecast_selection": {
+      "enabled": true,
+      "target": "donation",
+      "primary_metric": "brier_score",
+      "direction": "minimize",
+      "fallback_metrics": [
+        "log_loss",
+        "average_precision",
+        "roc_auc"
+      ]
+    },
+    "horizon_routing": {
+      "enabled": false
+    },
+    "output": {
+      "name": "contact_response_score",
+      "unit": "score",
+      "task_type": "classification",
+      "clip_min": 0.0,
+      "clip_max": 1.0,
+      "apply_clipping": true
+    }
+  }
+}

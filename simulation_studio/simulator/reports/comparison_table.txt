@@ -1,0 +1,11 @@
+SCENARIO COMPARISON
+Scenario                     Strategy                Donated  Shortage%     Reward  Expired
+  Normal Operations          Baseline                    519      13.9%  -26771.1       15
+  Donor Decline Crisis       Mass Donor Campaign         703      37.2% -222915.2        8
+  Mass Casualty Demand Surge Emergency Sharing Ne       1470      56.1% -1059579.4        3
+  Transport & Infrastructure Full Crisis Response        275      54.5% -404467.2       46
+  Combined Crisis            Full Crisis Response        157      86.1% -1696351.1        4
+  Holiday Flu Wave           Full Crisis Response        758      24.3% -110214.2      118
+  Regional Testing Backlog   Lab Infrastructure I        654      28.9% -100599.1       25
+  Provincial Supply Crunch   Emergency Sharing Ne       1000      38.4% -231084.4       61
+  Post-Storm Surgical Backlo Full Crisis Response       1253      18.4%  -93331.3       75

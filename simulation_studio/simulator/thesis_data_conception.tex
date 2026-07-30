@@ -1,0 +1,529 @@
+% =============================================================================
+%  Thesis Section — 3.4  Conception des données
+%  Design-level description: MCD, MLD, Feature Store, Temporal management
+% =============================================================================
+%  Prerequisites in preamble:
+%    \usepackage{graphicx, booktabs, multirow, amsmath, hyperref}
+%    \graphicspath{{ml-backend/simulator/}}
+%  Figures referenced:
+%    figures/mcd_diagram.png
+%    figures/mld_tiers_diagram.png
+% =============================================================================
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+% 3.4  Conception des données
+% ─────────────────────────────────────────────────────────────────────────────
+
+\section{Conception des données}
+\label{sec:data-conception}
+
+The PIOS platform handles four families of data: (i)~operational data
+(users, alerts, notifications, ML model registry); (ii)~synthetic datasets
+that reproduce the statistical properties of a real blood-supply network;
+(iii)~feature views consumed by training and inference pipelines; and
+(iv)~temporal series that feed the simulator and the reinforcement-learning
+agents.  The subsections below present, in turn, the conceptual model, its
+logical translation, the feature-store architecture and the strategy for
+managing time-dependent data.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+% 3.4.1  Modèle Conceptuel (MCD)
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Modèle Conceptuel de Données (MCD)}
+\label{sec:mcd}
+
+The conceptual model identifies the domain entities, their principal
+attributes and the associations between them, independently of any storage
+technology.  Figure~\ref{fig:mcd} shows the entity-relationship diagram;
+the paragraphs below motivate the design of each domain group.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/mcd_diagram.png}
+\caption{Modèle Conceptuel de Données.  Solid arrows: foreign-key
+         associations; dashed arrows: soft (UUID-based) references.
+         Cardinalities use the $1{:}N$ / $M{:}N$ notation.}
+\label{fig:mcd}
+\end{figure}
+
+\paragraph{Authentication \& collaboration.}
+
+A central \textbf{User} entity supports email-based authentication and
+role management ($M{:}N$ with \textbf{Group} and \textbf{Permission}).
+Users interact through \textbf{Conversations} (team, mission or direct
+threads), each containing ordered \textbf{Messages} with a priority tag.
+Separating conversations by type allows the UI to filter views without
+adding structural complexity.
+
+\paragraph{Alerting \& notifications.}
+
+The alerting subsystem follows a \emph{rule $\to$ event $\to$ history}
+pattern.  An \textbf{AlertRule} encodes reusable trigger logic—scope
+(global, centre, hospital, blood type), trigger type (threshold gap,
+stock-and-forecast, stale alert, manual), severity, de-duplication window
+and escalation delay.  When a rule fires it creates an
+\textbf{AlertEvent} whose status progresses through \emph{open},
+\emph{acknowledged}, \emph{escalated} and \emph{resolved}.  Every
+transition is appended to an \textbf{AlertEventHistory} record, providing
+a full audit trail.  A \textbf{Notification} entity handles delivery
+(push / in-app) and is linked from AlertEvent by a soft UUID reference
+rather than a foreign key, which decouples alert lifecycle management from
+the notification channel.
+
+\paragraph{ML model registry \& observability.}
+
+Every deployed model is represented by an \textbf{MLModelConfig} entry
+that records its type, feature schema, example payloads and default
+inputs.  Inference calls produce \textbf{PredictionLog} records tied to
+the calling User and the config used, enabling usage analytics and latency
+monitoring.  An \textbf{OrchestratorVariant} tracks the LLM variants
+available to the tool-calling orchestrator (singleton constraint: only one
+active at a time).  A \textbf{ModelStats} entity stores per-model
+evaluation snapshots, while a \textbf{DriftReport} entity records the
+outcome of periodic distribution checks—creating a time-indexed
+observability series for each model.
+
+\paragraph{Dashboard cache.}
+
+A \textbf{ModelResponse} entity caches the last prediction payload for
+each combination of region, blood product, time horizon and alert level.
+This avoids redundant inference calls and lets the dashboard render
+instantly.
+
+\paragraph{Data versioning.}
+
+A lightweight \textbf{DataVersion} entity assigns a timestamp and a
+content hash to each logical data source, giving downstream consumers a
+cheap staleness check before re-fetching.
+
+\paragraph{Blood-supply domain (file-based).}
+
+Outside the relational store, three analytical entities model the supply
+chain: \textbf{Donor} (demographics, eligibility, logistics),
+\textbf{Hospital} (daily inventory flow, environmental context) and
+\textbf{SupplyPoint} (stock, lead time, stockout indicators).  These live
+as columnar Parquet files and are exposed through the feature store
+(Section~\ref{sec:feature-store}).
+
+\bigskip
+
+Table~\ref{tab:mcd-relationships} summarises the inter-entity
+relationships.
+
+\begin{table}[htbp]
+\centering
+\caption{Entity relationships in the MCD.}
+\label{tab:mcd-relationships}
+\small
+\begin{tabular}{@{}llcl@{}}
+\toprule
+\textbf{From} & \textbf{To} & \textbf{Card.} & \textbf{Design note} \\
+\midrule
+User            & Group / Permission   & $M{:}N$ & role-based access \\
+Conversation    & User                 & $M{:}N$ & flexible thread membership \\
+Message         & Conversation, User   & $N{:}1$ & immutable once created \\
+AlertEvent      & AlertRule            & $N{:}1$ & nullable (manual alerts) \\
+AlertEvent      & Notification         & $N{:}1$ & soft UUID link (decoupled) \\
+AlertEventHistory & AlertEvent         & $N{:}1$ & append-only audit log \\
+PredictionLog   & User, MLModelConfig  & $N{:}1$ & nullable (anonymous calls) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+% 3.4.2  Modèle Logique (MLD)
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Modèle Logique de Données (MLD)}
+\label{sec:mld}
+
+The MCD translates into two complementary storage tiers
+(Figure~\ref{fig:mld-tiers}):
+
+\begin{enumerate}
+\item A \textbf{relational tier} (PostgreSQL in production, SQLite for
+      development) managed by Django ORM, hosting all operational tables.
+\item A \textbf{columnar tier} (Parquet files) holding the analytical
+      datasets, accessed exclusively through the Feast feature store.
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/mld_tiers_diagram.png}
+\caption{Logical storage architecture.  Operational tables live in the
+         relational database; analytical datasets live as Parquet files
+         served through Feast.  The ML-backend microservice mirrors the
+         model-registry tables so it can operate independently of
+         Django.}
+\label{fig:mld-tiers}
+\end{figure}
+
+This separation is deliberate.  Operational data (alerts, prediction logs,
+model configs) requires transactional integrity, row-level updates and
+foreign-key enforcement—properties that a relational database provides
+naturally.  Analytical data (daily hospital inventories, donor snapshots,
+stockout features) is append-heavy, read in bulk for training, and
+benefits from columnar compression and predicate push-down—exactly what
+Parquet delivers.
+
+\paragraph{Relational tier — design choices.}
+
+The backend is organised into seven Django applications, each owning a
+cohesive set of tables.  Table~\ref{tab:mld-summary} lists every table
+with its primary key strategy, the number of columns and the key design
+decisions behind it.
+
+\begin{table}[htbp]
+\centering
+\caption{Relational tables — summary.  PK strategy: \texttt{SERIAL}
+         (auto-increment integer) or \texttt{UUID} (v4).  ``JSONB cols''
+         counts columns stored as structured JSON.}
+\label{tab:mld-summary}
+\small
+\begin{tabular}{@{}llccl@{}}
+\toprule
+\textbf{Table} & \textbf{App}
+    & \textbf{PK} & \textbf{JSONB}
+    & \textbf{Design rationale} \\
+\midrule
+\texttt{user}
+    & auth & SERIAL & 0
+    & email as USERNAME; custom manager \\
+\texttt{conversation}
+    & comms & SERIAL & 0
+    & M2M join table for participants \\
+\texttt{message}
+    & comms & SERIAL & 0
+    & FK to conversation + sender \\
+\texttt{alert\_rule}
+    & alerts & SERIAL & 2
+    & conditions \& channels as JSONB \\
+\texttt{alert\_event}
+    & alerts & UUID & 1
+    & UUID PK for cross-service refs \\
+\texttt{alert\_event\_history}
+    & alerts & SERIAL & 1
+    & append-only; snapshot as JSONB \\
+\texttt{notification}
+    & notif & UUID & 1
+    & UUID PK; decoupled from alerts \\
+\texttt{model\_response}
+    & dashboard & SERIAL & 1
+    & composite index on scope dims \\
+\texttt{ml\_model\_config}
+    & ml & SERIAL & 4
+    & features, info, examples, defaults \\
+\texttt{prediction\_log}
+    & ml & SERIAL & 2
+    & input + output as JSONB \\
+\texttt{orchestrator\_variant}
+    & ml & SERIAL & 1
+    & singleton constraint on selection \\
+\texttt{model\_stats}
+    & ml & SERIAL & 1
+    & evaluation snapshot per model \\
+\texttt{drift\_report}
+    & ml & SERIAL & 1
+    & per-feature detail as JSONB \\
+\texttt{data\_version}
+    & etl & SERIAL & 0
+    & content hash for staleness check \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Several cross-cutting design decisions are worth noting:
+
+\begin{itemize}
+\item \textbf{UUID primary keys} are used for AlertEvent and Notification
+      because these entities are referenced across service boundaries
+      (Django $\leftrightarrow$ FastAPI); UUIDs avoid sequence collisions
+      and make soft references safe.
+\item \textbf{JSONB columns} are used wherever the schema is intentionally
+      open-ended (alert conditions, feature metadata, prediction
+      payloads).  This avoids an explosion of nullable columns while
+      keeping the data queryable with JSON path operators.
+\item \textbf{Composite indexes} are placed on the most common access
+      patterns—e.g.\ \texttt{(severity, status, opened\_at)} on
+      alert events, \texttt{(model\_id, checked\_at)} on drift reports,
+      and \texttt{(region, product, period, alert\_level)} on dashboard
+      responses.
+\item \textbf{Soft deletion is avoided}; alert events transition through
+      explicit status values, and prediction logs are append-only.  This
+      simplifies queries and preserves a complete audit trail.
+\end{itemize}
+
+\paragraph{Registry mirror.}
+
+The ML-backend microservice maintains a mirror of the model-registry
+tables so it can serve predictions without depending on the Django
+process.  When PostgreSQL is used, a database trigger pushes change
+notifications to all connected workers in real time; when SQLite is used,
+workers poll on a configurable interval.  This dual-write pattern provides
+operational independence while keeping both services consistent.
+
+\paragraph{Columnar tier.}
+
+The analytical datasets are organised around three domain entities (Donor,
+Hospital, SupplyPoint), each identified by a natural key plus an event
+timestamp.  Data is stored in Parquet format, partitioned by entity type.
+Table~\ref{tab:datasets-summary} lists the principal datasets.
+
+\begin{table}[htbp]
+\centering
+\caption{Analytical datasets (Parquet).  Each row is a timestamped
+         observation for one entity instance.}
+\label{tab:datasets-summary}
+\small
+\begin{tabular}{@{}llrl@{}}
+\toprule
+\textbf{Dataset} & \textbf{Entity key}
+    & \textbf{Cols} & \textbf{Prediction target(s)} \\
+\midrule
+Blood-bank daily ops
+    & hospital + date & 23
+    & stockout next day, heavy demand \\
+Transfusion with features
+    & hospital + date & 51
+    & days until stockout, heavy demand \\
+Donor registry
+    & donor            & 27
+    & donation within 6\,m, donation count \\
+Donor logistics
+    & donor            & 12
+    & (joined to registry) \\
+Donor snapshots
+    & donor            & 9
+    & donation within 30\,d \\
+Hospital supply (ML-ready)
+    & hospital + date  & 9
+    & blood shortage (binary) \\
+Stockout (ML-ready)
+    & supply + date    & 9
+    & days until stockout \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+% 3.4.3  Feature Store (offline / online)
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Feature Store (offline / online)}
+\label{sec:feature-store}
+
+A persistent source of model-quality degradation in production is
+\emph{training--serving skew}: features computed one way for training and a
+slightly different way at inference time~\cite{sculley2015hidden}.  The
+PIOS architecture eliminates this risk by introducing a \textbf{feature
+store} (built on Feast) that acts as the single source of truth for every
+feature consumed by any model.
+
+\paragraph{Design goals.}
+
+\begin{enumerate}
+\item \textbf{Single definition.} Each feature is defined exactly once;
+      both the offline (batch) and online (real-time) paths read from that
+      definition.
+\item \textbf{Point-in-time correctness.} Historical joins must respect
+      causality—no future information may leak into a training row.
+\item \textbf{Low-latency online serving.} Inference requests must
+      retrieve the latest feature vector in milliseconds, not seconds.
+\item \textbf{Extensibility.} Adding a new model that uses existing
+      features should require zero feature re-engineering.
+\end{enumerate}
+
+\paragraph{Entity model.}
+
+Three domain entities serve as join keys
+(Table~\ref{tab:feast-entities}).  Every feature observation is anchored
+to one entity instance and one event timestamp.
+
+\begin{table}[htbp]
+\centering
+\caption{Feature-store entities.}
+\label{tab:feast-entities}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Entity} & \textbf{Join key} & \textbf{Domain meaning} \\
+\midrule
+Donor      & \texttt{donor\_id}    & Individual blood donor \\
+Hospital   & \texttt{hospital\_id} & Blood-bank / hospital site \\
+Supply     & \texttt{supply\_id}   & Inventory supply point \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Feature views and services.}
+
+For each entity one or more \emph{feature views} expose a typed schema
+over a Parquet source file.  Every view carries a time-to-live (TTL) that
+controls how long a feature value remains valid for online serving.
+Views sharing the same entity are bundled into a \emph{feature service}—a
+logical group that training and inference code can reference by name.
+Three services are defined:
+
+\begin{itemize}
+\item \textbf{Donor service} — demographics, geolocation, donation
+      recency, frequency and cluster assignment;
+\item \textbf{Hospital service} — environmental conditions (temperature,
+      rain), demand drivers (surgeries, trauma), current inventory;
+\item \textbf{Supply service} — stock level, daily usage, lead time,
+      restock recency, upcoming surgical demand.
+\end{itemize}
+
+This grouping means a new model—say, a donor-eligibility classifier—can
+reference the Donor service and immediately receive all donor features
+without any schema duplication.
+
+\paragraph{Offline path.}
+
+During training a script provides an entity dataframe with join keys and
+label timestamps.  The feature store performs a \emph{point-in-time join}:
+for each row it retrieves the most recent feature snapshot whose timestamp
+is \emph{strictly before} the label's timestamp.  This guarantees that the
+model is trained only on information that would have been available at
+decision time.
+
+\paragraph{Online path.}
+
+For real-time inference the feature store maintains a materialised online
+store.  When a prediction request arrives, the serving layer retrieves the
+latest feature vector for the given entity key with sub-millisecond
+latency.  Because the feature definitions are shared with the offline
+path, training--serving skew is eliminated by construction.
+
+\paragraph{Materialisation strategy.}
+
+Features are pushed from the offline source to the online store via
+incremental materialisation: only rows newer than the previous
+high-water-mark timestamp are transferred.  This makes the refresh cost
+proportional to the volume of new data rather than the total dataset size,
+and it is triggered automatically before every training run so the online
+store is never stale when inference begins.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+% 3.4.4  Gestion des données temporelles
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Gestion des données temporelles}
+\label{sec:temporal-management}
+
+Blood-supply data is intrinsically temporal: donations occur at specific
+instants, inventory levels change hour by hour, and the relevance of a
+prediction decays rapidly.  The PIOS data architecture addresses this
+through four complementary design decisions.
+
+\paragraph{1.\ Event-time anchoring.}
+
+Every feature record carries an event timestamp that anchors it to a
+specific moment in the real world.  The feature store uses this column for
+point-in-time joins (Section~\ref{sec:feature-store}), and the TTL
+mechanism uses it to expire stale values from the online store.  Together,
+these two mechanisms prevent both future leakage (at training time) and
+stale-data pollution (at inference time).
+
+\paragraph{2.\ Causal feature engineering.}
+
+The raw time-series datasets (daily hospital operations, donor snapshots)
+are enriched with a family of temporal features designed to capture
+short-term dynamics and longer-term trends while respecting causality
+(Table~\ref{tab:temporal-features}).  All lag and rolling computations are
+performed per entity and sorted by date, so no future information leaks
+into past rows.
+
+\begin{table}[htbp]
+\centering
+\caption{Families of temporal features.  All windows are strictly causal.}
+\label{tab:temporal-features}
+\small
+\begin{tabular}{@{}lp{7.2cm}@{}}
+\toprule
+\textbf{Family} & \textbf{Purpose \& examples} \\
+\midrule
+Calendar
+    & Encode seasonality: day-of-week, weekend, month, holiday \\
+Lag (1 / 7 / 30\,d)
+    & Capture recent state: yesterday's usage, last week's stock \\
+Rolling mean \& std
+    & Smooth noise and detect volatility over 7- and 30-day windows \\
+Trend (OLS slope)
+    & Distinguish rising from falling demand (7-day, 30-day) \\
+Coverage ratio
+    & Days of supply remaining at current consumption rate \\
+Demand pressure
+    & Surgeries and trauma relative to available stock \\
+Stockout memory
+    & Recent stockout flags and 7-day cumulative count \\
+Net flow
+    & Units collected minus units used (single-step balance) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{3.\ Scheduled retraining and drift monitoring.}
+
+As the real-world data distribution evolves (\emph{concept drift}),
+models must be retrained periodically.  The platform includes a background
+scheduler that supports daily, weekly and monthly retraining cadences.
+After each training run a four-step pipeline executes:
+
+\begin{enumerate}
+\item \textbf{Train} — produce a new model registered as
+      \emph{challenger};
+\item \textbf{Promote} — compare the challenger against the current
+      \emph{champion} on a primary metric; promote only if the
+      challenger is at least as good;
+\item \textbf{Sync} — propagate the new champion to the inference
+      registry so production traffic uses it immediately;
+\item \textbf{Drift check} — compare feature distributions between
+      the reference (training-time) and current (production) data
+      using four statistical tests
+      (Table~\ref{tab:drift-tests}).
+\end{enumerate}
+
+\begin{table}[htbp]
+\centering
+\caption{Statistical tests for drift detection.}
+\label{tab:drift-tests}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Test} & \textbf{Feature type} & \textbf{Alert threshold} \\
+\midrule
+Kolmogorov--Smirnov    & numerical    & $p < 0.05$ \\
+Population Stability Index & numerical & PSI $> 0.20$ \\
+Chi-squared            & categorical  & $p < 0.05$ \\
+Jensen--Shannon div.   & categorical  & JS $> 0.10$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Each feature is assigned a severity (\emph{none}, \emph{warning},
+\emph{critical}).  When critical drift is detected the alert subsystem
+(Section~\ref{sec:mcd}) can trigger immediate retraining outside the
+regular schedule.
+
+\paragraph{4.\ Simulator temporal validation.}
+
+The discrete-event simulator produces 6-hourly inventory snapshots.
+Before trusting any simulation-based evaluation, these series are
+validated for temporal plausibility using (a)~an Augmented Dickey--Fuller
+test for stationarity—confirming that stock levels do not drift
+unboundedly—and (b)~Ljung--Box / ACF analysis to verify realistic
+short-range autocorrelation at 6-hour multiples.  A 72-hour warm-up is
+discarded to remove the initial transient.
+
+\bigskip
+
+Together, event-time anchoring, causal feature engineering, scheduled
+drift monitoring and simulator temporal validation form a coherent design
+that ensures every component of the platform—from training through
+inference to simulation—handles time-dependent data correctly.

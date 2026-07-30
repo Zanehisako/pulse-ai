@@ -1,0 +1,7 @@
+# File: .github/ISSUE_TEMPLATE/config.yml
+
+blank_issues_enabled: false
+contact_links:
+  - name: Questions / Support
+    url: https://github.com/<org>/<repo>/discussions
+    about: Use discussions for questions instead of opening issues.

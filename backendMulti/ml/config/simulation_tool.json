@@ -1,0 +1,335 @@
+{
+  "base_url": "http://localhost:8010",
+  "timeout_seconds": 45,
+  "default_policy": "dreamerv3_official",
+  "compare_on_recommend": false,
+  "backend": {
+    "default_scenario_key": "baseline",
+    "fallback_policy_key": "baseline",
+    "run_key_policy": "dreamerv3_official",
+    "include_timeline": true,
+    "default_hours": 168,
+    "weather_options": [
+      "blizzard",
+      "ice_storm",
+      "snow",
+      "cloudy",
+      "clear"
+    ],
+    "inventory_keys": [
+      "RBC",
+      "PLATELETS",
+      "PLASMA"
+    ]
+  },
+  "default_compare_policies": [
+    "dreamerv3_official",
+    "ppo_continuous",
+    "sac_continuous",
+    "iql_offline",
+    "cql_offline"
+  ],
+  "policy_aliases": {
+    "dreamer": "dreamerv3_official",
+    "dreamer_v3": "dreamerv3_official",
+    "dreamer3": "dreamerv3_official",
+    "dreamerv3": "dreamerv3_official",
+    "dreamer_v3_official": "dreamerv3_official",
+    "official_dreamerv3": "dreamerv3_official",
+    "official_dreamer_v3": "dreamerv3_official",
+    "ppo": "ppo_continuous",
+    "ppo_continuous": "ppo_continuous",
+    "sac": "sac_continuous",
+    "sac_continuous": "sac_continuous",
+    "iql": "iql_offline",
+    "iql_offline": "iql_offline",
+    "cql": "cql_offline",
+    "cql_offline": "cql_offline",
+    "baseline": "baseline",
+    "mass_campaign": "mass_campaign",
+    "campaign": "mass_campaign",
+    "lab_investment": "lab_investment",
+    "emergency_network": "emergency_network",
+    "full_response": "full_response",
+    "ppo_shortage_minimizer": "ppo_shortage_minimizer"
+  },
+  "predefined_scenario_aliases": {
+    "baseline": "baseline",
+    "normal_operations": "baseline",
+    "normal_operation": "baseline",
+    "donor_decrease": "donor_decrease",
+    "donor_decline": "donor_decrease",
+    "donor_decline_crisis": "donor_decrease",
+    "demand_surge": "demand_surge",
+    "transport_disruption": "transport_disruption",
+    "combined_crisis": "combined_crisis",
+    "holiday_flu_wave": "holiday_flu_wave",
+    "holiday_flu": "holiday_flu_wave",
+    "regional_testing_backlog": "regional_testing_backlog",
+    "provincial_supply_crunch": "provincial_supply_crunch",
+    "post_storm_backlog": "post_storm_backlog"
+  },
+  "intent_patterns": [
+    "\\bwhat if\\b",
+    "\\bwhat would happen\\b",
+    "\\bsimulat(?:e|ion)\\b",
+    "\\brun (?:a )?scenario\\b",
+    "\\bstress test\\b",
+    "\\bforecast the impact\\b",
+    "\\bcompare (?:strategies|policies)\\b",
+    "\\bwhat should we do if\\b",
+    "\\bhow should we respond if\\b"
+  ],
+  "recommend_patterns": [
+    "\\bwhat should we do\\b",
+    "\\bhow should we respond\\b",
+    "\\brecommend\\b",
+    "\\bmitigation\\b",
+    "\\bresponse plan\\b"
+  ],
+  "compare_patterns": [
+    "\\bcompare\\b",
+    "\\bversus\\b",
+    "\\bvs\\b"
+  ],
+  "shock_patterns": [
+    "\\bdonor",
+    "\\bsupply",
+    "\\bdemand",
+    "\\bshortage",
+    "\\bincident",
+    "\\bcrisis",
+    "\\bdisruption"
+  ],
+  "negative_adjustment_verbs": [
+    "decrease",
+    "decreased",
+    "decreasing",
+    "reduce",
+    "reduced",
+    "reducing",
+    "drop",
+    "dropped",
+    "dropping",
+    "lower",
+    "lowered",
+    "lowering",
+    "cut",
+    "cuts",
+    "cutting",
+    "decline",
+    "declined",
+    "fall",
+    "fell"
+  ],
+  "positive_adjustment_verbs": [
+    "increase",
+    "increased",
+    "increasing",
+    "raise",
+    "raised",
+    "raising",
+    "boost",
+    "boosted",
+    "boosting",
+    "surge",
+    "surged",
+    "surging",
+    "spike",
+    "spiked",
+    "spiking",
+    "grow",
+    "grew",
+    "growing",
+    "up"
+  ],
+  "unsupported_scope_warning": "The backend run was network-wide; requested blood-type or geography scoping was captured for context but not applied as a backend filter.",
+  "custom_scenario_field_aliases": {
+    "sim_hours": [
+      "simulation hours",
+      "sim hours",
+      "episode hours",
+      "run length",
+      "time horizon",
+      "simulation horizon"
+    ],
+    "forced_weather": [
+      "forced weather",
+      "weather state",
+      "weather"
+    ],
+    "donor_inter_arrival_h": [
+      "donor inter arrival",
+      "donor inter-arrival",
+      "donor arrival interval",
+      "hours between donors",
+      "donor arrival pace"
+    ],
+    "donor_show_factor": [
+      "donor show factor",
+      "show factor",
+      "donor turnout",
+      "donor show rate",
+      "show-up factor"
+    ],
+    "eligible_rate": [
+      "eligibility rate",
+      "eligible rate",
+      "donor eligibility",
+      "screening pass rate"
+    ],
+    "demand_rate_h": [
+      "demand inter arrival",
+      "demand inter-arrival",
+      "order inter arrival",
+      "order inter-arrival",
+      "hours between orders",
+      "hospital order interval"
+    ],
+    "demand_surge_factor": [
+      "demand surge factor",
+      "demand pressure",
+      "demand intensity",
+      "demand surge"
+    ],
+    "avg_units_per_order": [
+      "average units per order",
+      "avg units per order",
+      "units per order",
+      "average order size",
+      "order size"
+    ],
+    "transport_penalty": [
+      "transport penalty",
+      "transport delay",
+      "transport time",
+      "shipment delay",
+      "delivery delay"
+    ],
+    "lab_time_factor": [
+      "lab time factor",
+      "lab time",
+      "laboratory time",
+      "testing time"
+    ],
+    "proc_time_factor": [
+      "processing time factor",
+      "processing time",
+      "post lab processing",
+      "component prep time"
+    ],
+    "initial_inventory_days": [
+      "initial inventory buffer",
+      "initial inventory",
+      "starting inventory",
+      "starting stock"
+    ],
+    "reserve_target_days": [
+      "reserve target",
+      "reserve buffer",
+      "target reserve",
+      "reserve days"
+    ],
+    "regional_replenishment_rate": [
+      "regional replenishment rate",
+      "replenishment rate",
+      "provincial replenishment",
+      "network replenishment"
+    ],
+    "demand_forecast_noise": [
+      "demand forecast noise",
+      "forecast noise",
+      "forecast error",
+      "forecast uncertainty"
+    ],
+    "demand_forecast_interval_h": [
+      "forecast refresh interval",
+      "forecast interval",
+      "forecast refresh cadence",
+      "forecast cadence",
+      "demand forecast interval"
+    ],
+    "demand_shock_scale": [
+      "demand shock scale",
+      "shock scale",
+      "demand volatility",
+      "shock volatility"
+    ],
+    "transport_lead_time_noise": [
+      "transport lead time noise",
+      "lead time noise",
+      "shipment lead time noise",
+      "transport randomness"
+    ],
+    "congestion_threshold_units": [
+      "congestion threshold",
+      "backlog threshold",
+      "congestion threshold units"
+    ],
+    "congestion_delay_factor": [
+      "congestion delay factor",
+      "congestion delay",
+      "backlog delay factor"
+    ],
+    "episode_budget": [
+      "episode budget",
+      "intervention budget",
+      "response budget",
+      "budget"
+    ]
+  },
+  "ml_prediction_exclusion_terms": [
+    "current inventory",
+    "units in stock",
+    "daily usage",
+    "lead time",
+    "units used",
+    "units collected",
+    "shelf life",
+    "route disruption",
+    "stockout probability",
+    "stockout risk",
+    "stockout hazard",
+    "bmi",
+    "eligible",
+    "recency",
+    "donation probability",
+    "outreach priority",
+    "expiry waste",
+    "wastage",
+    "supply forecast",
+    "demand forecast",
+    "supply disruption",
+    "donor shortfall",
+    "inventory risk"
+  ],
+  "scenario_override_terms": [
+    "what if",
+    "what would",
+    "would happen",
+    "scenario",
+    "next week",
+    "next month",
+    "dropped by",
+    "increased by",
+    "compare policies",
+    "compare strategies",
+    "stress test"
+  ],
+  "ml_bridge": {
+    "prefill_enabled": true,
+    "demand_model": "component_demand_quantile_forecast_model",
+    "supply_model": "component_supply_forecast_model",
+    "stockout_model": "stockout_time_to_event_hazard_model",
+    "point_query_hours": 48,
+    "point_query_terms": [
+      "point query",
+      "quick simulation",
+      "short simulation",
+      "simulate for 24 hours",
+      "simulate for 48 hours",
+      "quick forecast",
+      "short-term simulation"
+    ]
+  }
+}

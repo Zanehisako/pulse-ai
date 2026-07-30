@@ -1,0 +1,203 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label='ml' %}">Ml</a>
+  &rsaquo; ML Control Center
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .ml-control-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .ml-control-card {
+    background: var(--body-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 16px;
+  }
+  .ml-control-card h2 {
+    margin-top: 0;
+  }
+  .ml-kv {
+    display: grid;
+    grid-template-columns: minmax(140px, 1fr) 2fr;
+    gap: 6px 12px;
+    margin: 0;
+  }
+  .ml-kv dt {
+    color: var(--body-quiet-color);
+    font-weight: 600;
+  }
+  .ml-kv dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .ml-control-form {
+    margin-top: 12px;
+  }
+  .ml-control-form label {
+    display: block;
+    font-weight: 600;
+    margin: 10px 0 4px;
+  }
+  .ml-control-form select,
+  .ml-control-form textarea {
+    width: 100%;
+    max-width: 100%;
+  }
+  .ml-checkbox-row label {
+    display: inline-block;
+    font-weight: 400;
+    margin-right: 16px;
+  }
+  .ml-result {
+    max-height: 420px;
+    overflow: auto;
+    white-space: pre-wrap;
+  }
+  .ml-model-table td,
+  .ml-model-table th {
+    vertical-align: top;
+  }
+</style>
+
+<h1>ML Control Center</h1>
+
+<div class="ml-control-grid">
+  <section class="ml-control-card">
+    <h2>Model Config Hot Reload</h2>
+    {% with runtime=status_payload.config_runtime watcher=status_payload.config_runtime.config_hot_reload %}
+    <dl class="ml-kv">
+      <dt>Status</dt>
+      <dd>{{ status_payload.status }}</dd>
+      <dt>Models</dt>
+      <dd>{{ status_payload.models_loaded }} loaded / {{ status_payload.models_total }} configured</dd>
+      <dt>Watcher enabled</dt>
+      <dd>{{ watcher.enabled|default:"False" }}</dd>
+      <dt>Watcher running</dt>
+      <dd>{{ watcher.running|default:"False" }}</dd>
+      <dt>Watched file</dt>
+      <dd>{{ watcher.watched_path|default:runtime.model_config_file }}</dd>
+      <dt>Reload count</dt>
+      <dd>{{ runtime.reload_count }}</dd>
+      <dt>Last reload reason</dt>
+      <dd>{{ runtime.last_reload_reason }}</dd>
+      <dt>Last file error</dt>
+      <dd>{{ watcher.last_file_error|default:runtime.last_source_error|default:"-" }}</dd>
+    </dl>
+    {% endwith %}
+    <form class="ml-control-form" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="reload_config">
+      <button type="submit" class="button">Reload model config</button>
+    </form>
+  </section>
+
+  <section class="ml-control-card">
+    <h2>Orchestrator</h2>
+    {% with orch=status_payload.orchestrator %}
+    <dl class="ml-kv">
+      <dt>Planner mode</dt>
+      <dd>{{ orch.planner_mode }}</dd>
+      <dt>LLM ready</dt>
+      <dd>{{ orch.llm_ready }}</dd>
+      <dt>Selected</dt>
+      <dd>{{ orch.selected_model_id|default:"-" }}</dd>
+      <dt>Active</dt>
+      <dd>{{ orch.active_model_id|default:"-" }}</dd>
+      <dt>Model file exists</dt>
+      <dd>{{ orch.selected_model_exists }}</dd>
+      <dt>Model path</dt>
+      <dd>{{ orch.selected_model_path|default:"-" }}</dd>
+      <dt>Error</dt>
+      <dd>{{ orch.llm_error|default:"-" }}</dd>
+    </dl>
+    {% endwith %}
+    <form class="ml-control-form" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="select_orchestrator">
+      <label for="orchestrator_model_id">Model variant</label>
+      <select id="orchestrator_model_id" name="orchestrator_model_id" required>
+        {% for model in orchestrator_models %}
+          <option value="{{ model.id }}" {% if model.id == selected_orchestrator_model_id %}selected{% endif %}>
+            {{ model.name }} ({{ model.id }}){% if model.local_exists %} - local{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+      <div class="ml-checkbox-row">
+        <label><input type="checkbox" name="download" value="1" checked> Download/warm up</label>
+        <label><input type="checkbox" name="wait" value="1"> Wait</label>
+      </div>
+      <button type="submit" class="button default">Apply selection</button>
+    </form>
+    <form class="ml-control-form" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="warmup_orchestrator">
+      <div class="ml-checkbox-row">
+        <label><input type="checkbox" name="wait" value="1"> Wait</label>
+      </div>
+      <button type="submit" class="button">Warm up selected model</button>
+    </form>
+  </section>
+</div>
+
+<section class="ml-control-card">
+  <h2>Direct Model Runner</h2>
+  <form class="ml-control-form" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="direct_predict">
+    <label for="direct_model_id">Loaded model</label>
+    <select id="direct_model_id" name="direct_model_id" required>
+      {% for model in loaded_models %}
+        <option value="{{ model.model_id }}" {% if model.model_id == selected_direct_model_id %}selected{% endif %}>
+          {{ model.model_id }} ({{ model.model_type }})
+        </option>
+      {% endfor %}
+    </select>
+    <label for="direct_payload_json">Prediction payload JSON</label>
+    <textarea id="direct_payload_json" name="direct_payload_json" rows="10" spellcheck="false">{{ direct_payload_json }}</textarea>
+    <p class="help">
+      Use {"features": {...}} for one prediction, or {"inputs": [{...}, {...}]} for batch prediction.
+    </p>
+    <button type="submit" class="button default">Run direct prediction</button>
+  </form>
+</section>
+
+{% if action_result_json %}
+<section class="ml-control-card">
+  <h2>Last Action Result</h2>
+  <pre class="ml-result">{{ action_result_json }}</pre>
+</section>
+{% endif %}
+
+<section class="ml-control-card">
+  <h2>Loaded Model Metadata</h2>
+  <table class="ml-model-table">
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>Status</th>
+        <th>Type</th>
+        <th>Features</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for model in models %}
+      <tr>
+        <td>{{ model.model_id }}</td>
+        <td>{{ model.status }}{% if model.load_error %}: {{ model.load_error }}{% endif %}</td>
+        <td>{{ model.model_type }}</td>
+        <td>{{ model.feature_names|join:", " }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

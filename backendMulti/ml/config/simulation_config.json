@@ -1,0 +1,27 @@
+{
+  "enabled": true,
+  "tick_interval_minutes": 10,
+  "blood_supply": {
+    "consumption_variance_pct": 0.10,
+    "restock_probability": 0.08,
+    "restock_amount_min": 50,
+    "restock_amount_max": 300,
+    "min_stock_floor": 0,
+    "snapshot_retention_days": 90
+  },
+  "hospital_features": {
+    "temperature_drift_max": 2.0,
+    "rain_mm_max": 8.0,
+    "scheduled_surgeries_variance_pct": 0.15,
+    "trauma_cases_variance_pct": 0.20
+  },
+  "donors": {
+    "recency_increment": 1,
+    "availability_churn_rate": 0.02,
+    "availability_recovery_rate": 0.03
+  },
+  "alerts": {
+    "max_open_critical": 4,
+    "max_open_warning": 6
+  }
+}

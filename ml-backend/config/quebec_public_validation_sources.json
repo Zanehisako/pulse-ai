@@ -1,0 +1,269 @@
+{
+  "id": "quebec_public_external_validation",
+  "enabled": true,
+  "description": "External aggregate/proxy validation for Quebec synthetic blood donor and inventory datasets. This validates calibration against public Quebec sources; it is not row-level clinical or production validation.",
+  "output": {
+    "directory": "artifacts/external_validation",
+    "json_report": "external_validation_report.json",
+    "markdown_report": "external_validation_report.md",
+    "tables_directory": "tables",
+    "plots_directory": "plots"
+  },
+  "synthetic_datasets": {
+    "donor_features": {
+      "enabled": true,
+      "path": "datasets_featues_labels_seperated/quebec_donor_features.parquet",
+      "format": "parquet"
+    },
+    "inventory_features": {
+      "enabled": true,
+      "path": "datasets_featues_labels_seperated/quebec_inventory_features.parquet",
+      "format": "parquet"
+    }
+  },
+  "sources": {
+    "hema_quebec_demographic_report_2022_2023": {
+      "enabled": true,
+      "source_type": "pdf_reference",
+      "url": "https://www.hemaquebec.ca/sites/default/files/public/document/diffusion-information/rapport-demographique-2022-2023.pdf",
+      "description": "Hema-Quebec demographic annual report with aggregate donation, donor, deferral, age, sex, donation habit, and reaction tables.",
+      "usable_for": [
+        "donor demographic plausibility",
+        "donor deferral plausibility",
+        "donation habit plausibility"
+      ],
+      "reference_dimensions": [
+        "age",
+        "sex",
+        "donation_count",
+        "deferral_category",
+        "donation_type"
+      ]
+    },
+    "hema_quebec_annual_report_2023_2024": {
+      "enabled": true,
+      "source_type": "published_aggregate",
+      "url": "https://www.hemaquebec.ca/en/about/press-room/press-releases/hema-quebec-releases-2023-2024-annual-report",
+      "description": "Published annual figures for Hema-Quebec fiscal year 2023-2024.",
+      "metrics": {
+        "blood_donors": 148376,
+        "blood_products_distributed": 300478,
+        "plasma_donors": 26963,
+        "stable_products_distributed": 453376
+      }
+    },
+    "hema_quebec_donation_centres": {
+      "enabled": true,
+      "source_type": "html_reference",
+      "url": "https://www.hemaquebec.ca/a-propos/qui-nous-sommes/etablissements",
+      "description": "Public Hema-Quebec fixed donation centre city list and supported donation product types.",
+      "centre_cities": [
+        "Brossard",
+        "Drummondville",
+        "Gatineau",
+        "Kirkland",
+        "Laval",
+        "Lebourgneuf",
+        "Levis",
+        "Montreal",
+        "Saguenay",
+        "Saint-Bruno",
+        "Sainte-Foy",
+        "Sherbrooke",
+        "Trois-Rivieres"
+      ]
+    },
+    "donnees_quebec_er_hourly": {
+      "enabled": true,
+      "source_type": "csv",
+      "url": "https://beta.donneesquebec.ca/recherche/dataset/fichier-horaire-des-donnees-de-la-situation-a-l-urgence/resource/a9272cc9-8234-40d1-9806-9f6b4c75c20d",
+      "data_url": "https://www.msss.gouv.qc.ca/professionnels/statistiques/documents/urgences/Releve_horaire_urgences_7jours.csv",
+      "description": "Données Québec hourly emergency room situation file used as a hospital pressure proxy.",
+      "format": "csv",
+      "encoding": "latin1",
+      "fetch": {
+        "enabled": true,
+        "fail_on_error": false
+      },
+      "columns": {
+        "facility": "Nom_installation",
+        "functional_stretchers": "Nombre_de_civieres_fonctionnelles",
+        "occupied_stretchers": "Nombre_de_civieres_occupees",
+        "updated_at": "Mise_a_jour"
+      },
+      "derived_metrics": {
+        "er_occupancy_rate": {
+          "numerator": "Nombre_de_civieres_occupees",
+          "denominator": "Nombre_de_civieres_fonctionnelles"
+        }
+      }
+    },
+    "msss_facility_map_m02": {
+      "enabled": true,
+      "source_type": "geospatial_reference",
+      "url": "https://www.donneesquebec.ca/recherche/dataset/fichiers-cartographiques-m02-des-installations-et-etablissements",
+      "description": "MSSS M02 health and social service facility geospatial reference for Quebec facilities.",
+      "usable_for": [
+        "hospital geography plausibility",
+        "facility naming and administrative coverage"
+      ]
+    },
+    "isq_population_region_age_gender": {
+      "enabled": true,
+      "source_type": "statistical_table",
+      "url": "https://statistique.quebec.ca/en/document/population-and-age-and-sex-structure-administrative-regions",
+      "description": "Institut de la statistique du Québec population structure by administrative region, age, and gender.",
+      "region_population_weights": {
+        "Montreal": 2078000,
+        "Monteregie": 1595000,
+        "Capitale-Nationale": 770000,
+        "Laval": 455000,
+        "Outaouais": 410000,
+        "Estrie": 505000,
+        "Saguenay-Lac-Saint-Jean": 285000,
+        "Mauricie": 283000
+      }
+    }
+  },
+  "comparisons": {
+    "annual_blood_products_delivered": {
+      "enabled": true,
+      "comparison_type": "scalar_column_vs_source_metric",
+      "source_id": "hema_quebec_annual_report_2023_2024",
+      "dataset": "donor_features",
+      "synthetic_column": "annual_blood_products_delivered",
+      "aggregator": "median",
+      "source_metric": "blood_products_distributed",
+      "threshold": {
+        "relative_error_max": 0.05
+      },
+      "plot": true
+    },
+    "annual_blood_drives": {
+      "enabled": true,
+      "comparison_type": "scalar_column_expected_range",
+      "source_id": "hema_quebec_demographic_report_2022_2023",
+      "dataset": "donor_features",
+      "synthetic_column": "annual_blood_drives",
+      "aggregator": "median",
+      "expected_min": 1800,
+      "expected_max": 2200,
+      "threshold": {
+        "pass_when_in_range": true
+      },
+      "plot": true
+    },
+    "blood_type_distribution": {
+      "enabled": true,
+      "comparison_type": "distribution_vs_expected",
+      "source_id": "hema_quebec_demographic_report_2022_2023",
+      "dataset": "donor_features",
+      "synthetic_column": "blood_type",
+      "dedupe_key": "donor_id",
+      "expected_distribution": {
+        "O+": 0.37,
+        "A+": 0.31,
+        "B+": 0.12,
+        "O-": 0.08,
+        "A-": 0.06,
+        "AB+": 0.04,
+        "B-": 0.02,
+        "AB-": 0.01
+      },
+      "threshold": {
+        "max_total_variation_distance": 0.08
+      },
+      "plot": true
+    },
+    "regional_population_distribution": {
+      "enabled": true,
+      "comparison_type": "distribution_vs_expected_weights",
+      "source_id": "isq_population_region_age_gender",
+      "dataset": "donor_features",
+      "synthetic_column": "region",
+      "dedupe_key": "donor_id",
+      "source_weights": "region_population_weights",
+      "threshold": {
+        "max_total_variation_distance": 0.12
+      },
+      "plot": true
+    },
+    "age_band_distribution": {
+      "enabled": true,
+      "comparison_type": "age_band_profile",
+      "source_id": "hema_quebec_demographic_report_2022_2023",
+      "dataset": "donor_features",
+      "synthetic_column": "age",
+      "dedupe_key": "donor_id",
+      "bins": [17, 24, 34, 44, 54, 64, 120],
+      "labels": ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"],
+      "threshold": {
+        "minimum_nonempty_bands": 6
+      },
+      "plot": true
+    },
+    "sex_distribution_profile": {
+      "enabled": true,
+      "comparison_type": "category_profile",
+      "source_id": "hema_quebec_demographic_report_2022_2023",
+      "dataset": "donor_features",
+      "synthetic_column": "sex",
+      "dedupe_key": "donor_id",
+      "threshold": {
+        "minimum_nonempty_categories": 2
+      },
+      "plot": true
+    },
+    "donation_centre_city_coverage": {
+      "enabled": true,
+      "comparison_type": "coverage_values",
+      "source_id": "hema_quebec_donation_centres",
+      "dataset": "donor_features",
+      "synthetic_column": "city",
+      "dedupe_key": "donor_id",
+      "source_values": "centre_cities",
+      "normalization": "ascii_lower",
+      "threshold": {
+        "min_coverage_rate": 0.6
+      },
+      "plot": true
+    },
+    "hospital_region_coverage": {
+      "enabled": true,
+      "comparison_type": "coverage_values",
+      "source_id": "msss_facility_map_m02",
+      "dataset": "inventory_features",
+      "synthetic_column": "wilaya",
+      "source_values": [
+        "Montreal",
+        "Quebec"
+      ],
+      "normalization": "ascii_lower",
+      "threshold": {
+        "min_coverage_rate": 1.0
+      },
+      "plot": true
+    },
+    "er_pressure_proxy_profile": {
+      "enabled": true,
+      "comparison_type": "external_proxy_profile",
+      "source_id": "donnees_quebec_er_hourly",
+      "dataset": "inventory_features",
+      "synthetic_column": "short_horizon_stockout_risk_score",
+      "external_metric": "er_occupancy_rate",
+      "quantiles": [0.05, 0.25, 0.5, 0.75, 0.95],
+      "threshold": {
+        "minimum_synthetic_rows": 1000,
+        "minimum_external_rows": 10
+      },
+      "plot": true
+    }
+  },
+  "limitations": [
+    "No public row-level Quebec donor longitudinal dataset was identified.",
+    "No public row-level Quebec blood inventory, order, wastage, or stockout label dataset was identified.",
+    "Données Québec emergency room data is a hospital pressure proxy, not a blood demand or inventory target.",
+    "Héma-Québec annual and demographic reports provide aggregate calibration evidence, not model accuracy labels.",
+    "Production validation still requires anonymized operational data from Héma-Québec, MSSS, or hospital transfusion services."
+  ]
+}

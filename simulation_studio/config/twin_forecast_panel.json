@@ -1,0 +1,60 @@
+{
+  "version": "2026-06-15",
+  "enabled": true,
+  "scheduled_predictions_file": "scheduled_predictions.json",
+  "panel_options_source": "jobs",
+  "panel_job_filter": {
+    "dashboard_roles": ["forecast", "stockout_risk", "stockout_sentinel", "wastage", "supply"],
+    "require_enabled": true
+  },
+  "prediction_value_mode": "demand",
+  "default_job_id": "dashboard_forecast_t1",
+  "validation": {
+    "forecast": {
+      "predicted": { "label": "Forecast demand", "aggregate": "sum", "value_mode": "demand", "scale": 0.0987, "scale_note": "QUEBEC_CITY_POPULATION_SHARE = 839311/8501833; converts province-scale model output to the Quebec City CMA the sim is calibrated to. Tune if model bias differs." },
+      "actual": { "label": "Realized demand", "source": "realized_demand", "aggregate": "sum", "horizon_basis": true, "horizon_basis_note": "T7/T30 jobs predict daily demand × horizon (a cumulative total); realized_demand is a per-day rate. horizon_basis lifts realized onto the model's horizon basis (× dashboard_horizon days) so both series share units. T1 (horizon 1) is unchanged." }
+    },
+    "stockout_risk": {
+      "predicted": { "label": "Predicted stockout risk", "aggregate": "mean", "value_mode": "raw" },
+      "actual": { "label": "Realized stockout rate (7d)", "source": "realized_stockout_freq", "aggregate": "mean", "source_note": "The model predicts P(stockout within 7 days); the honest comparator is the realized frequency of that event (fraction of entities that hit stockout in a trailing 7-day window), NOT the instantaneous shortage rate. Residual gap is genuine model calibration error — do NOT swap back to shortage_rate to force overlay." }
+    },
+    "stockout_sentinel": {
+      "predicted": { "label": "Hazard model risk", "aggregate": "mean", "value_mode": "raw" },
+      "actual": { "label": "Realized stockout rate (7d)", "source": "realized_stockout_freq", "aggregate": "mean", "source_note": "p_stockout_by_7d is a 7-day cumulative stockout probability; compared against the realized 7-day stockout frequency (same event, same horizon). Residual gap is genuine hazard-model calibration error." }
+    },
+    "wastage": {
+      "predicted": { "label": "Forecast wastage", "aggregate": "sum", "value_mode": "raw", "scale": 0.0987, "scale_note": "QUEBEC_CITY_POPULATION_SHARE = 839311/8501833; the expiry-waste model is trained at province scale, so its summed output is divided down to the Quebec City CMA the sim realizes. Residual gap after scaling is genuine model/sim bias (e.g. few in-window expiries on a 42-day shelf life) — do NOT tune scale to force overlay." },
+      "actual": { "label": "Realized expiries", "source": "realized_wastage", "aggregate": "sum" }
+    },
+    "supply": {
+      "predicted": { "label": "Forecast supply", "aggregate": "sum", "value_mode": "raw", "scale": 0.0987, "scale_note": "QUEBEC_CITY_POPULATION_SHARE = 839311/8501833; the supply-forecast model is trained at province scale, so its summed output is divided down to the Quebec City CMA the sim realizes. Residual gap after scaling is genuine model/sim bias — do NOT tune scale to force overlay." },
+      "actual": { "label": "Realized collections", "source": "realized_supply", "aggregate": "sum" }
+    }
+  },
+  "entity_source_map_ref": "standalone_predictions",
+  "tick_context": {
+    "mapping_overrides": {
+      "month": { "compute": "month_from_simulated_hour" },
+      "dow": { "compute": "dow_from_simulated_hour" },
+      "event_timestamp": { "compute": "iso_from_simulated_hour" }
+    }
+  },
+  "chart": {
+    "max_points": 24,
+    "label_template": "h{simulated_hour}",
+    "demand_aggregate": "sum",
+    "supply_source": "snapshot_stock_sum",
+    "forecast_interval_hours": 24,
+    "realized_smoothing_hours": 24,
+    "usage_window_7d_hours": 18,
+    "usage_window_30d_hours": 48,
+    "stockout_window_hours": 168,
+    "stockout_threshold": 0,
+    "stockout_note": "stockout_window_hours (default 168 = 7 days) matches the risk/hazard models' P(stockout within 7d) horizon; an entity counts as stocked-out when current_stock_units <= stockout_threshold (0 = literally empty). Raise the threshold toward the safety floor if the sim's per-type pools rarely hit exact zero.",
+    "window_note": "forecast_interval_hours commits ONE validation point per simulated day (the demand model's 1-day horizon) and measures realized demand over the whole day -> honest, no 6h annualization spikes; the predictions table still updates every tick. Set 0 for legacy per-tick cadence, where realized_smoothing_hours smooths the actual line instead. usage_window_*_hours size the model's trend-feature windows (tick ~6h)."
+  },
+  "ws": {
+    "max_prediction_rows": 80
+  },
+  "loading_policy_ref": "standalone_predictions.scheduled_predictions.default_loading_policy"
+}

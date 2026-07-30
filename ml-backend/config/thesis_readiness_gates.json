@@ -1,0 +1,87 @@
+{
+  "id": "thesis_readiness_gates",
+  "enabled": true,
+  "_thresholds_source": "Thresholds from sota_training_utils.py CONFIG (training-time evaluation gates). For production deployment, real-data backtest thresholds should supersede these.",
+  "models": {
+    "donor_next_donation_hazard_model": {
+      "required_metrics": {
+        "brier_score": { "direction": "minimize", "max": 0.18 },
+        "roc_auc": { "direction": "maximize", "min": 0.80 },
+        "log_loss": { "direction": "report_only" }
+      },
+      "shadow_deployment": true,
+      "production_routing": "disabled_until_thresholds_defined",
+      "_note": "Training-time thresholds from sota_training_utils.py CONFIG: max_brier_gate=0.18, min_auc_gate=0.80. Currently deployed as @challenger."
+    },
+    "donor_contact_propensity_model": {
+      "required_metrics": {
+        "brier_score": { "direction": "minimize", "max": 0.18 },
+        "roc_auc": { "direction": "maximize", "min": 0.70 }
+      },
+      "shadow_deployment": true,
+      "production_routing": "disabled_until_thresholds_defined",
+      "_note": "Training-time thresholds from sota_training_utils.py CONFIG. Proxy-only model — trained on synthetic/calibrated contact propensity labels. Requires real contact-response labels for production validation."
+    },
+    "donor_contact_response_model": {
+      "required_metrics": {
+        "brier_score": { "direction": "minimize", "max": 0.18 },
+        "roc_auc": { "direction": "maximize", "min": 0.80 }
+      },
+      "shadow_deployment": true,
+      "production_routing": "disabled_until_thresholds_defined",
+      "_note": "Training-time thresholds from sota_training_utils.py CONFIG. Proxy model using donated_next_6m target. Real contact-response labels unavailable — uplift claims not supported. Production validation blocked until real labels exist."
+    },
+    "donor_priority_policy_model": {
+      "required_metrics": {
+        "root_mean_squared_error": { "direction": "report_only" }
+      },
+      "shadow_deployment": true,
+      "production_routing": "disabled_until_thresholds_defined",
+      "_note": "Proxy policy model — requires real outreach utility validation for production. Training-time regression gates (WAPE ≤ 0.25, coverage error ≤ 0.08) apply at model evaluation time."
+    },
+    "stockout_time_to_event_hazard_model": {
+      "required_metrics": {
+        "brier_score": { "direction": "minimize", "max": 0.18 },
+        "roc_auc": { "direction": "maximize", "min": 0.80 }
+      },
+      "shadow_deployment": true,
+      "production_routing": "disabled_until_thresholds_defined",
+      "_note": "Training-time thresholds from sota_training_utils.py CONFIG. Sentinel model — not primary production stockout engine."
+    },
+    "component_demand_quantile_forecast_model": {
+      "required_metrics": {
+        "root_mean_squared_error": { "direction": "report_only" },
+        "mase": { "direction": "report_only" }
+      },
+      "shadow_deployment": true,
+      "production_routing": "disabled_until_thresholds_defined",
+      "_note": "Training-time regression gates (WAPE ≤ 0.25, coverage error ≤ 0.08, worst-group WAPE ≤ 0.35) from sota_training_utils.py CONFIG apply at training/evaluation time. Production routing thresholds TBD after real-data backtest."
+    },
+    "component_supply_forecast_model": {
+      "required_metrics": {
+        "root_mean_squared_error": { "direction": "report_only" },
+        "mase": { "direction": "report_only" }
+      },
+      "shadow_deployment": true,
+      "production_routing": "disabled_until_thresholds_defined",
+      "_note": "Training-time regression gates (WAPE ≤ 0.25, coverage error ≤ 0.08, worst-group WAPE ≤ 0.35) from sota_training_utils.py CONFIG apply at training/evaluation time. Production routing thresholds TBD after real-data backtest."
+    },
+    "component_expiry_waste_model": {
+      "required_metrics": {
+        "root_mean_squared_error": { "direction": "report_only" },
+        "mean_absolute_error": { "direction": "report_only" }
+      },
+      "shadow_deployment": true,
+      "production_routing": "disabled_until_thresholds_defined",
+      "_note": "Training-time regression gates (WAPE ≤ 0.25, coverage error ≤ 0.08, worst-group WAPE ≤ 0.35) from sota_training_utils.py CONFIG apply at training/evaluation time. Feeds inventory simulator. Falls back to proxy target if shifted labels unavailable."
+    },
+    "component_inventory_risk_simulator": {
+      "required_metrics": {
+        "root_mean_squared_error": { "direction": "report_only" }
+      },
+      "shadow_deployment": true,
+      "production_routing": "disabled_until_thresholds_defined",
+      "_note": "Composite pyfunc model. Thresholds TBD after first backtest. Beats reorder-point baseline check required before production. Training-time thresholds from sota_training_utils.py CONFIG apply at evaluation time."
+    }
+  }
+}

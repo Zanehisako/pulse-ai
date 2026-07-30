@@ -1,0 +1,51 @@
+{
+  "version": "2026-05-17",
+  "blood_types": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+  "templates": [
+    {
+      "id": "critical_stock",
+      "name_pattern": "{hospital_id}_{blood_type}_critical_stock",
+      "description_pattern": "Critical stock alert for {blood_type} at {hospital_id}",
+      "severity_base": "critical",
+      "trigger_type": "stock_and_forecast",
+      "scope_type": "hospital",
+      "conditions": {
+        "all": [
+          {
+            "field": "current_stock_units",
+            "op": "<",
+            "value": 20,
+            "threshold_mode": "zscore"
+          },
+          {
+            "field": "predicted_value",
+            "op": "<",
+            "value": 10,
+            "threshold_mode": "zscore"
+          }
+        ]
+      },
+      "channels": ["websocket", "notification"],
+      "dedup_window_minutes": 120,
+      "escalation_after_minutes": 60
+    },
+    {
+      "id": "trend_warning",
+      "name_pattern": "{hospital_id}_{blood_type}_trend_warning",
+      "description_pattern": "Downward trend warning for {blood_type} at {hospital_id}",
+      "severity_base": "warning",
+      "trigger_type": "threshold_gap",
+      "scope_type": "hospital",
+      "conditions": {
+        "field": "predicted_value",
+        "op": "<",
+        "value": 30,
+        "threshold_mode": "percentile",
+        "threshold_percentile": 15
+      },
+      "channels": ["notification"],
+      "dedup_window_minutes": 240,
+      "escalation_after_minutes": 180
+    }
+  ]
+}

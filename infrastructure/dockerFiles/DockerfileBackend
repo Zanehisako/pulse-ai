@@ -1,0 +1,50 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ARG PIOS_PYPROJECT_OPTIONAL_GROUPS=""
+ARG APP_VERSION=dev
+LABEL org.opencontainers.image.version="$APP_VERSION"
+ENV APP_VERSION="$APP_VERSION"
+
+WORKDIR /app
+
+# System dependencies
+RUN apt-get update && \
+    apt-get install -y build-essential libpq-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Keep pip current, but avoid unnecessary setuptools churn before deps install.
+RUN python -m pip install --upgrade pip
+
+# Copy pyproject.toml first for better layer caching
+COPY pyproject.toml ./
+
+# Extract and install ONLY dependencies (no package build needed)
+RUN printf 'import os, tomllib, subprocess, sys\n\
+with open("pyproject.toml", "rb") as f:\n\
+    data = tomllib.load(f)\n\
+deps = data.get("project", {}).get("dependencies", [])\n\
+optional = data.get("project", {}).get("optional-dependencies", {})\n\
+groups = [g.strip() for g in os.getenv("PIOS_PYPROJECT_OPTIONAL_GROUPS", "").split(",") if g.strip()]\n\
+for group in groups:\n\
+    deps.extend(optional.get(group, []))\n\
+deps = list(dict.fromkeys(deps))\n\
+if deps:\n\
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--prefer-binary", "--no-cache-dir"] + deps)\n\
+' > /tmp/install_deps.py && PIOS_PYPROJECT_OPTIONAL_GROUPS="$PIOS_PYPROJECT_OPTIONAL_GROUPS" python /tmp/install_deps.py
+
+# Now copy real source (won't re-trigger pip above)
+COPY . .
+
+# Re-register the package only, deps already cached
+RUN pip install --no-cache-dir --no-deps .
+
+# Ensure startup script is executable inside the image
+# RUN chmod +x /app/entrypoint.sh
+RUN sed -i 's/\r//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+# Expose the port the app runs on
+EXPOSE 8000
+
+ENTRYPOINT ["/app/entrypoint.sh"]

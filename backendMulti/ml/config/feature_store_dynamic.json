@@ -1,0 +1,192 @@
+{
+  "natural_language_extraction": {
+    "numeric_fields": [
+      {
+        "field": "age",
+        "type": "int",
+        "patterns": [
+          "\\b(?:age|aged)\\s*[:=]?\\s*(\\d{1,3})\\b",
+          "\\b(\\d{1,3})\\s*years?\\s*old\\b"
+        ]
+      },
+      {
+        "field": "bmi",
+        "type": "float",
+        "patterns": [
+          "\\bbmi\\s*[:=]?\\s*(\\d+(?:\\.\\d+)?)"
+        ]
+      },
+      {
+        "field": "donation_count_last_12m",
+        "type": "int",
+        "patterns": [
+          "(\\d+)\\s*(?:donations?|times?)\\s*(?:in|during)\\s*(?:the\\s*)?(?:last\\s*)?12\\s*months?"
+        ]
+      },
+      {
+        "field": "recency_days",
+        "type": "int",
+        "patterns": [
+          "(?:recency|days since last donation|last donation)\\s*[:=]?\\s*(\\d+)"
+        ]
+      },
+      {
+        "field": "month",
+        "type": "int",
+        "patterns": [
+          "\\bmonth\\s*[:=]?\\s*(1[0-2]|[1-9])"
+        ]
+      }
+    ],
+    "blood_group_patterns": [
+      "(?:blood\\s*type|type)\\s*[:=]?\\s*(ab|a|b|o)([+-])",
+      "(?<![a-z0-9])(ab|a|b|o)([+-])(?![a-z0-9])"
+    ],
+    "component_context_terms": [
+      "component",
+      "product",
+      "blood product"
+    ],
+    "sex_values": {
+      "male": "M",
+      "female": "F",
+      "m": "M",
+      "f": "F"
+    },
+    "entity_patterns": [
+      {
+        "field": "hospital",
+        "id_field": "hospital_id",
+        "pattern": "\\bhospital\\s+([a-z0-9_-]+)\\b",
+        "transform": "capitalize"
+      },
+      {
+        "field": "hospital_ids",
+        "id_field": "hospital_id",
+        "pattern": "\\b(h\\d{3})\\b",
+        "transform": "upper",
+        "many": true,
+        "unique": true,
+        "max_matches": 10
+      },
+      {
+        "field": "donor",
+        "id_field": "donor_id",
+        "pattern": "\\bdonor(?:\\s+id)?\\s+([a-z]*\\d[a-z0-9_-]*)\\b",
+        "transform": "upper"
+      }
+    ],
+    "flag_terms": {
+      "weekend": ["weekend"]
+    }
+  },
+  "context_field_aliases": {
+    "temp_c": "temperature",
+    "supply_shock": "disaster",
+    "stock_start": "current_inventory",
+    "stock_end": "current_inventory"
+  },
+  "entity_key_aliases": {
+    "hospital_id": ["hospital_id", "hospital"],
+    "donor_id": ["donor_id", "donor"],
+    "supply_id": ["supply_id", "supply"],
+    "blood_type": [
+      "blood_type",
+      "blood_component",
+      "component",
+      "blood_product_type",
+      "product_type",
+      "component_type"
+    ],
+    "entity_id": ["entity_id", "entity"]
+  },
+  "identifier_names": ["donor", "hospital", "supply", "entity"],
+  "order_columns": [
+    "event_timestamp",
+    "date",
+    "as_of_date",
+    "updated_at",
+    "created_at",
+    "donor_id",
+    "hospital_id",
+    "supply_id",
+    "entity_id",
+    "id"
+  ],
+  "entity_table_mappings": [
+    {
+      "entity_key": "hospital_id",
+      "env": "PIOS_ORCH_DB_HOSPITALS_TABLE",
+      "default": "orchestrator_hospitals"
+    },
+    {
+      "entity_key": "donor_id",
+      "env": "PIOS_ORCH_DB_DONORS_TABLE",
+      "default": "orchestrator_donors"
+    }
+  ],
+  "feature_match_table_mappings": [
+    {
+      "env": "PIOS_ORCH_DB_DONORS_TABLE",
+      "default": "orchestrator_donors",
+      "features": [
+        "age",
+        "bmi",
+        "sex",
+        "blood_type",
+        "recency_days",
+        "donation_count_last_12m",
+        "eligibility_status"
+      ]
+    },
+    {
+      "env": "PIOS_ORCH_DB_HOSPITALS_TABLE",
+      "default": "orchestrator_hospitals",
+      "features": [
+        "current_inventory",
+        "temperature",
+        "rain_mm",
+        "scheduled_surgeries",
+        "trauma_cases",
+        "disaster"
+      ]
+    }
+  ],
+  "sqlite_feature_match_tables": ["orchestrator_hospitals"],
+  "component": {
+    "entity_keys": ["blood_type"],
+    "parent_entity_keys": ["hospital_id"],
+    "values": ["RBC", "PLASMA", "PLATELETS"],
+    "all_values": ["ALL", "__ALL__"],
+    "aliases": {
+      "RCB": "RBC",
+      "RED_CELL": "RBC",
+      "RED_CELLS": "RBC",
+      "RED_BLOOD_CELL": "RBC",
+      "RED_BLOOD_CELLS": "RBC",
+      "PALLET": "PLATELETS",
+      "PALLETS": "PLATELETS",
+      "PLATELET": "PLATELETS",
+      "PLT": "PLATELETS",
+      "FFP": "PLASMA"
+    },
+    "factors": {
+      "RBC": 0.55,
+      "PLASMA": 0.3,
+      "PLATELETS": 0.15
+    },
+    "scaled_quantity_fields": [
+      "stock_start",
+      "stock_end",
+      "current_inventory"
+    ],
+    "scaled_count_fields": [
+      "units_collected",
+      "units_used",
+      "wastage"
+    ],
+    "critical_stock_field": "critical_stock",
+    "critical_stock_source_field": "stock_end",
+    "critical_stock_threshold": 2
+  }
+}

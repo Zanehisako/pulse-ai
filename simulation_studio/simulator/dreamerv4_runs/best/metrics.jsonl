@@ -1,0 +1,22 @@
+{"step": 4, "grad_steps": 4, "episodes": 0, "fps": 1.3, "buffer_size": 1004, "wm/total": 2.12645, "wm/obs": 0.17885, "wm/rew": 0.37278, "wm/cont": 0.45774, "wm/kl": 1.31983, "wm/kl_dyn": 1.11708, "wm/kl_rep": 1.11708, "ac/actor_loss": 3.98992, "ac/critic_loss": 0.18017, "ac/entropy": 19.5782, "ac/return_mean": 0.86556, "ac/advantage_mean": 0.74288}
+{"step": 8, "grad_steps": 8, "episodes": 0, "fps": 2.2, "buffer_size": 1008, "wm/total": 0.70546, "wm/obs": 0.06484, "wm/rew": 0.11766, "wm/cont": 0.20464, "wm/kl": 1.00006, "wm/kl_dyn": 0.31833, "wm/kl_rep": 0.31833, "ac/actor_loss": 8.33293, "ac/critic_loss": 0.32699, "ac/entropy": 21.26192, "ac/return_mean": 2.94387, "ac/advantage_mean": 2.55282}
+{"step": 12, "grad_steps": 12, "episodes": 0, "fps": 2.7, "buffer_size": 1012, "wm/total": 0.53785, "wm/obs": 0.04994, "wm/rew": 0.12904, "wm/cont": 0.15999, "wm/kl": 1.0, "wm/kl_dyn": 0.19888, "wm/kl_rep": 0.19888, "ac/actor_loss": 0.99117, "ac/critic_loss": 1.00473, "ac/entropy": 21.75404, "ac/return_mean": 1.62473, "ac/advantage_mean": 1.21718}
+{"step": 28, "grad_steps": 28, "episodes": 0, "fps": 3.8, "buffer_size": 1028, "wm/total": 0.36344, "wm/obs": 0.02882, "wm/rew": 0.09611, "wm/cont": 0.15305, "wm/kl": 1.0, "wm/kl_dyn": 0.08546, "wm/kl_rep": 0.08546, "ac/actor_loss": -7.00942, "ac/critic_loss": 0.60343, "ac/entropy": 22.74277, "ac/return_mean": 1.48362, "ac/advantage_mean": 0.97809}
+{"step": 52, "grad_steps": 52, "episodes": 0, "fps": 4.4, "buffer_size": 1052, "wm/total": 0.26553, "wm/obs": 0.01802, "wm/rew": 0.07512, "wm/cont": 0.14944, "wm/kl": 1.0, "wm/kl_dyn": 0.02295, "wm/kl_rep": 0.02295, "ac/actor_loss": -24.02543, "ac/critic_loss": 0.31256, "ac/entropy": 25.71913, "ac/return_mean": 2.23737, "ac/advantage_mean": 1.41443}
+{"step": 109, "episode": 1, "episode_reward": -20.3179988861084, "time": 21.935194969177246}
+{"step": 110, "episode": 2, "episode_reward": -19.713302612304688, "time": 21.942028045654297}
+{"step": 111, "episode": 3, "episode_reward": -18.23241424560547, "time": 21.947253942489624}
+{"step": 112, "episode": 4, "episode_reward": -19.734851837158203, "time": 21.951769828796387}
+{"step": 221, "episode": 5, "episode_reward": 25.15281867980957, "time": 42.2741539478302}
+{"step": 222, "episode": 6, "episode_reward": 21.725173950195312, "time": 42.27916598320007}
+{"step": 223, "episode": 7, "episode_reward": 19.238893508911133, "time": 42.2838237285614}
+{"step": 224, "episode": 8, "episode_reward": 22.48427963256836, "time": 42.2887077331543}
+{"step": 333, "episode": 9, "episode_reward": 9.693440437316895, "time": 62.68313193321228}
+{"step": 334, "episode": 10, "episode_reward": 8.80518627166748, "time": 62.68683481216431}
+{"step": 335, "episode": 11, "episode_reward": 8.1947660446167, "time": 62.6917040348053}
+{"step": 336, "episode": 12, "episode_reward": 6.1908955574035645, "time": 62.69583177566528}
+{"step": 445, "episode": 13, "episode_reward": -5.70537805557251, "time": 83.29619407653809}
+{"step": 446, "episode": 14, "episode_reward": 4.075921535491943, "time": 83.30462694168091}
+{"step": 447, "episode": 15, "episode_reward": -9.93375015258789, "time": 83.3104178905487}
+{"step": 448, "episode": 16, "episode_reward": -7.721399307250977, "time": 83.31780099868774}
+{"step": 500, "grad_steps": 500, "episodes": 16, "fps": 5.3, "buffer_size": 1500, "wm/total": 0.19109, "wm/obs": 0.00978, "wm/rew": 0.05555, "wm/cont": 0.12137, "wm/kl": 1.0, "wm/kl_dyn": 0.0044, "wm/kl_rep": 0.0044, "ac/actor_loss": -12.68514, "ac/critic_loss": 0.35402, "ac/entropy": 18.76755, "ac/return_mean": 4.7972, "ac/advantage_mean": 0.61988}

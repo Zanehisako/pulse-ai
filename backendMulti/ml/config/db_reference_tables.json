@@ -1,0 +1,280 @@
+{
+  "target_column_patterns": [
+    "(?:^|_)(?:label|target)(?:$|_)",
+    "(?:^|_)(?:prediction|predictions|predicted|forecast)(?:$|_)",
+    "(?:^|_)days_until_",
+    "(?:^|_)next_",
+    "_next_"
+  ],
+  "query_defaults": {
+    "default_schema": "public",
+    "default_sqlite_table": "blood_supply",
+    "default_limit": 10,
+    "max_limit": 10,
+    "series_limit": 24,
+    "aggregate_aliases": {
+      "list": "list",
+      "show": "list",
+      "display": "list",
+      "avg": "avg",
+      "average": "avg",
+      "mean": "avg",
+      "sum": "sum",
+      "count": "count",
+      "distinct_count": "distinct_count",
+      "count_distinct": "distinct_count",
+      "min": "min",
+      "minimum": "min",
+      "max": "max",
+      "maximum": "max"
+    }
+  },
+  "natural_language_query": {
+    "blocked_prediction_tokens": [
+      "predict",
+      "prediction",
+      "forecast",
+      "stockout",
+      "shortage",
+      "risk",
+      "probability"
+    ],
+    "list_intent_tokens": [
+      "show",
+      "list",
+      "display",
+      "view",
+      "get",
+      "what is",
+      "what are",
+      "which"
+    ],
+    "latest_tokens": [
+      "current",
+      "latest",
+      "recent",
+      "today",
+      "now",
+      "stock status"
+    ],
+    "supply_intent_tokens": [
+      "supply",
+      "stock",
+      "inventory",
+      "available",
+      "units available"
+    ],
+    "supply_context_terms": [
+      "blood",
+      "stock",
+      "inventory",
+      "supply",
+      "available"
+    ],
+    "supply_blood_group_patterns": [
+      "(?<![a-z0-9])(?:ab|a|b|o)\\s*[+-](?![a-z0-9])"
+    ],
+    "prevalence_tokens": [
+      "prevalence",
+      "distribution",
+      "breakdown",
+      "percentage",
+      "percent",
+      "share"
+    ],
+    "blood_context_phrases": [
+      "blood type"
+    ],
+    "blood_context_required_terms": [
+      ["blood", "type"],
+      ["blood", "group"]
+    ],
+    "population_context_terms": [
+      "population",
+      "donor population",
+      "u.s.",
+      "united states",
+      "country"
+    ],
+    "outreach_required_terms": [
+      "donor"
+    ],
+    "outreach_tokens": [
+      "call",
+      "contact",
+      "reach out",
+      "follow up",
+      "re-engage",
+      "which ones",
+      "which donors",
+      "who should",
+      "next month",
+      "next 30 days"
+    ],
+    "blood_type_patterns": {
+      "signed": "(?<![a-z0-9])(ab|a|b|o)\\s*([+-])(?![a-z0-9])",
+      "worded": "\\b(ab|a|b|o)\\s*(positive|negative)\\b",
+      "word_signs": {
+        "positive": "+",
+        "negative": "-"
+      }
+    },
+    "country_code_pattern": "\\bcountry(?:\\s+code)?\\s*[:=]?\\s*([A-Za-z]{2})\\b",
+    "country_aliases": {
+      "u.s.": "US",
+      "us": "US",
+      "usa": "US",
+      "united states": "US",
+      "american": "US",
+      "canada": "CA",
+      "algeria": "DZ",
+      "france": "FR"
+    },
+    "limit_patterns": [
+      "\\btop\\s+(\\d{1,2})\\b",
+      "\\b(\\d{1,2})\\s+donors?\\b"
+    ],
+    "ethnicity_terms": [
+      "ethnicity",
+      "ethnic",
+      "race",
+      "racial"
+    ]
+  },
+  "tables": {
+    "donors": {
+      "aliases": ["donor", "donors", "donor_registry", "donor_registry_records"],
+      "default_table_name": "orchestrator_donors",
+      "identity_fields": ["donor_id", "blood_type", "country_code"],
+      "field_aliases": {
+        "blood_group": "blood_type",
+        "abo_group": "blood_type",
+        "birthdate": "age",
+        "date_of_birth": "age",
+        "dob": "age",
+        "donor_age": "age"
+      },
+      "ignored_filter_fields": [
+        "blood_component",
+        "component",
+        "component_type",
+        "worst_component"
+      ],
+      "filter_value_paths": {
+        "blood_type": [
+          "blood_type",
+          "blood_group",
+          "abo_group",
+          "worst_blood_group",
+          "worst_component_prediction.blood_group"
+        ]
+      },
+      "filter_value_patterns": {
+        "blood_type": [
+          "(?:^|[^A-Za-z0-9])(AB|A|B|O)\\s*([+-])"
+        ]
+      },
+      "filter_value_case": {
+        "blood_type": "upper",
+        "country_code": "upper",
+        "eligibility_status": "lower"
+      },
+      "filter_value_map": {
+        "eligibility_status": {
+          "true": "eligible",
+          "false": "deferred"
+        }
+      },
+      "seed_field_aliases": {
+        "blood_type": ["blood_group"],
+        "donation_count_last_12m": ["frequency_365"]
+      },
+      "seed_derived_fields": {
+        "eligible_to_donate": {
+          "source": "days_until_eligible",
+          "operator": "lte",
+          "value": 0
+        },
+        "eligibility_status": {
+          "source": "days_until_eligible",
+          "operator": "lte",
+          "value": 0,
+          "true_value": "eligible",
+          "false_value": "deferred"
+        }
+      },
+      "seed_refresh_when_empty_fields": [
+        "blood_type",
+        "eligible_to_donate"
+      ],
+      "inverse_field_aliases": ["birthdate", "date_of_birth", "dob"],
+      "csv_kind": "donors",
+      "columns": [
+        ["donor_id", "BIGINT PRIMARY KEY"],
+        ["age", "INTEGER"],
+        ["sex", "TEXT"],
+        ["country_code", "TEXT"],
+        ["region", "TEXT"],
+        ["blood_type", "TEXT"],
+        ["is_rare_type", "BOOLEAN"],
+        ["smoker", "BOOLEAN"],
+        ["bmi", "DOUBLE PRECISION"],
+        ["chronic_condition_flag", "BOOLEAN"],
+        ["eligible_to_donate", "BOOLEAN"],
+        ["deferral_reason", "TEXT"],
+        ["preferred_site", "TEXT"],
+        ["donation_count_last_12m", "INTEGER"],
+        ["is_regular_donor", "BOOLEAN"],
+        ["years_since_first_donation", "INTEGER"],
+        ["lifetime_donation_count", "INTEGER"],
+        ["first_donation_year", "INTEGER"],
+        ["last_donation_date", "DATE"],
+        ["recency_days", "INTEGER"],
+        ["donor_age_at_first_donation", "INTEGER"],
+        ["blood_type_country_prevalence", "DOUBLE PRECISION"],
+        ["donation_propensity_score", "DOUBLE PRECISION"],
+        ["eligibility_status", "TEXT"],
+        ["as_of_date", "DATE"],
+        ["donated_next_6m", "BOOLEAN"],
+        ["next_6m_donation_count", "INTEGER"]
+      ]
+    },
+    "hospitals": {
+      "aliases": ["hospital", "hospitals", "hospital_supply", "hospital_inventory", "stock status"],
+      "default_table_name": "orchestrator_hospitals",
+      "identity_fields": ["date", "hospital_id", "blood_type"],
+      "field_aliases": {
+        "inventory": "stock_end",
+        "stock": "stock_end",
+        "available_units": "stock_end"
+      },
+      "inverse_field_aliases": [],
+      "csv_kind": "hospitals",
+      "columns": [
+        ["date", "DATE"],
+        ["hospital_id", "TEXT"],
+        ["dow", "INTEGER"],
+        ["weekend", "BOOLEAN"],
+        ["month", "INTEGER"],
+        ["holiday", "BOOLEAN"],
+        ["temp_c", "DOUBLE PRECISION"],
+        ["rain_mm", "DOUBLE PRECISION"],
+        ["flu_index", "DOUBLE PRECISION"],
+        ["trauma_cases", "INTEGER"],
+        ["scheduled_surgeries", "INTEGER"],
+        ["donation_campaign", "BOOLEAN"],
+        ["supply_shock", "BOOLEAN"],
+        ["blood_type", "TEXT"],
+        ["stock_start", "INTEGER"],
+        ["units_collected", "INTEGER"],
+        ["units_used", "INTEGER"],
+        ["wastage", "INTEGER"],
+        ["stock_end", "INTEGER"],
+        ["critical_stock", "BOOLEAN"],
+        ["stockout_next_day", "BOOLEAN"],
+        ["heavy_demand", "BOOLEAN"],
+        ["heavy_demand_next_day", "BOOLEAN"]
+      ]
+    }
+  }
+}

@@ -1,0 +1,237 @@
+{
+  "hybrid_stockout": {
+    "enabled": true,
+    "confidence": "shadow",
+    "fallback_probability": {
+      "enabled": false
+    },
+    "regression": {
+      "model_id": "component_inventory_risk_simulator",
+      "type": "model",
+      "days_output": "expected_days_until_stockout"
+    },
+    "component_fanout": {
+      "enabled": true,
+      "component_key": "component_type",
+      "request_keys": [
+        "blood_component",
+        "component",
+        "component_type"
+      ],
+      "overall_strategy": "max_probability",
+      "components": [
+        "RBC",
+        "PLASMA",
+        "PLATELETS"
+      ],
+      "all_values": [
+        "ALL",
+        "__ALL__"
+      ],
+      "aliases": {
+        "RCB": "RBC",
+        "RED_CELL": "RBC",
+        "RED_CELLS": "RBC",
+        "RED_BLOOD_CELL": "RBC",
+        "RED_BLOOD_CELLS": "RBC",
+        "PALLET": "PLATELETS",
+        "PALLETS": "PLATELETS",
+        "PLATELET": "PLATELETS",
+        "PLT": "PLATELETS",
+        "FFP": "PLASMA"
+      },
+      "priority_weights": {
+        "RBC": 0.75,
+        "PLASMA": 0.45,
+        "PLATELETS": 0.9
+      }
+    },
+    "blood_group_fanout": {
+      "enabled": true,
+      "request_keys": [
+        "blood_type",
+        "blood_group",
+        "abo_group",
+        "blood_group_type"
+      ],
+      "groups": [
+        "O+",
+        "O-",
+        "A+",
+        "A-",
+        "B+",
+        "B-",
+        "AB+",
+        "AB-"
+      ],
+      "inventory_factors": {
+        "O+": 0.37,
+        "O-": 0.06,
+        "A+": 0.31,
+        "A-": 0.06,
+        "B+": 0.09,
+        "B-": 0.02,
+        "AB+": 0.03,
+        "AB-": 0.01
+      },
+      "scaled_inventory_features": [
+        "current_inventory",
+        "stock_end",
+        "stock_start",
+        "units_collected",
+        "units_used",
+        "wastage"
+      ],
+      "priority_weights": {
+        "O-": 1.0,
+        "O+": 0.8,
+        "A-": 0.72,
+        "B-": 0.68,
+        "AB-": 0.62,
+        "A+": 0.5,
+        "B+": 0.42,
+        "AB+": 0.35
+      }
+    },
+    "horizons": [
+      {
+        "key": "1_7_days",
+        "label": "1-7 days",
+        "min_days": 0,
+        "max_days": 7,
+        "timeframe": "short",
+        "output_key": "p_stockout_0_7d"
+      },
+      {
+        "key": "8_30_days",
+        "label": "8-30 days",
+        "min_days": 8,
+        "max_days": 30,
+        "timeframe": "medium",
+        "output_key": "p_stockout_0_30d"
+      },
+      {
+        "key": "31_90_days",
+        "label": "31-90 days",
+        "min_days": 31,
+        "max_days": 90,
+        "timeframe": "long",
+        "output_key": "p_stockout_0_90d"
+      },
+      {
+        "key": "91_180_days",
+        "label": "91-180 days",
+        "min_days": 91,
+        "max_days": 180,
+        "timeframe": "long",
+        "output_key": "p_stockout_0_180d"
+      }
+    ],
+    "risk_levels": [
+      {
+        "level": "critical",
+        "min_probability": 0.7,
+        "max_estimated_days": 7,
+        "recommended_action": "Urgent donor campaign or transfer request"
+      },
+      {
+        "level": "high",
+        "min_probability": 0.5,
+        "max_estimated_days": 14,
+        "recommended_action": "Prepare transfer request and targeted donor outreach"
+      },
+      {
+        "level": "medium",
+        "min_probability": 0.25,
+        "max_estimated_days": 30,
+        "recommended_action": "Increase monitoring and schedule replenishment"
+      },
+      {
+        "level": "low",
+        "min_probability": 0,
+        "recommended_action": "Continue routine monitoring"
+      }
+    ]
+  },
+  "models": {
+    "component_inventory_risk_simulator": {
+      "primary": true
+    },
+    "stockout_time_to_event_hazard_model": {
+      "primary": false,
+      "role": "sentinel"
+    }
+  },
+  "orchestrator_routing": {
+    "prediction_output_names": [
+      "expected_days_until_stockout",
+      "p_stockout_0_7d",
+      "p_stockout_0_30d",
+      "p_stockout_0_90d",
+      "p_stockout_0_180d"
+    ],
+    "prediction_text_terms": [
+      "stockout",
+      "shortage"
+    ],
+    "forecast_selection_default_target": "stockout",
+    "forecast_selection_default_metric": "brier_score",
+    "query_intent_terms": [
+      "stockout",
+      "stock out",
+      "shortage risk",
+      "run out",
+      "days until stock",
+      "blood inventory risk"
+    ],
+    "operational_feature_names": [
+      "current_stock_units",
+      "current_inventory",
+      "stock_end",
+      "stock_start",
+      "units_used",
+      "units_collected",
+      "reserved_units",
+      "substitution_available_units",
+      "safety_threshold_units"
+    ],
+    "prediction_intent_terms": [
+      "predict",
+      "forecast",
+      "risk",
+      "probability",
+      "estimate"
+    ],
+    "scoped_feature_names": [
+      "hospital",
+      "hospital_id",
+      "location"
+    ],
+    "scoped_query_terms": [
+      "hospital"
+    ],
+    "scoped_model_terms": [
+      "hospital"
+    ],
+    "scores": {
+      "horizon_timeframe_match": 100,
+      "horizon_days_match": 80,
+      "horizon_days_mismatch": -40,
+      "scoped_text_match": 20,
+      "primary_model": 10
+    },
+    "default_timeframe_scores": {
+      "short": 70,
+      "medium": 35,
+      "long": -35
+    },
+    "model_priority_terms": {
+      "component_inventory_risk_simulator": 25,
+      "stockout_time_to_event_hazard_model": 5
+    },
+    "model_penalty_terms": {
+      "long_term": -25,
+      "prophet": -25
+    }
+  }
+}

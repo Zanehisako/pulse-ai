@@ -1,0 +1,232 @@
+{
+  "_comment": [
+    "Training Schedule Configuration",
+    "================================",
+    "Controls automated retraining of ML models.",
+    "",
+    "ACTIVE models:",
+    "  - donor_next_donation_hazard_model",
+    "  - donor_contact_propensity_model",
+    "  - donor_contact_response_model (proxy, uplift claims not supported)",
+    "  - donor_priority_policy_model",
+    "  - donor_uplift_model (disabled, requires randomized holdout data)",
+    "  - stockout_time_to_event_hazard_model (sentinel)",
+    "  - component_demand_quantile_forecast_model",
+    "  - component_supply_forecast_model",
+    "  - component_expiry_waste_model (feeds inventory simulator)",
+    "  - component_inventory_risk_simulator (composite pyfunc, primary stockout engine)"
+  ],
+  "defaults": {
+    "time": "23:30",
+    "timezone": "UTC"
+  },
+  "scripts": {
+    "donor_next_donation_hazard": {
+      "script": "train_donor_next_donation_hazard.py",
+      "registered_model_name": "donor_next_donation_hazard_model",
+      "frequency": "weekly",
+      "day_of_week": "sun",
+      "time": "02:00",
+      "enabled": true,
+      "description": "Discrete-time hazard model for donor next-donation timing. Replaces donor_short/medium/long_horizon_probability and days_until_next_donation_regression."
+    },
+    "donor_contact_propensity": {
+      "script": "train_donor_contact_propensity.py",
+      "registered_model_name": "donor_contact_propensity_model",
+      "frequency": "weekly",
+      "day_of_week": "sun",
+      "time": "02:10",
+      "enabled": true,
+      "description": "Donor contact propensity model predicting likelihood of donor response to outreach."
+    },
+    "donor_priority_policy": {
+      "script": "train_donor_priority_policy.py",
+      "registered_model_name": "donor_priority_policy_model",
+      "frequency": "weekly",
+      "day_of_week": "sun",
+      "time": "02:20",
+      "enabled": true,
+      "description": "Expected-utility donor priority policy model. Replaces ideal_donor_classifier."
+    },
+    "stockout_time_to_event_hazard": {
+      "script": "train_stockout_time_to_event_hazard.py",
+      "registered_model_name": "stockout_time_to_event_hazard_model",
+      "frequency": "weekly",
+      "day_of_week": "sun",
+      "time": "02:30",
+      "enabled": true,
+      "description": "Stockout time-to-event hazard model for calibrated horizon probabilities."
+    },
+    "component_demand_quantile_forecast": {
+      "script": "train_component_demand_quantile_forecast.py",
+      "registered_model_name": "component_demand_quantile_forecast_model",
+      "frequency": "weekly",
+      "day_of_week": "sun",
+      "time": "02:40",
+      "enabled": true,
+      "description": "Quantile demand forecast: P10/P50/P90 daily demand by hospital, component, blood type."
+    },
+    "component_supply_forecast": {
+      "script": "train_component_supply_forecast.py",
+      "registered_model_name": "component_supply_forecast_model",
+      "frequency": "weekly",
+      "day_of_week": "sun",
+      "time": "02:50",
+      "enabled": true,
+      "description": "Probabilistic supply forecast: P10/P50/P90 released usable supply."
+    },
+    "component_expiry_waste": {
+      "script": "train_component_expiry_waste.py",
+      "registered_model_name": "component_expiry_waste_model",
+      "frequency": "weekly",
+      "day_of_week": "sun",
+      "time": "03:00",
+      "enabled": true,
+      "description": "Wastage forecast model: daily expiry/waste by hospital, component, blood type. Feeds inventory simulator."
+    },
+    "component_inventory_risk_simulator": {
+      "script": "train_component_inventory_risk_simulator.py",
+      "registered_model_name": "component_inventory_risk_simulator",
+      "frequency": "weekly",
+      "day_of_week": "sun",
+      "time": "03:10",
+      "enabled": true,
+      "description": "Composite pyfunc inventory simulator. Wraps demand, supply, and waste models with Monte Carlo simulation. Primary stockout engine."
+    },
+    "donor_contact_response": {
+      "script": "train_donor_contact_response.py",
+      "registered_model_name": "donor_contact_response_model",
+      "frequency": "weekly",
+      "day_of_week": "sun",
+      "time": "03:20",
+      "enabled": true,
+      "description": "Contact response proxy model. Uses donated_next_6m as proxy target with contact-proxy features. Uplift claims not supported."
+    },
+    "donor_uplift": {
+      "script": "train_donor_uplift.py",
+      "registered_model_name": "donor_uplift_model",
+      "frequency": "weekly",
+      "day_of_week": "sun",
+      "time": "03:30",
+      "enabled": false,
+      "description": "Causal uplift estimation placeholder. Disabled until randomized outreach holdout data exists."
+    }
+  },
+  "post_training": {
+    "sync_registry": true
+  },
+  "drift_monitoring": {
+    "_comment": [
+      "Drift Monitoring — all archived models disabled.",
+      "Enable per-model entries for new models once they are in production."
+    ],
+    "enabled": true,
+    "frequency": "daily",
+    "time": "06:00",
+    "run_after_training": true,
+    "thresholds": {
+      "psi": 0.2,
+      "ks_pvalue": 0.05,
+      "psi_warning": 0.1
+    },
+    "per_model": {}
+  },
+  "promotion_rules": {
+    "_comment": [
+      "Promotion rules for active new models.",
+      "Archived model rules removed."
+    ],
+    "default": {
+      "primary_metric": "root_mean_squared_error",
+      "direction": "minimize",
+      "min_improvement_pct": 0.0,
+      "fallback_metrics": [
+        "mean_absolute_error"
+      ]
+    },
+    "donor_next_donation_hazard_model": {
+      "primary_metric": "brier_score",
+      "direction": "minimize",
+      "min_improvement_pct": 2.0,
+      "fallback_metrics": [
+        "log_loss",
+        "average_precision",
+        "roc_auc"
+      ]
+    },
+    "donor_contact_propensity_model": {
+      "primary_metric": "brier_score",
+      "direction": "minimize",
+      "min_improvement_pct": 0.0,
+      "fallback_metrics": [
+        "log_loss",
+        "average_precision",
+        "roc_auc"
+      ]
+    },
+    "donor_priority_policy_model": {
+      "primary_metric": "root_mean_squared_error",
+      "direction": "minimize",
+      "min_improvement_pct": 0.0,
+      "fallback_metrics": [
+        "mean_absolute_error"
+      ]
+    },
+    "stockout_time_to_event_hazard_model": {
+      "primary_metric": "brier_score",
+      "direction": "minimize",
+      "min_improvement_pct": 0.0,
+      "fallback_metrics": [
+        "log_loss",
+        "average_precision",
+        "roc_auc"
+      ]
+    },
+    "component_demand_quantile_forecast_model": {
+      "primary_metric": "rmsse",
+      "direction": "minimize",
+      "min_improvement_pct": 0.0,
+      "fallback_metrics": [
+        "mase",
+        "root_mean_squared_error"
+      ]
+    },
+    "component_supply_forecast_model": {
+      "primary_metric": "rmsse",
+      "direction": "minimize",
+      "min_improvement_pct": 0.0,
+      "fallback_metrics": [
+        "mase",
+        "root_mean_squared_error"
+      ]
+    },
+    "component_expiry_waste_model": {
+      "primary_metric": "root_mean_squared_error",
+      "direction": "minimize",
+      "min_improvement_pct": 0.0,
+      "fallback_metrics": [
+        "mean_absolute_error",
+        "mase"
+      ]
+    },
+    "component_inventory_risk_simulator": {
+      "primary_metric": "root_mean_squared_error",
+      "direction": "minimize",
+      "min_improvement_pct": 0.0,
+      "fallback_metrics": [
+        "mean_absolute_error"
+      ],
+      "_note": "Simulator metrics TBD after first backtest. Promotion currently based on structural validation."
+    },
+    "donor_contact_response_model": {
+      "primary_metric": "brier_score",
+      "direction": "minimize",
+      "min_improvement_pct": 0.0,
+      "fallback_metrics": [
+        "log_loss",
+        "average_precision",
+        "roc_auc"
+      ]
+    }
+  }
+}

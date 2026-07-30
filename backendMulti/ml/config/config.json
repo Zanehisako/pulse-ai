@@ -1,0 +1,2042 @@
+{
+  "runtime": {
+    "config_hot_reload": {
+      "enabled": true,
+      "poll_interval_seconds": 0.25,
+      "debounce_seconds": 0.25
+    }
+  },
+  "models": [
+    {
+      "id": "component_demand_quantile_forecast_model",
+      "description": "Predicts future blood demand (units needed) per hospital, blood type, and component over 7/30 day horizons. Use for demand forecasting and supply planning.",
+      "file_path": "models:/component_demand_quantile_forecast_model@challenger",
+      "type": "mlflow",
+      "enabled": true,
+      "features": [
+        "hospital_id",
+        "hospital_name",
+        "region_admin",
+        "city",
+        "supplier_context",
+        "province",
+        "blood_type",
+        "component_type",
+        "hospital_size_tier",
+        "month",
+        "dow",
+        "weekend",
+        "holiday",
+        "flu_season_flag",
+        "major_event",
+        "supply_disruption",
+        "donor_shortfall",
+        "shelf_life_days",
+        "current_inventory",
+        "units_used",
+        "units_collected",
+        "wastage",
+        "incoming_supply_scheduled_7d",
+        "lead_time_days",
+        "route_disruption_score",
+        "trauma_cases",
+        "scheduled_surgeries",
+        "component_criticality_score",
+        "inventory_7d_mean",
+        "usage_7d_mean",
+        "wastage_7d_mean",
+        "collection_7d_mean",
+        "inventory_30d_mean",
+        "usage_30d_mean",
+        "collection_30d_mean",
+        "stockout_count_30d"
+      ],
+      "feature_info": {},
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Forecast demand units for O+ red cells at hospital H001 over the next week.",
+          "why": "Direct inventory demand forecasting."
+        },
+        {
+          "kind": "good",
+          "user_query": "How many units of A- plasma will be needed next month?",
+          "why": "Demand quantity prediction."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can this donor donate blood?",
+          "why": "Donor eligibility is not demand forecasting."
+        }
+      ],
+      "defaults": {
+        "deployment_mode": "shadow",
+        "thesis_use": "prototype",
+        "metrics_path": "/Users/mac/Downloads/pios_sota_global_models/global_sota_demand_quantile_forecast_model_metrics.json"
+      }
+    },
+    {
+      "id": "component_supply_forecast_model",
+      "description": "Predicts future blood supply (units collected/incoming) per hospital, blood type, and component. Use for supply forecasting.",
+      "file_path": "models:/component_supply_forecast_model@challenger",
+      "type": "mlflow",
+      "enabled": true,
+      "features": [
+        "hospital_id",
+        "hospital_name",
+        "region_admin",
+        "city",
+        "supplier_context",
+        "province",
+        "blood_type",
+        "component_type",
+        "hospital_size_tier",
+        "month",
+        "dow",
+        "weekend",
+        "holiday",
+        "flu_season_flag",
+        "major_event",
+        "supply_disruption",
+        "donor_shortfall",
+        "shelf_life_days",
+        "current_inventory",
+        "units_used",
+        "units_collected",
+        "wastage",
+        "incoming_supply_scheduled_7d",
+        "lead_time_days",
+        "route_disruption_score",
+        "trauma_cases",
+        "scheduled_surgeries",
+        "component_criticality_score",
+        "inventory_7d_mean",
+        "usage_7d_mean",
+        "wastage_7d_mean",
+        "collection_7d_mean",
+        "inventory_30d_mean",
+        "usage_30d_mean",
+        "collection_30d_mean",
+        "stockout_count_30d"
+      ],
+      "feature_info": {},
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Forecast incoming supply for A- platelets at hospital H002.",
+          "why": "Direct supply forecasting."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Is this donor eligible?",
+          "why": "Donor questions are not supply forecasting."
+        }
+      ],
+      "defaults": {
+        "deployment_mode": "shadow",
+        "thesis_use": "prototype",
+        "metrics_path": "/Users/mac/Downloads/pios_sota_global_models/global_sota_supply_quantile_forecast_model_metrics.json"
+      }
+    },
+    {
+      "id": "component_expiry_waste_model",
+      "description": "Predicts daily expiry and wastage units per hospital, blood type, and component. Use for waste reduction planning.",
+      "file_path": "models:/component_expiry_waste_model@challenger",
+      "type": "mlflow",
+      "enabled": true,
+      "features": [
+        "hospital_id",
+        "hospital_name",
+        "region_admin",
+        "city",
+        "supplier_context",
+        "province",
+        "blood_type",
+        "component_type",
+        "hospital_size_tier",
+        "month",
+        "dow",
+        "weekend",
+        "holiday",
+        "flu_season_flag",
+        "major_event",
+        "supply_disruption",
+        "donor_shortfall",
+        "shelf_life_days",
+        "current_inventory",
+        "wastage",
+        "units_used",
+        "units_collected",
+        "route_disruption_score",
+        "inventory_7d_mean",
+        "wastage_7d_mean",
+        "inventory_30d_mean",
+        "wastage_30d_mean",
+        "collection_adjusted_runway_days"
+      ],
+      "feature_info": {},
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Estimate expiry waste for O- red cells at this hospital.",
+          "why": "Direct wastage forecast."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Will this donor donate again?",
+          "why": "Donor behavior is not wastage."
+        }
+      ],
+      "defaults": {
+        "deployment_mode": "shadow",
+        "thesis_use": "prototype",
+        "metrics_path": "/Users/mac/Downloads/pios_sota_global_models/global_sota_expiry_waste_model_metrics.json"
+      }
+    },
+    {
+      "id": "stockout_time_to_event_hazard_model",
+      "description": "Predicts probability of blood stockout within 7/30/90/180 day windows per hospital, blood type, and component. Use for stockout risk assessment.",
+      "file_path": "models:/stockout_time_to_event_hazard_model@challenger",
+      "type": "mlflow",
+      "enabled": true,
+      "features": [
+        "hospital_id",
+        "hospital_name",
+        "region_admin",
+        "city",
+        "supplier_context",
+        "province",
+        "blood_type",
+        "component_type",
+        "hospital_size_tier",
+        "month",
+        "dow",
+        "weekend",
+        "holiday",
+        "flu_season_flag",
+        "major_event",
+        "supply_disruption",
+        "donor_shortfall",
+        "shelf_life_days",
+        "current_inventory",
+        "units_used",
+        "units_collected",
+        "wastage",
+        "incoming_supply_scheduled_7d",
+        "lead_time_days",
+        "route_disruption_score",
+        "trauma_cases",
+        "scheduled_surgeries",
+        "component_criticality_score",
+        "inventory_7d_mean",
+        "usage_7d_mean",
+        "wastage_7d_mean",
+        "collection_7d_mean",
+        "inventory_30d_mean",
+        "usage_30d_mean",
+        "collection_30d_mean",
+        "stockout_count_30d",
+        "safety_threshold",
+        "stockout_count_7d",
+        "stockout_count_14d"
+      ],
+      "feature_info": {},
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "What is the 7 day stockout probability for AB- platelets at hospital H001?",
+          "why": "Direct stockout risk."
+        },
+        {
+          "kind": "good",
+          "user_query": "Will we run out of O+ blood this week?",
+          "why": "Stockout risk question."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can a donor with BMI 24 donate?",
+          "why": "Donor eligibility is not stockout risk."
+        }
+      ],
+      "defaults": {
+        "deployment_mode": "shadow",
+        "thesis_use": "prototype",
+        "metrics_path": "/Users/mac/Downloads/pios_sota_global_models/global_sota_stockout_hazard_model_metrics.json"
+      }
+    },
+    {
+      "id": "donor_next_donation_hazard_model",
+      "description": "Predicts whether a donor can donate blood now or is likely to donate within a future 3/6 month horizon based on their profile, eligibility, recency, and blood type. Use for donate-now, eligibility, and future donation likelihood questions, not explicit ideal-donor profile scoring.",
+      "file_path": "models:/donor_next_donation_hazard_model@challenger",
+      "type": "mlflow",
+      "enabled": true,
+      "features": [
+        "province",
+        "supplier_context",
+        "region_admin",
+        "age",
+        "sex",
+        "language_preference",
+        "blood_type",
+        "digital_contactability_score",
+        "center_distance_km",
+        "public_transit_access_score",
+        "winter_route_risk_score",
+        "smoker",
+        "bmi",
+        "chronic_condition_flag",
+        "is_rare_type",
+        "snapshot_month",
+        "snapshot_is_winter",
+        "years_since_first_donation",
+        "lifetime_donation_count",
+        "recency_days",
+        "snapshot_days_until_eligible",
+        "snapshot_frequency_365",
+        "donation_velocity",
+        "is_regular_donor",
+        "eligible_to_donate",
+        "readiness_score",
+        "mobility_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "feature_info": {},
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Can a 35 year old donor with BMI 24 donate blood now?",
+          "why": "Donate-now donor eligibility and donation likelihood question."
+        },
+        {
+          "kind": "good",
+          "user_query": "Can this person donate blood now?",
+          "why": "Donate-now donor eligibility question."
+        },
+        {
+          "kind": "good",
+          "user_query": "Is this O- donor likely to donate in the next six months?",
+          "why": "Direct donation probability prediction."
+        },
+        {
+          "kind": "good",
+          "user_query": "What is the donation probability for a 28 year old female donor over the next quarter?",
+          "why": "Future donor donation likelihood."
+        },
+        {
+          "kind": "good",
+          "user_query": "Will this regular donor donate again in the next 90 days?",
+          "why": "Future donation horizon question."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Is a 35 year old donor with BMI 24 an ideal donor?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Score this donor for outreach priority.",
+          "why": "Outreach ranking is donor_priority_policy_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Will this donor respond to a contact attempt?",
+          "why": "Contact response is donor_contact_response_model."
+        }
+      ],
+      "defaults": {
+        "deployment_mode": "shadow",
+        "thesis_use": "prototype",
+        "serving_backend": "tabular_gbdt",
+        "metrics_path": "/Users/mac/Downloads/pios_sota_global_models/global_sota_donor_next_donation_hazard_model_metrics.json"
+      }
+    },
+    {
+      "id": "ideal_donor_probability_model",
+      "description": "Predicts a bounded ideal-donor probability score from donor profile, eligibility, mobility, recency, and blood-type features. Use for explicit ideal donor profile and ideal candidate suitability questions; decision support only, not final medical eligibility.",
+      "file_path": "models:/ideal_donor_probability_model@challenger",
+      "type": "mlflow",
+      "enabled": true,
+      "features": [
+        "province",
+        "supplier_context",
+        "region_admin",
+        "age",
+        "sex",
+        "language_preference",
+        "blood_type",
+        "digital_contactability_score",
+        "center_distance_km",
+        "public_transit_access_score",
+        "winter_route_risk_score",
+        "smoker",
+        "bmi",
+        "chronic_condition_flag",
+        "is_rare_type",
+        "snapshot_month",
+        "snapshot_is_winter",
+        "years_since_first_donation",
+        "lifetime_donation_count",
+        "recency_days",
+        "snapshot_days_until_eligible",
+        "snapshot_frequency_365",
+        "donation_velocity",
+        "is_regular_donor",
+        "eligible_to_donate",
+        "mobility_score"
+      ],
+      "feature_info": {},
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Is a 35 year old donor with BMI 24 an ideal donor?",
+          "why": "Direct ideal donor profile score from age and BMI."
+        },
+        {
+          "kind": "good",
+          "user_query": "What is this donor's ideal donor probability?",
+          "why": "Direct ideal donor probability scoring."
+        },
+        {
+          "kind": "good",
+          "user_query": "Rank this donor as an ideal blood donor candidate.",
+          "why": "Ideal donor candidate score."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can a 35 year old donor with BMI 24 donate blood now?",
+          "why": "Donate-now donor eligibility is donor_next_donation_hazard_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Is this O- donor likely to donate in the next six months?",
+          "why": "Future donation likelihood is donor_next_donation_hazard_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Will this donor respond to an outreach call?",
+          "why": "Contact response is donor_contact_response_model."
+        }
+      ],
+      "defaults": {
+        "deployment_mode": "shadow",
+        "thesis_use": "prototype",
+        "serving_backend": "tabular_gbdt"
+      }
+    },
+    {
+      "id": "donor_contact_response_model",
+      "description": "Predicts whether a donor will respond positively to an outreach/contact attempt (phone call, SMS, email). Use only for contact response scoring, NOT for donation eligibility.",
+      "file_path": "models:/donor_contact_response_model@challenger",
+      "type": "mlflow",
+      "enabled": false,
+      "features": [
+        "province",
+        "supplier_context",
+        "region_admin",
+        "age",
+        "sex",
+        "language_preference",
+        "blood_type",
+        "digital_contactability_score",
+        "center_distance_km",
+        "public_transit_access_score",
+        "winter_route_risk_score",
+        "smoker",
+        "bmi",
+        "chronic_condition_flag",
+        "is_rare_type",
+        "snapshot_month",
+        "snapshot_is_winter",
+        "years_since_first_donation",
+        "lifetime_donation_count",
+        "recency_days",
+        "snapshot_days_until_eligible",
+        "snapshot_frequency_365",
+        "donation_velocity",
+        "is_regular_donor",
+        "eligible_to_donate",
+        "readiness_score",
+        "mobility_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "feature_info": {},
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Will this donor respond if we call them?",
+          "why": "Contact response prediction."
+        },
+        {
+          "kind": "good",
+          "user_query": "Score this donor contact response likelihood.",
+          "why": "Direct contact response scoring."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can this donor donate blood?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        }
+      ],
+      "defaults": {
+        "deployment_mode": "shadow",
+        "thesis_use": "prototype",
+        "proxy_only": true,
+        "serving_backend": "tabular_gbdt",
+        "metrics_path": "/Users/mac/Downloads/pios_sota_global_models/global_sota_donor_contact_response_model_metrics.json"
+      }
+    },
+    {
+      "id": "donor_contact_propensity_model",
+      "description": "Predicts the propensity/likelihood that a donor should be contacted for a blood drive campaign. Use only for campaign targeting, NOT for donation eligibility.",
+      "file_path": "models:/donor_contact_propensity_model@challenger",
+      "type": "mlflow",
+      "enabled": false,
+      "features": [
+        "province",
+        "supplier_context",
+        "region_admin",
+        "age",
+        "sex",
+        "language_preference",
+        "blood_type",
+        "digital_contactability_score",
+        "center_distance_km",
+        "public_transit_access_score",
+        "winter_route_risk_score",
+        "smoker",
+        "bmi",
+        "chronic_condition_flag",
+        "is_rare_type",
+        "snapshot_month",
+        "snapshot_is_winter",
+        "years_since_first_donation",
+        "lifetime_donation_count",
+        "recency_days",
+        "snapshot_days_until_eligible",
+        "snapshot_frequency_365",
+        "donation_velocity",
+        "is_regular_donor",
+        "eligible_to_donate",
+        "readiness_score",
+        "mobility_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "feature_info": {},
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Should we include this donor in the next blood drive campaign?",
+          "why": "Campaign targeting propensity."
+        },
+        {
+          "kind": "good",
+          "user_query": "Score donor contact propensity for this donor profile.",
+          "why": "Direct contact propensity scoring."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can a 35 year old with BMI 24 donate blood?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Is this donor eligible to donate?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        }
+      ],
+      "defaults": {
+        "deployment_mode": "shadow",
+        "thesis_use": "prototype",
+        "proxy_only": true,
+        "serving_backend": "tabular_gbdt",
+        "metrics_path": "/Users/mac/Downloads/pios_sota_global_models/global_sota_donor_contact_propensity_model_metrics.json"
+      }
+    },
+    {
+      "id": "donor_priority_policy_model",
+      "description": "Ranks donors by outreach priority score based on rarity, eligibility, and operational factors. Use for donor ranking and prioritization, NOT for eligibility.",
+      "file_path": "models:/donor_priority_policy_model@challenger",
+      "type": "mlflow",
+      "enabled": true,
+      "features": [
+        "eligible_to_donate",
+        "is_regular_donor",
+        "blood_type",
+        "is_rare_type",
+        "center_distance_km",
+        "travel_time_min",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority",
+        "readiness_score"
+      ],
+      "feature_info": {},
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Rank this eligible rare-type donor for outreach priority.",
+          "why": "Direct donor priority ranking."
+        },
+        {
+          "kind": "good",
+          "user_query": "Which donors should we prioritize for outreach?",
+          "why": "Priority scoring."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can this donor donate blood?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        }
+      ],
+      "defaults": {
+        "deployment_mode": "shadow",
+        "thesis_use": "prototype",
+        "metrics_path": "/Users/mac/Downloads/pios_sota_global_models/global_sota_donor_priority_policy_model_metrics.json"
+      }
+    },
+    {
+      "id": "component_inventory_risk_simulator",
+      "description": "Monte Carlo inventory risk simulator. Estimates stockout probabilities and days-until-stockout using current inventory state. Use for inventory risk simulation.",
+      "file_path": "models:/component_inventory_risk_simulator@challenger",
+      "type": "mlflow",
+      "enabled": true,
+      "features": [
+        "hospital_id",
+        "blood_type",
+        "component_type",
+        "event_timestamp",
+        "current_inventory",
+        "usage_today",
+        "current_stock_units",
+        "units_used",
+        "units_collected",
+        "wastage",
+        "reserved_units",
+        "substitution_available_units",
+        "safety_threshold_units",
+        "shelf_life_days"
+      ],
+      "feature_info": {},
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Simulate stockout risk for current inventory levels.",
+          "why": "Direct inventory simulation."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can this donor donate?",
+          "why": "Donor questions are not inventory simulation."
+        }
+      ],
+      "defaults": {
+        "deployment_mode": "shadow",
+        "thesis_use": "prototype",
+        "metrics_path": "/Users/mac/Downloads/pios_sota_global_models/global_sota_inventory_risk_simulator_metrics.json"
+      }
+    },
+    {
+      "id": "donor_next_donation_time_model",
+      "description": "Predicts the number of days until a donor's next donation using quantile regression. Use for donation timing forecasts and scheduling.",
+      "file_path": "models:/donor_next_donation_time_model@challenger",
+      "type": "mlflow",
+      "enabled": true,
+      "features": [
+        "province",
+        "supplier_context",
+        "region_admin",
+        "age",
+        "sex",
+        "language_preference",
+        "blood_type",
+        "digital_contactability_score",
+        "center_distance_km",
+        "public_transit_access_score",
+        "winter_route_risk_score",
+        "smoker",
+        "bmi",
+        "chronic_condition_flag",
+        "is_rare_type",
+        "snapshot_month",
+        "snapshot_is_winter",
+        "years_since_first_donation",
+        "lifetime_donation_count",
+        "recency_days",
+        "snapshot_days_until_eligible",
+        "snapshot_frequency_365",
+        "donation_velocity",
+        "is_regular_donor",
+        "eligible_to_donate",
+        "readiness_score",
+        "mobility_score",
+        "response_readiness_index",
+        "donor_momentum",
+        "operational_outreach_priority"
+      ],
+      "feature_info": {},
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "How many days until this donor is likely to donate again?",
+          "why": "Direct time-to-donation prediction."
+        },
+        {
+          "kind": "good",
+          "user_query": "When will this O+ donor next donate?",
+          "why": "Donation timing forecast."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Can this donor donate blood?",
+          "why": "Ideal donor profile scoring is ideal_donor_probability_model."
+        }
+      ],
+      "defaults": {
+        "deployment_mode": "shadow",
+        "thesis_use": "prototype"
+      }
+    }
+  ],
+  "stockout_hybrid": {
+    "enabled": false,
+    "confidence": "shadow",
+    "regression": {
+      "model_id": "component_inventory_risk_simulator",
+      "type": "model",
+      "days_output": "expected_days_until_stockout"
+    },
+    "component_fanout": {
+      "enabled": true,
+      "component_key": "blood_component",
+      "request_keys": [
+        "blood_component",
+        "component",
+        "component_type"
+      ]
+    },
+    "blood_group_fanout": {
+      "enabled": true,
+      "request_keys": [
+        "blood_type",
+        "blood_group",
+        "abo_group",
+        "blood_group_type"
+      ]
+    },
+    "horizons": [
+      {
+        "key": "0_7_days",
+        "label": "0-7 days",
+        "min_days": 0,
+        "max_days": 7,
+        "timeframe": "short",
+        "output_key": "p_stockout_0_7d"
+      },
+      {
+        "key": "8_30_days",
+        "label": "8-30 days",
+        "min_days": 8,
+        "max_days": 30,
+        "timeframe": "medium",
+        "output_key": "p_stockout_0_30d"
+      },
+      {
+        "key": "31_90_days",
+        "label": "31-90 days",
+        "min_days": 31,
+        "max_days": 90,
+        "timeframe": "long",
+        "output_key": "p_stockout_0_90d"
+      },
+      {
+        "key": "91_180_days",
+        "label": "91-180 days",
+        "min_days": 91,
+        "max_days": 180,
+        "timeframe": "long",
+        "output_key": "p_stockout_0_180d"
+      }
+    ]
+  },
+  "external_tools": [
+    {
+      "id": "stockout_hybrid",
+      "name": "stockout_hybrid",
+      "type": "external",
+      "enabled": false,
+      "adapter": "stockout_hybrid",
+      "description": "Hybrid stockout prediction function. Use for stockout, shortage-risk, critical inventory, or hospital donor-campaign context when the highest-risk blood group/component is needed before downstream tool calls.",
+      "aliases": [
+        "stockout_horizon",
+        "stockout_horizion",
+        "stockout_risk",
+        "stockout_forecast"
+      ],
+      "input_hints": "query plus known non-null request features matching configured model/entity schemas",
+      "schema": {
+        "stockout_hybrid": {
+          "fields": [
+            "query",
+            "hospital_id",
+            "hospital_ids",
+            "hospital_rows",
+            "blood_type",
+            "blood_group",
+            "blood_component",
+            "compare_mode",
+            "max_rows",
+            "limit",
+            "raw_row_limit",
+            "entity_key",
+            "group_rows",
+            "regression_model_id"
+          ],
+          "notes": "Use hospital_id for a single hospital. Use hospital_ids or hospital_rows for bounded compare and ranking requests."
+        }
+      },
+      "batch_compare": {
+        "entity_key": "hospital_id",
+        "group_rows": true,
+        "max_rows": 10,
+        "raw_row_limit": 25,
+        "control_argument_keys": [
+          "hospital_ids",
+          "hospital_rows",
+          "compare_mode",
+          "max_rows",
+          "limit",
+          "raw_row_limit",
+          "entity_key",
+          "group_rows"
+        ],
+        "row_selection": [
+          {
+            "field": "critical_stock",
+            "direction": "desc"
+          },
+          {
+            "field": "stock_end",
+            "direction": "asc"
+          }
+        ],
+        "sort": [
+          {
+            "field": "stockout_probability",
+            "direction": "desc"
+          },
+          {
+            "field": "estimated_days_until_stockout",
+            "direction": "asc"
+          },
+          {
+            "field": "risk_level",
+            "direction": "desc"
+          }
+        ],
+        "risk_order": {
+          "critical": 3,
+          "high": 2,
+          "medium": 1,
+          "moderate": 1,
+          "low": 0
+        }
+      },
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Which blood group is at highest stockout risk for hospital H001?",
+          "arguments": {
+            "query": "Which blood group is at highest stockout risk for hospital H001?"
+          },
+          "why": "The output includes fields such as worst_blood_group and worst_component that later dependent tool calls can reference."
+        },
+        {
+          "kind": "good",
+          "user_query": "Compare stockout between hospital H001 and hospital H002.",
+          "arguments": {
+            "hospital_ids": [
+              "H001",
+              "H002"
+            ],
+            "compare_mode": "compare",
+            "max_rows": 2
+          },
+          "why": "Use bounded hospital ids for a direct comparison rather than a single-hospital prediction."
+        },
+        {
+          "kind": "good",
+          "user_query": "Which hospitals are at highest stockout risk?",
+          "arguments": {
+            "compare_mode": "rank",
+            "max_rows": 10
+          },
+          "why": "Use bounded hospital rows from a prior lookup or db tool before scoring and ranking."
+        },
+        {
+          "kind": "good",
+          "user_query": "Which hospital will run out of stock faster?",
+          "arguments": {
+            "hospital_rows": "$steps.1.output.rows",
+            "compare_mode": "rank",
+            "entity_key": "hospital_id",
+            "group_rows": true,
+            "max_rows": 10
+          },
+          "why": "Rank bounded hospital entities, not individual blood-type inventory rows."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Which O+ donors should we call?",
+          "why": "The blood group is already explicit; use configured donor lookup and scoring tools directly unless shortage context is requested."
+        }
+      ],
+      "entrypoint": "ml.core.hybrid_stockout.build_hybrid_stockout_prediction",
+      "permissions": [
+        "run_prediction"
+      ],
+      "timeout_seconds": 45,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "hospital_id": {
+            "type": "string"
+          },
+          "hospital_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hospital_rows": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "blood_type": {
+            "type": "string"
+          },
+          "blood_group": {
+            "type": "string"
+          },
+          "blood_component": {
+            "type": "string"
+          },
+          "compare_mode": {
+            "type": "string",
+            "enum": [
+              "compare",
+              "rank",
+              "batch"
+            ]
+          },
+          "max_rows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "raw_row_limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "entity_key": {
+            "type": "string"
+          },
+          "group_rows": {
+            "type": "boolean"
+          },
+          "regression_model_id": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "query_kind": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "array"
+          },
+          "answer": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "db_tool",
+      "description": "Structured Postgres analytics tool over bounded local reference tables. Use it for descriptive analytics on stored donors and hospitals data, bounded donor outreach candidate lookup, counts, averages, grouped summaries, top-N lookups, and historical comparisons. Do not use it for forecasting or prediction from feature inputs.",
+      "aliases": [
+        "db_search",
+        "db_query",
+        "reference_search"
+      ],
+      "input_hints": "Choose table and columns only from schema_summary. For row listings use aggregate=list with fields=[...]. For current stock/status questions, use table=hospitals, aggregate=list, latest_only=true, and stock fields; do not invent weather, trauma, surgery, or holiday filters unless the user explicitly provides them. For scalar/grouped analytics use field plus aggregate(count|distinct_count|avg|sum|min|max). Use latest_only=true only when the user asks for current/latest rows and the table has a date-like field. filters(object optional; exact field/value matches only), limit(max 10), sort(optional asc|desc).",
+      "schema": {
+        "donors": {
+          "fields": [
+            "donor_id",
+            "age",
+            "sex",
+            "country_code",
+            "region",
+            "blood_type",
+            "is_rare_type",
+            "smoker",
+            "bmi",
+            "chronic_condition_flag",
+            "eligible_to_donate",
+            "deferral_reason",
+            "preferred_site",
+            "donation_count_last_12m",
+            "is_regular_donor",
+            "years_since_first_donation",
+            "lifetime_donation_count",
+            "first_donation_year",
+            "last_donation_date",
+            "recency_days",
+            "donor_age_at_first_donation",
+            "blood_type_country_prevalence",
+            "donation_propensity_score",
+            "eligibility_status",
+            "as_of_date"
+          ],
+          "notes": "Use age for oldest/youngest donor questions. There is no birthdate/date_of_birth/dob column."
+        },
+        "hospitals": {
+          "fields": [
+            "date",
+            "hospital_id",
+            "dow",
+            "weekend",
+            "month",
+            "holiday",
+            "temp_c",
+            "rain_mm",
+            "flu_index",
+            "trauma_cases",
+            "scheduled_surgeries",
+            "donation_campaign",
+            "supply_shock",
+            "blood_type",
+            "stock_start",
+            "units_collected",
+            "units_used",
+            "wastage",
+            "stock_end",
+            "critical_stock",
+            "heavy_demand"
+          ],
+          "notes": "Use stock_end and critical_stock for current inventory, available units, and stock status questions. Do not add filters that are not explicit in the user query."
+        }
+      },
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Show me the oldest donor in our database.",
+          "arguments": {
+            "table": "donors",
+            "field": "age",
+            "aggregate": "max",
+            "limit": 1,
+            "sort": "desc"
+          }
+        },
+        {
+          "kind": "good",
+          "user_query": "Average donor age by country code.",
+          "arguments": {
+            "table": "donors",
+            "field": "age",
+            "aggregate": "avg",
+            "group_by": "country_code",
+            "limit": 10,
+            "sort": "desc"
+          }
+        },
+        {
+          "kind": "good",
+          "user_query": "What is the stock status?",
+          "arguments": {
+            "table": "hospitals",
+            "aggregate": "list",
+            "fields": [
+              "date",
+              "hospital_id",
+              "blood_type",
+              "stock_end",
+              "critical_stock"
+            ],
+            "latest_only": true,
+            "limit": 10
+          },
+          "why": "This is a current inventory status lookup, so list bounded latest hospital stock rows instead of averaging historical stock_end or adding inferred filters."
+        },
+        {
+          "kind": "good",
+          "user_query": "Which hospitals currently have the highest O+ stock?",
+          "arguments": {
+            "table": "hospitals",
+            "field": "stock_end",
+            "aggregate": "max",
+            "filters": {
+              "blood_type": "O+"
+            },
+            "limit": 10,
+            "sort": "desc"
+          }
+        },
+        {
+          "kind": "good",
+          "user_query": "In historical hospital data, what was the average stock_end when holiday was false, rain_mm was 0, trauma_cases was 10, and scheduled_surgeries was 50?",
+          "arguments": {
+            "table": "hospitals",
+            "field": "stock_end",
+            "aggregate": "avg",
+            "filters": {
+              "holiday": false,
+              "rain_mm": 0,
+              "trauma_cases": 10,
+              "scheduled_surgeries": 50
+            },
+            "limit": 1
+          }
+        },
+        {
+          "kind": "good",
+          "user_query": "Show our current hospital stocks.",
+          "arguments": {
+            "table": "hospitals",
+            "aggregate": "list",
+            "fields": [
+              "date",
+              "hospital_id",
+              "blood_type",
+              "stock_start",
+              "stock_end",
+              "critical_stock"
+            ],
+            "latest_only": true,
+            "limit": 10
+          },
+          "why": "This is a bounded row listing; choose the relevant fields from the configured schema."
+        },
+        {
+          "kind": "good",
+          "user_query": "Which O+ donors should we call?",
+          "arguments": {
+            "table": "donors",
+            "aggregate": "list",
+            "fields": [
+              "donor_id",
+              "blood_type",
+              "age",
+              "sex",
+              "bmi",
+              "recency_days",
+              "donation_count_last_12m",
+              "eligibility_status",
+              "eligible_to_donate"
+            ],
+            "filters": {
+              "blood_type": "O+",
+              "eligible_to_donate": true
+            },
+            "limit": 10
+          },
+          "why": "This is a bounded donor candidate lookup for outreach; downstream model scoring can rank the returned rows."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Give me every donor row in the table.",
+          "why": "Never request full-table dumps. Use bounded aggregates only."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Given temperature 30, rain 0, holiday false, trauma cases 10, and 50 scheduled surgeries, predict the future stock_end.",
+          "why": "This is a prediction/forecast request. Use the relevant hospital inventory model, not db_tool."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Find the oldest donor using birthdate.",
+          "why": "Donors table has age, not birthdate."
+        }
+      ],
+      "id": "db_tool",
+      "type": "external",
+      "enabled": true,
+      "adapter": "db_query",
+      "entrypoint": "ml.core.external_tools.execute_db_tool",
+      "permissions": [
+        "read_reference_data"
+      ],
+      "timeout_seconds": 45,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aggregate": {
+            "type": "string"
+          },
+          "group_by": {
+            "type": "string"
+          },
+          "filters": {
+            "type": "object"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "sort": {
+            "type": "string"
+          },
+          "latest_only": {
+            "type": "boolean"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array"
+          },
+          "answer": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "simulation",
+      "description": "Blood supply scenario simulation tool. Use it for natural-language what-if questions, scenario stress tests, impact forecasts under donor/supply/demand shocks, mitigation recommendations, policy comparisons, and dynamic custom scenarios spanning episode duration, weather, donor supply, hospital demand, operations/inventory, forecast/congestion, and budget controls.",
+      "input_hints": "query (natural-language scenario request such as 'What would happen if donors dropped by 50% next week?', 'Compare PPO, SAC, and DreamerV3 for a 30% donor drop next week.', or a custom scenario override request covering hours, weather, donor/demand rates, inventory, forecast, congestion, transport, lab timing, or budget)",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "What would happen if blood donors dropped by 50% in the next week?",
+          "arguments": {
+            "query": "What would happen if blood donors dropped by 50% in the next week?"
+          },
+          "why": "Scenario simulation and impact forecasting should use the simulation backend."
+        },
+        {
+          "kind": "good",
+          "user_query": "Compare PPO, SAC, IQL, CQL, and DreamerV3 for a 30% donor drop next week.",
+          "arguments": {
+            "query": "Compare PPO, SAC, IQL, CQL, and DreamerV3 for a 30% donor drop next week."
+          },
+          "why": "Policy comparison under a shared scenario belongs to the simulation backend."
+        },
+        {
+          "kind": "bad",
+          "user_query": "How many O+ units are available right now?",
+          "why": "This is a descriptive inventory lookup, so use db_tool instead."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Predict donor eligibility for a 35 year old donor with BMI 24.",
+          "why": "This is direct model inference from provided features, so use the predictive model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Forecast demand for a large hospital with 25 units daily usage and 5 trauma cases",
+          "why": "Single-point demand prediction uses component_demand_quantile_forecast_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Simulate inventory risk with 3 units stock and 15 units daily demand",
+          "why": "Inventory risk scoring uses component_inventory_risk_simulator model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "Predict supply forecast with 3 units collected and supply disruption active",
+          "why": "Supply prediction uses component_supply_forecast_model."
+        },
+        {
+          "kind": "bad",
+          "user_query": "What is the stockout probability with 5 units in stock?",
+          "why": "Stockout probability uses stockout_time_to_event_hazard_model."
+        }
+      ],
+      "id": "simulation",
+      "type": "external",
+      "enabled": false,
+      "adapter": "simulation_query",
+      "entrypoint": "ml.core.external_tools.execute_simulation_tool",
+      "permissions": [
+        "run_simulation"
+      ],
+      "timeout_seconds": 45,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "results": {
+            "type": "object"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "digital_twin_current_state",
+      "name": "digital_twin_current_state",
+      "type": "external",
+      "enabled": false,
+      "adapter": "digital_twin",
+      "operation": "current_state",
+      "description": "Read the current persisted digital twin run, latest redacted snapshot, latest frame, divergence, alerts, predictions, model health, and decision-support status.",
+      "input_hints": "Optional run_id. If omitted, the latest twin run is used or a new run is created from config defaults.",
+      "schema": {
+        "digital_twin_current_state": {
+          "fields": [
+            "run_id",
+            "source_mode",
+            "scenario_key",
+            "strategy_key",
+            "seed"
+          ],
+          "notes": "Use for operational twin state, not for direct writes to real prediction, alert, donor, or inventory tables."
+        }
+      },
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "What is the current digital twin state and live signal health?",
+          "arguments": {
+            "source_mode": "live"
+          }
+        },
+        {
+          "kind": "bad",
+          "user_query": "Update the real hospital inventory from the twin.",
+          "why": "Twin reads and recommendations are decision support. Real workflow writes require an explicit approved promotion target."
+        }
+      ],
+      "entrypoint": "ml.core.external_tools.execute_digital_twin_tool",
+      "permissions": [
+        "read_twin_state"
+      ],
+      "timeout_seconds": 30,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "source_mode": {
+            "type": "string"
+          },
+          "scenario_key": {
+            "type": "string"
+          },
+          "strategy_key": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "results": {
+            "type": "object"
+          },
+          "decision_support": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "digital_twin_run_branch",
+      "name": "digital_twin_run_branch",
+      "type": "external",
+      "enabled": false,
+      "adapter": "digital_twin",
+      "operation": "run_branch",
+      "description": "Create a persisted what-if branch from a digital twin run using configured policy, event, or action overrides.",
+      "input_hints": "run_id plus branch_key, policy_overrides, action_overrides, and event_overrides.",
+      "schema": {
+        "digital_twin_run_branch": {
+          "fields": [
+            "run_id",
+            "branch_key",
+            "policy_overrides",
+            "action_overrides",
+            "event_overrides"
+          ],
+          "notes": "Branch outputs are simulated and stored in digital_twin tables only."
+        }
+      },
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Run a twin branch where we increase donor outreach and shorten processing.",
+          "arguments": {
+            "branch_key": "outreach-processing",
+            "policy_overrides": {
+              "strategy_key": "full_response"
+            }
+          }
+        }
+      ],
+      "entrypoint": "ml.core.external_tools.execute_digital_twin_tool",
+      "permissions": [
+        "run_twin_branch"
+      ],
+      "timeout_seconds": 45,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "branch_key": {
+            "type": "string"
+          },
+          "policy_overrides": {
+            "type": "object"
+          },
+          "action_overrides": {
+            "type": "array"
+          },
+          "event_overrides": {
+            "type": "array"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "results": {
+            "type": "object"
+          },
+          "decision_support": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "digital_twin_compare_policies",
+      "name": "digital_twin_compare_policies",
+      "type": "external",
+      "enabled": false,
+      "adapter": "digital_twin",
+      "operation": "compare_policies",
+      "description": "Create and compare multiple persisted digital twin policy branches from the same run state.",
+      "input_hints": "run_id plus policies array. Policies should come from digital_twin.json branches.allowed_policies.",
+      "schema": {
+        "digital_twin_compare_policies": {
+          "fields": [
+            "run_id",
+            "policies"
+          ],
+          "notes": "Use for strategy comparisons in the twin, not for direct operational mutations."
+        }
+      },
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Compare baseline, emergency network, and full response in the digital twin.",
+          "arguments": {
+            "policies": [
+              "baseline",
+              "emergency_network",
+              "full_response"
+            ]
+          }
+        }
+      ],
+      "entrypoint": "ml.core.external_tools.execute_digital_twin_tool",
+      "permissions": [
+        "run_twin_branch"
+      ],
+      "timeout_seconds": 60,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "results": {
+            "type": "object"
+          },
+          "decision_support": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "digital_twin_recommend_action",
+      "name": "digital_twin_recommend_action",
+      "type": "external",
+      "enabled": false,
+      "adapter": "digital_twin",
+      "operation": "recommend_action",
+      "description": "Generate a persisted digital twin recommendation using the latest twin frame, real input signals, configured action catalog, and decision-support labeling.",
+      "input_hints": "Optional run_id and branch_id.",
+      "schema": {
+        "digital_twin_recommend_action": {
+          "fields": [
+            "run_id",
+            "branch_id"
+          ],
+          "notes": "Recommendation outputs must be treated as decision support and do not mutate real workflow tables."
+        }
+      },
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Recommend the best twin action for the current run.",
+          "arguments": {
+            "run_id": "$steps.1.output.run_id"
+          }
+        }
+      ],
+      "entrypoint": "ml.core.external_tools.execute_digital_twin_tool",
+      "permissions": [
+        "recommend_twin_action"
+      ],
+      "timeout_seconds": 45,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "branch_id": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "results": {
+            "type": "object"
+          },
+          "decision_support": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "digital_twin_promote_action",
+      "name": "digital_twin_promote_action",
+      "type": "external",
+      "enabled": false,
+      "adapter": "digital_twin",
+      "operation": "promote_action",
+      "description": "Request operator-approved promotion of a simulated twin action into a configured real workflow target. Default digital_twin.json disables promotion targets.",
+      "input_hints": "action_id from a previously simulated twin action. Promotion is blocked unless enabled by config.",
+      "schema": {
+        "digital_twin_promote_action": {
+          "fields": [
+            "action_id"
+          ],
+          "notes": "Use only when the operator explicitly approves promotion and config enables a target."
+        }
+      },
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "Promote this twin action after operator approval.",
+          "arguments": {
+            "action_id": "$steps.2.output.results.action_id"
+          }
+        },
+        {
+          "kind": "bad",
+          "user_query": "Automatically apply the twin recommendation.",
+          "why": "Promotion requires explicit operator approval and an enabled config target."
+        }
+      ],
+      "entrypoint": "ml.core.external_tools.execute_digital_twin_tool",
+      "permissions": [
+        "promote_twin_action"
+      ],
+      "timeout_seconds": 30,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "action_id": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "results": {
+            "type": "object"
+          },
+          "decision_support": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "search",
+      "name": "search",
+      "type": "external",
+      "enabled": false,
+      "adapter": "search",
+      "description": "Configured retrieval tool. Use only when local configured tools cannot answer.",
+      "input_hints": "query",
+      "schema": {},
+      "examples": [],
+      "entrypoint": "ml.core.external_tools.execute_search_tool",
+      "permissions": [
+        "external_search"
+      ],
+      "timeout_seconds": 10,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object"
+      }
+    },
+    {
+      "id": "llm_api",
+      "name": "llm_api",
+      "type": "external",
+      "enabled": true,
+      "adapter": "llm_api",
+      "description": "Configured general answer tool. Use only when no more specific configured tool matches.",
+      "input_hints": "query",
+      "schema": {},
+      "examples": [],
+      "entrypoint": "ml.core.external_tools.execute_llm_api_tool",
+      "permissions": [
+        "external_llm"
+      ],
+      "timeout_seconds": 20,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object"
+      }
+    }
+  ],
+  "orchestrator": {
+    "fallback_order": [
+      "db_tool",
+      "llm_api"
+    ],
+    "fallback_aliases": [
+      "default",
+      "fallback"
+    ],
+    "model_execution": {
+      "control_argument_keys": [
+        "batch"
+      ]
+    },
+    "planning_limits": {
+      "example_limit": 3,
+      "workflow_example_limit": 2,
+      "schema_field_limit": 18,
+      "tool_description_chars": 420,
+      "model_description_chars": 140,
+      "fallback_model_step_limit": 1,
+      "completion_tokens": 256,
+      "context_reserve_tokens": 128
+    },
+    "dynamic_planning": {
+      "prefer_planner_terms": [
+        "stockout",
+        "run out",
+        "shortage",
+        "donor",
+        "donate",
+        "donation",
+        "forecast",
+        "demand",
+        "supply",
+        "inventory risk",
+        "simulate",
+        "priority",
+        "rank",
+        "outreach",
+        "probability",
+        "predict"
+      ],
+      "direct_response": {
+        "enabled": true,
+        "rules": [
+          {
+            "id": "donor_category_overview",
+            "enabled": true,
+            "description": "Answer conceptual donor type/category questions without calling configured tools.",
+            "trigger_terms": [
+              "type",
+              "types",
+              "kind",
+              "kinds",
+              "category",
+              "categories",
+              "list"
+            ],
+            "required_term_groups": [
+              [
+                "donor",
+                "donors"
+              ],
+              [
+                "type",
+                "types",
+                "kind",
+                "kinds",
+                "category",
+                "categories",
+                "list"
+              ]
+            ],
+            "blocked_terms": [
+              "ideal donor",
+              "ideal donors",
+              "best donor",
+              "best donors",
+              "rank ideal",
+              "rank donors",
+              "predict",
+              "forecast",
+              "stockout",
+              "shortage",
+              "hospital",
+              "eligible",
+              "donate now",
+              "blood type",
+              "blood types",
+              "common",
+              "most common",
+              "donor_id",
+              "call",
+              "contact"
+            ],
+            "reasoning": "Configured direct response: conceptual donor category question does not require model or database execution.",
+            "response_markdown": "Common donor categories include:\\n\\n1. **Whole blood donors** - donate complete blood for broad transfusion use.\\n2. **Plasma donors** - donate plasma used in plasma-derived therapies and some clinical support.\\n3. **Platelet donors** - donate platelets often used for oncology, surgery, and trauma support.\\n4. **Rare blood type donors** - donors with uncommon blood groups who may be prioritized for matching needs.\\n5. **Regular donors** - donors with a recent and reliable donation history.\\n\\nFor eligibility or donor ranking, use configured prediction/database tools because those require current donor data."
+          }
+        ]
+      },
+      "workflow_examples": [
+        {
+          "user_query": "Can a 35 year old donor with BMI 24 donate blood now?",
+          "trigger_terms": [
+            "donor",
+            "donate",
+            "donate now",
+            "donate blood now",
+            "eligible",
+            "can",
+            "bmi"
+          ],
+          "required_terms": [
+            "donor"
+          ],
+          "required_any_terms": [
+            "donate blood now",
+            "donate now"
+          ],
+          "steps": [
+            {
+              "tool": "donor_next_donation_hazard_model",
+              "arguments": {
+                "age": 35,
+                "bmi": 24
+              }
+            }
+          ]
+        },
+        {
+          "user_query": "Is a 35 year old donor with BMI 24 an ideal donor?",
+          "trigger_terms": [
+            "donor",
+            "ideal donor",
+            "ideal",
+            "bmi"
+          ],
+          "required_terms": [
+            "donor",
+            "ideal"
+          ],
+          "steps": [
+            {
+              "tool": "ideal_donor_probability_model",
+              "arguments": {
+                "age": 35,
+                "bmi": 24
+              }
+            }
+          ]
+        },
+        {
+          "user_query": "Forecast demand for a large hospital during flu season",
+          "trigger_terms": [
+            "demand",
+            "forecast",
+            "how many units",
+            "need",
+            "predict demand"
+          ],
+          "required_any_terms": [
+            "demand",
+            "forecast demand"
+          ],
+          "steps": [
+            {
+              "tool": "component_demand_quantile_forecast_model",
+              "arguments": {
+                "hospital_size_tier": "large",
+                "flu_season_flag": 1
+              }
+            }
+          ]
+        },
+        {
+          "user_query": "Simulate inventory risk with 3 units stock and 15 units daily demand",
+          "trigger_terms": [
+            "inventory risk",
+            "simulate",
+            "risk level",
+            "inventory simulation"
+          ],
+          "required_any_terms": [
+            "inventory risk",
+            "simulate"
+          ],
+          "steps": [
+            {
+              "tool": "component_inventory_risk_simulator",
+              "arguments": {
+                "current_inventory": 3,
+                "units_used": 15
+              }
+            }
+          ]
+        },
+        {
+          "user_query": "Rank this rare-type eligible donor for outreach priority",
+          "trigger_terms": [
+            "rank",
+            "priority",
+            "outreach",
+            "prioritize"
+          ],
+          "required_any_terms": [
+            "rank",
+            "priority",
+            "outreach"
+          ],
+          "steps": [
+            {
+              "tool": "donor_priority_policy_model",
+              "arguments": {
+                "is_rare_type": 1,
+                "eligible_to_donate": 1
+              }
+            }
+          ]
+        },
+        {
+          "user_query": "Forecast incoming supply with no disruption",
+          "trigger_terms": [
+            "supply forecast",
+            "incoming supply",
+            "forecast supply",
+            "supply prediction"
+          ],
+          "required_any_terms": [
+            "supply forecast",
+            "forecast supply",
+            "incoming supply"
+          ],
+          "steps": [
+            {
+              "tool": "component_supply_forecast_model",
+              "arguments": {
+                "supply_disruption": 0,
+                "lead_time_days": 2
+              }
+            }
+          ]
+        }
+      ],
+      "row_scoring": {
+        "trigger_terms": [
+          "best",
+          "rank",
+          "score",
+          "recommend",
+          "call",
+          "contact",
+          "who should",
+          "which donors"
+        ],
+        "source_output_keys": [
+          "rows"
+        ],
+        "model_tasks": [
+          "donor_individual"
+        ],
+        "entity_keys": [
+          "donor_id"
+        ],
+        "control_argument_key": "batch",
+        "max_rows": 10,
+        "include_fields": [
+          "donor_id",
+          "blood_type",
+          "region",
+          "preferred_site",
+          "recency_days",
+          "donation_count_last_12m",
+          "eligibility_status"
+        ],
+        "score_keys": [
+          "probability",
+          "prediction",
+          "ideal_score",
+          "score"
+        ],
+        "sort": "desc",
+        "row_source": {
+          "tool_adapters": [
+            "db_query"
+          ],
+          "reasoning": "Fetch bounded donor rows from the configured row source before scoring.",
+          "argument_defaults": {
+            "table": "donors",
+            "aggregate": "list",
+            "fields": [
+              "donor_id",
+              "blood_type",
+              "country_code",
+              "age",
+              "sex",
+              "recency_days",
+              "donation_count_last_12m",
+              "eligibility_status"
+            ],
+            "limit": 10
+          },
+          "filter_defaults": {
+            "eligible_to_donate": true
+          },
+          "filter_remove": [
+            "eligibility_status"
+          ],
+          "filter_dependencies": [
+            {
+              "field": "blood_type",
+              "source_tool_adapters": [
+                "stockout_hybrid"
+              ],
+              "output_paths": [
+                "worst_blood_group",
+                "worst_component_prediction.blood_group"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "prompts": {
+      "llm_api_system": "You are a factual analytics assistant. If data is uncertain, state limitations clearly.",
+      "planning": "You are an ML orchestrator.\nAvailable tools:\n{tools_description}{workflow_examples}\nUser query: \"{query}\"\n\nInstructions:\n1. Analyze the query.\n2. Use ONLY the tools listed above.\n3. Choose tools by matching the user request to each tool's description, input hints, examples, feature names, and contracts.\n4. If the request contains multiple actions, plan multiple tool calls in dependency order instead of stopping after the first matching tool.\n5. If a later action needs an earlier result, reference it with $steps.N.output.field; N is the 1-based prior step number.\n6. Use predictive ML models when the user asks to predict, classify, score, rank, estimate, or forecast an outcome from feature values or bounded rows.\n7. Use retrieval/analytics tools only when their description says they answer stored-data or external-information questions.\n8. Do not substitute one tool category for another unless the listed tool metadata says it supports that task.\n9. Pass only explicit, non-null user inputs and bounded structured arguments required by the selected tool contract.\n10. NEVER ask any retrieval tool for a full table or an unbounded result set.\n11. Just retrieve/compute the data; the final summary will handle comparison and wording.\n12. NEVER invent, pad, or fill missing model features with null/NaN.\n13. For feature-store-backed models, IDs are optional lookup hints only; pass known non-null features and omit unknown values so the resolver can complete them from configured feature sources.\n14. If the query includes a forecast horizon/timeframe, prefer a predictive model whose Forecast horizon line matches it.\n15. If no listed tool metadata matches the request, return an empty tool_calls list.\n16. Return JSON with a top-level 'reasoning' field containing a brief user-visible planning rationale, not private chain-of-thought.\n17. Return a 'tool_calls' list. Each tool call needs 'name', 'arguments', and a brief user-visible 'reasoning' field explaining why that tool is used.\nJSON output:",
+      "summarizer": "You are a helpful assistant.\nUser Query: \"{query}\"\n\nRESULTS DATA (FACTUAL GROUND TRUTH):\n{data_block}\n\nINSTRUCTION:\nAnswer the user's query using ONLY the results above.\n- Return Markdown text, not plain text or HTML.\n- Use Markdown tables, bold text, bullets, numbered lists, code fences, images, or simple chart-ready Markdown only when they make the answer clearer.\n- Preserve every factual result shown above. Keep the wording simple, but do not drop components, rows, horizons, probabilities, dates, names, or units.\n- For multi-step results, combine the step summaries into one final answer instead of answering each tool in isolation.\n- Use short plain-language sentences or bullets for non-technical users.\n- Use each tool's prediction name/unit as the meaning of the number.\n- For metrics named like `days_until_*`, `hours_until_*`, `time_until_*`, or `time_to_*`, treat the value as remaining time until that event. Lower values mean sooner; a value at the time origin means the event is due now/at the forecast date, not that the event is absent.\n- For component forecasts, answer per component and do not collapse different components into one result.\n- Do not invent thresholds, missing components, causes, or extra values.\n- Do not wrap the whole answer in one code block.\n\nMarkdown answer:"
+    }
+  }
+}

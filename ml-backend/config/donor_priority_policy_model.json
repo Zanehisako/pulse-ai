@@ -1,0 +1,79 @@
+{
+  "id": "donor_priority_policy_model",
+  "name": "Donor Priority Policy Model",
+  "enabled": true,
+  "type": "model",
+  "input_schema": {
+    "donor_id": "string",
+    "event_timestamp": "datetime",
+    "donor_features": "object",
+    "hazard_outputs": "object",
+    "contact_outputs": "object"
+  },
+  "output_schema": {
+    "donor_priority_score": "number",
+    "recommended_action": "string",
+    "action_reason": "string"
+  },
+  "adapter": "policy_pyfunc",
+  "entrypoint": "training_scripts.train_donor_priority_policy",
+  "permissions": [
+    "read_donor_profile",
+    "read_donor_history",
+    "read_campaign_context",
+    "write_shadow_prediction"
+  ],
+  "timeout_seconds": 30,
+  "model_type": "policy",
+  "registered_model_name": "donor_priority_policy_model",
+  "description": "Expected-utility donor priority scoring policy. Takes donor features plus hazard model outputs and produces a ranked priority score, recommended action, and action reason. Replaces the vague ideal_donor_classifier with an operational decision score.",
+  "policy_inputs": {
+    "donor_features": [
+      "eligible_to_donate",
+      "is_regular_donor",
+      "blood_type",
+      "is_rare_type",
+      "center_distance_km",
+      "travel_time_min",
+      "response_readiness_index",
+      "donor_momentum",
+      "operational_outreach_priority"
+    ],
+    "model_outputs": {
+      "donor_next_donation_hazard_model": [
+        "p_donation_0_30d",
+        "p_donation_31_90d",
+        "expected_days_until_next_donation"
+      ],
+      "donor_contact_propensity_model": [
+        "contact_propensity"
+      ]
+    }
+  },
+  "priority_formula": {
+    "expected_usable_units_weight": 0.40,
+    "urgency_weight": 0.25,
+    "compatibility_weight": 0.15,
+    "location_feasibility_weight": 0.10,
+    "response_likelihood_weight": 0.10,
+    "contact_cost": 0.05,
+    "fatigue_penalty": 0.02,
+    "display_score_normalization": true
+  },
+  "action_thresholds": {
+    "urgent_contact": 0.80,
+    "high_priority_contact": 0.60,
+    "standard_contact": 0.30,
+    "low_priority": 0.10
+  },
+  "prediction_defaults": {
+    "output": {
+      "name": "donor_priority_score",
+      "unit": "score",
+      "task_type": "policy",
+      "clip_min": 0.0,
+      "clip_max": 1.0,
+      "apply_clipping": true
+    }
+  }
+}

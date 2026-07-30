@@ -1,0 +1,65 @@
+{
+  "id": "quebec_training_datasets",
+  "enabled": true,
+  "sources": {
+    "quebec_donor": {
+      "enabled": true,
+      "description": "Quebec donor feature and label split for donor horizon forecasting, days-to-next-donation regression, donor propensity baseline, and ideal donor readiness.",
+      "feature_parquet": "datasets_featues_labels_seperated/quebec_donor_features.parquet",
+      "label_parquet": "datasets_featues_labels_seperated/quebec_donor_labels.parquet",
+      "entity_keys": [
+        "donor_id"
+      ],
+      "timestamp_column": "event_timestamp",
+      "label_columns": {
+        "short_horizon": "donated_within_0_3m",
+        "medium_horizon": "donated_within_3_6m",
+        "long_horizon": "donated_within_6m_plus",
+        "days_regression": "days_until_next_donation",
+        "ideal_donor": "ideal_donor_probability",
+        "legacy_baseline": "donated_next_6m",
+        "contact_response": "donated_next_6m"
+      },
+      "leakage_exclusions": [
+        "donated_within_0_3m",
+        "donated_within_3_6m",
+        "donated_within_6m_plus",
+        "days_until_next_donation",
+        "ideal_donor_probability",
+        "donated_next_6m"
+      ]
+    },
+    "quebec_inventory": {
+      "enabled": true,
+      "description": "Quebec hospital, collection center, blood type, and component feature and label split for stockout horizon forecasting and days-to-stockout regression.",
+      "feature_parquet": "datasets_featues_labels_seperated/quebec_inventory_features.parquet",
+      "label_parquet": "datasets_featues_labels_seperated/quebec_inventory_labels.parquet",
+      "entity_keys": [
+        "hospital_id",
+        "blood_type",
+        "component_type"
+      ],
+      "timestamp_column": "event_timestamp",
+      "label_columns": {
+        "short_horizon": "stockout_within_0_7d",
+        "medium_horizon": "stockout_within_8_30d",
+        "long_horizon": "stockout_within_31d_plus",
+        "days_regression": "days_until_stockout",
+        "event": "blood_shortage",
+        "wastage_1d": "wastage_next_1d",
+        "wastage_7d": "wastage_next_7d",
+        "wastage_30d": "wastage_next_30d"
+      },
+      "leakage_exclusions": [
+        "stockout_within_0_7d",
+        "stockout_within_8_30d",
+        "stockout_within_31d_plus",
+        "days_until_stockout",
+        "blood_shortage",
+        "wastage_next_1d",
+        "wastage_next_7d",
+        "wastage_next_30d"
+      ]
+    }
+  }
+}

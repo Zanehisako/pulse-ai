@@ -1,0 +1,65 @@
+{
+  "sources": [
+    {
+      "id": "don",
+      "label": "Demandes / usage",
+      "app_label": "inventory",
+      "model": "BloodSupply",
+      "default_group_by": "blood_product_type",
+      "default_metric": "sum",
+      "group_by": [
+        { "value": "blood_product_type", "label": "Produit sanguin" },
+        { "value": "hospital__wilaya", "label": "Région" }
+      ],
+      "metrics": [
+        { "value": "count", "label": "Nombre de lignes (Count)", "field": "id" },
+        { "value": "sum", "label": "Somme (Usage today)", "field": "usage_today" }
+      ]
+    },
+    {
+      "id": "donneur",
+      "label": "Donneurs",
+      "app_label": "inventory",
+      "model": "Donor",
+      "default_group_by": "blood_group",
+      "group_by": [
+        { "value": "blood_group", "label": "Groupe sanguin" },
+        { "value": "wilaya", "label": "Région" },
+        { "value": "availability", "label": "Disponibilité" }
+      ],
+      "metrics": [
+        { "value": "count", "label": "Nombre (Count)", "field": "id" }
+      ]
+    },
+    {
+      "id": "centre",
+      "label": "Centres de don",
+      "app_label": "inventory",
+      "model": "Hospital",
+      "default_group_by": "wilaya",
+      "group_by": [
+        { "value": "wilaya", "label": "Région" },
+        { "value": "name", "label": "Nom du centre" }
+      ],
+      "metrics": [
+        { "value": "count", "label": "Nombre (Count)", "field": "id" }
+      ]
+    },
+    {
+      "id": "stock",
+      "label": "Stock",
+      "app_label": "inventory",
+      "model": "BloodSupply",
+      "default_group_by": "blood_product_type",
+      "default_metric": "sum",
+      "group_by": [
+        { "value": "blood_product_type", "label": "Produit sanguin" },
+        { "value": "hospital__wilaya", "label": "Région" }
+      ],
+      "metrics": [
+        { "value": "count", "label": "Nombre de lignes (Count)", "field": "id" },
+        { "value": "sum", "label": "Somme (Stock units)", "field": "current_stock_units" }
+      ]
+    }
+  ]
+}

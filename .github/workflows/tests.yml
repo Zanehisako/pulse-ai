@@ -1,0 +1,135 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backendMulti:
+    name: backendMulti tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: pios
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U admin -d pios"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DJANGO_DEBUG: "1"
+      DJANGO_SECRET_KEY: ci-dummy-secret
+      DJANGO_SKIP_ML_INIT: "1"
+      DJANGO_SKIP_SIMULATION: "1"
+      DB_NAME: pios
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      KEYCLOAK_CLIENT_SECRET: ci-dummy-client-secret
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PYTHONUTF8: "1"
+
+    defaults:
+      run:
+        working-directory: backendMulti
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run backend tests with coverage
+        run: |
+          python -m pytest \
+            tests \
+            authApp \
+            workspace \
+            backendMulti \
+            bloodbag \
+            centres \
+            communications \
+            dashboard \
+            inventory \
+            media \
+            ml \
+            notifications \
+            testUrl \
+            alerts \
+            --cov=alerts.services \
+            --cov=alerts.models \
+            --cov=alerts.serializers \
+            --cov=inventory.forecast_ml_bridge \
+            --cov=inventory.models \
+            --cov=inventory.seed_data \
+            --cov=inventory.simulation \
+            --cov=ml.api.serializers \
+            --cov=ml.core.feature_extraction \
+            --cov=ml.models \
+            --cov-config=../.coveragerc \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=80
+
+  simulation_studio:
+    name: simulation_studio tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PYTHONUTF8: "1"
+
+    defaults:
+      run:
+        working-directory: simulation_studio
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]" pytest-cov
+
+      - name: Run simulation tests with coverage
+        run: |
+          python -m pytest tests \
+            --cov \
+            --cov-config=.coveragerc \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=80
