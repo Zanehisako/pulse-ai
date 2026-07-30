@@ -45,7 +45,7 @@ dependencies = [
 
   # ── xLAM Orchestrator (LLM) ──────────────
   "huggingface-hub>=0.23.0",
-  "llama-cpp-python==0.3.28",
+  "llama-cpp-python==0.3.34",
 
   # Mlops
   "feast==0.58.0",
