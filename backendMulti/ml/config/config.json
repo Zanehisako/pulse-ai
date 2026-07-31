@@ -1952,6 +1952,40 @@
               }
             }
           ]
+        },
+        {
+          "user_query": "Compare stockout time between all hospitals",
+          "trigger_terms": [
+            "compare stockout",
+            "stockout time between hospitals",
+            "compare hospitals stockout",
+            "stockout hazard"
+          ],
+          "required_any_terms": [
+            "stockout",
+            "hospitals"
+          ],
+          "steps": [
+            {
+              "tool": "db_tool",
+              "arguments": {
+                "table": "hospitals",
+                "aggregate": "list",
+                "fields": ["hospital_id", "hospital_name", "blood_type", "stock_end", "critical_stock"],
+                "latest_only": true,
+                "limit": 100
+              }
+            },
+            {
+              "tool": "stockout_time_to_event_hazard_model",
+              "arguments": {
+                "batch": {
+                  "rows": "$steps.1.output.hospitals",
+                  "entity_key": "hospital_id"
+                }
+              }
+            }
+          ]
         }
       ],
       "row_scoring": {
@@ -1963,21 +1997,40 @@
           "call",
           "contact",
           "who should",
-          "which donors"
+          "which donors",
+          "compare",
+          "between",
+          "stockout",
+          "hospitals",
+          "hospital",
+          "risk",
+          "time",
+          "hazard",
+          "forecast"
         ],
         "source_output_keys": [
-          "rows"
+          "rows",
+          "hospitals",
+          "donors",
+          "data",
+          "records"
         ],
         "model_tasks": [
-          "donor_individual"
+          "donor_individual",
+          "inventory_forecast",
+          "donor_horizon",
+          "hazard_survival"
         ],
         "entity_keys": [
-          "donor_id"
+          "donor_id",
+          "hospital_id",
+          "blood_type"
         ],
         "control_argument_key": "batch",
         "max_rows": 10,
         "include_fields": [
           "donor_id",
+          "hospital_id",
           "blood_type",
           "region",
           "preferred_site",
@@ -1989,7 +2042,10 @@
           "probability",
           "prediction",
           "ideal_score",
-          "score"
+          "hazard",
+          "score",
+          "hazard_rate",
+          "days_until_stockout"
         ],
         "sort": "desc",
         "row_source": {

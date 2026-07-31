@@ -6,12 +6,15 @@ from __future__ import annotations
 import csv
 import datetime as dt
 import json
+import logging
 import os
 import re
 import sqlite3
 import threading
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 import psycopg2
 from psycopg2 import sql
@@ -1345,7 +1348,8 @@ def _build_filter_clauses(
     for raw_field, raw_value in sorted(filters.items()):
         field_name = _validate_identifier(raw_field, "filter field")
         if field_name not in allowed_columns:
-            raise RuntimeError(f"Unsupported filter field '{field_name}'.")
+            logger.debug("Skipping unsupported filter field '%s' for table.", field_name)
+            continue
         identifier = sql.Identifier(field_name)
         if isinstance(raw_value, list):
             values = [value for value in raw_value if not _is_blank_seed_value(value)]
@@ -1649,7 +1653,8 @@ def _build_sqlite_filter_clauses(
     for raw_field, raw_value in sorted(filters.items()):
         field_name = _validate_identifier(raw_field, "filter field")
         if field_name not in allowed_columns:
-            raise RuntimeError(f"Unsupported filter field '{field_name}'.")
+            logger.debug("Skipping unsupported filter field '%s' for table.", field_name)
+            continue
         if isinstance(raw_value, list):
             values = [
                 _sqlite_value(value)
