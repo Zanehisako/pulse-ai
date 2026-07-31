@@ -4049,3 +4049,61 @@ class OrchestratorExternalToolsTests(unittest.TestCase):
             repaired.steps[0].arguments["query"],
             "Compare DreamerV3, PPO, and SAC under a 40% donor drop next week.",
         )
+
+    def test_execute_db_schema_tool_returns_all_tables_and_columns(self):
+        from ml.core.external_tools import execute_db_schema_tool
+
+        res = execute_db_schema_tool()
+        self.assertIn("tables", res)
+        self.assertIn("table_names", res)
+        self.assertIn("donors", res["tables"])
+        self.assertIn("hospitals", res["tables"])
+
+        donors_schema = res["tables"]["donors"]
+        self.assertEqual(donors_schema["logical_table"], "donors")
+        self.assertGreater(len(donors_schema["columns"]), 10)
+        donor_col_names = [col["name"] for col in donors_schema["columns"]]
+        self.assertIn("donor_id", donor_col_names)
+        self.assertIn("eligible_to_donate", donor_col_names)
+
+        hospitals_schema = res["tables"]["hospitals"]
+        self.assertEqual(hospitals_schema["logical_table"], "hospitals")
+        hospital_col_names = [col["name"] for col in hospitals_schema["columns"]]
+        self.assertIn("hospital_id", hospital_col_names)
+        self.assertIn("stock_end", hospital_col_names)
+
+    def test_execute_db_schema_tool_filters_by_table(self):
+        from ml.core.external_tools import execute_db_schema_tool
+
+        res = execute_db_schema_tool(table="hospitals")
+        self.assertEqual(res["table_names"], ["hospitals"])
+        self.assertIn("hospitals", res["tables"])
+        self.assertNotIn("donors", res["tables"])
+
+    def test_repair_row_source_arguments_does_not_inject_donor_filters_into_hospitals_query(self):
+        env = {
+            "PIOS_XLAM_DISABLE_LLM": "1",
+            "PIOS_ORCH_ENABLE_DB_TOOL": "1",
+        }
+        with self._orchestrator_with_tools_enabled(
+            _DummyRegistry(),
+            extra_env=env,
+        ) as orchestrator:
+            hospital_args = {
+                "table": "hospitals",
+                "aggregate": "list",
+                "fields": ["hospital_id", "hospital_name", "blood_type", "stock_end"],
+                "filters": {"hospital_name": "central hospital", "blood_type": "O+"},
+            }
+            repaired = orchestrator._repair_row_source_arguments(
+                query="Inspect stockout hazard for hospital inventory",
+                tool_name=orchestrator.db_tool_name,
+                arguments=hospital_args,
+                results=[],
+            )
+
+        filters = repaired.get("filters", {})
+        self.assertNotIn("eligible_to_donate", filters)
+        self.assertEqual(filters.get("hospital_name"), "central hospital")
+        self.assertEqual(filters.get("blood_type"), "O+")
+
