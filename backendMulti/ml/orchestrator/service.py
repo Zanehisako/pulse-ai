@@ -24,6 +24,7 @@ from ml.core.external_tools import (
     db_reference_default_sqlite_table,
     db_reference_default_table_name,
     db_reference_series_limit,
+    execute_db_schema_tool,
     execute_db_tool,
     execute_digital_twin_tool,
     execute_llm_api_tool,
@@ -2131,6 +2132,9 @@ class DynamicXLAMOrchestrator:
     def _is_db_tool(self, tool_name: str) -> bool:
         return self._tool_adapter(tool_name) == "db_query"
 
+    def _is_db_schema_tool(self, tool_name: str) -> bool:
+        return self._tool_adapter(tool_name) == "db_schema"
+
     def _is_stockout_hybrid_tool(self, tool_name: str) -> bool:
         return self._tool_adapter(tool_name) == "stockout_hybrid"
 
@@ -2841,6 +2845,15 @@ class DynamicXLAMOrchestrator:
             **db_arguments,
         )
 
+    def _execute_db_schema_tool(
+        self,
+        query: str,
+        arguments: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        schema_arguments = dict(arguments or {})
+        schema_arguments.pop("query", None)
+        return execute_db_schema_tool(query=query, **schema_arguments)
+
     def _db_csv_candidates(self) -> list[Path]:
         candidates = [
             self.db_supply_csv_path,
@@ -2981,6 +2994,8 @@ class DynamicXLAMOrchestrator:
             return self._execute_stockout_hybrid_tool(query, arguments)
         if self._is_db_tool(tool_name):
             return self._execute_db_fallback(query, arguments)
+        if self._is_db_schema_tool(tool_name):
+            return self._execute_db_schema_tool(query, arguments)
         if self._is_search_tool(tool_name):
             return self._execute_search_tool(query)
         if self._is_llm_api_tool(tool_name):
@@ -3539,6 +3554,7 @@ class DynamicXLAMOrchestrator:
         supported_types = {"external"}
         supported_adapters = {
             "db_query",
+            "db_schema",
             "search",
             "llm_api",
             "simulation_query",
@@ -4289,9 +4305,12 @@ class DynamicXLAMOrchestrator:
         filters = dict(filters) if isinstance(filters, dict) else {}
         filter_defaults = config.get("filter_defaults")
         if isinstance(filter_defaults, dict):
+            target_table = arguments.get("table")
+            default_table = argument_defaults.get("table") if isinstance(argument_defaults, dict) else None
             for key, value in filter_defaults.items():
                 if not self._has_model_input_value(filters.get(key)):
-                    filters[key] = value
+                    if not target_table or not default_table or safe_slug(target_table) == safe_slug(default_table):
+                        filters[key] = value
         if filters:
             arguments["filters"] = filters
         return arguments
@@ -4590,9 +4609,12 @@ class DynamicXLAMOrchestrator:
 
         filter_defaults = config.get("filter_defaults")
         if isinstance(filter_defaults, dict):
+            target_table = repaired.get("table")
+            default_table = argument_defaults.get("table") if isinstance(argument_defaults, dict) else None
             for key, value in filter_defaults.items():
                 if not self._has_model_input_value(filters.get(key)):
-                    filters[key] = value
+                    if not target_table or not default_table or safe_slug(target_table) == safe_slug(default_table):
+                        filters[key] = value
 
         dependencies = config.get("filter_dependencies")
         if isinstance(dependencies, list):

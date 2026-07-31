@@ -3982,4 +3982,59 @@ def is_external_output_success(output: dict[str, Any]) -> bool:
     results = output.get("results")
     if isinstance(results, list) and len(results) > 0:
         return True
+    if bool(output.get("tables")):
+        return True
     return bool(output.get("data"))
+
+
+def execute_db_schema_tool(
+    query: str | None = None,
+    table: str | None = None,
+) -> dict[str, Any]:
+    configs = _load_table_configs()
+    payload = _db_reference_config()
+    raw_tables = payload.get("tables", {})
+    if not isinstance(raw_tables, dict):
+        raw_tables = {}
+
+    table_param = (table or "").strip()
+    target_logical: str | None = None
+    if table_param:
+        normalized = safe_slug(table_param)
+        for logical_name, config in configs.items():
+            if normalized in config["aliases"]:
+                target_logical = logical_name
+                break
+        if not target_logical:
+            supported = ", ".join(sorted(configs.keys()))
+            raise RuntimeError(
+                f"Unknown table '{table_param}' for DB schema inspector. Supported tables: {supported}."
+            )
+
+    tables_output: dict[str, Any] = {}
+    table_keys = [target_logical] if target_logical else sorted(configs.keys())
+
+    for logical_name in table_keys:
+        parsed_config = configs[logical_name]
+        ddl_columns = parsed_config.get("ddl_columns", [])
+        column_list = [
+            {"name": name, "type": dtype}
+            for name, dtype in ddl_columns
+        ]
+        tables_output[logical_name] = {
+            "logical_table": logical_name,
+            "default_table_name": parsed_config.get("default_table_name"),
+            "aliases": sorted(list(parsed_config.get("aliases", []))),
+            "identity_fields": list(parsed_config.get("identity_fields", [])),
+            "column_count": len(column_list),
+            "columns": column_list,
+            "field_aliases": dict(parsed_config.get("field_aliases", {})),
+            "ignored_filter_fields": sorted(list(parsed_config.get("ignored_filter_fields", []))),
+        }
+
+    return {
+        "tables": tables_output,
+        "table_names": sorted(list(tables_output.keys())),
+        "answer": f"DB schema contains tables: {', '.join(sorted(tables_output.keys()))}.",
+    }
+

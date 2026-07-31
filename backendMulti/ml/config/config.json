@@ -1242,6 +1242,49 @@
       }
     },
     {
+      "id": "db_schema_tool",
+      "name": "db_schema_tool",
+      "type": "external",
+      "enabled": true,
+      "adapter": "db_schema",
+      "entrypoint": "ml.core.external_tools.execute_db_schema_tool",
+      "description": "Returns the complete database schema including all tables, columns, data types, primary/identity keys, and field aliases.",
+      "permissions": [
+        "read_reference_data"
+      ],
+      "timeout_seconds": 10,
+      "aliases": [
+        "db_schema",
+        "schema_inspector",
+        "get_db_schema",
+        "inspect_schema",
+        "database_schema"
+      ],
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "string",
+            "description": "Optional table name or alias (e.g. 'donors', 'hospitals'). If omitted, returns schema for all tables."
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "tables": {
+            "type": "object"
+          },
+          "table_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "simulation",
       "description": "Blood supply scenario simulation tool. Use it for natural-language what-if questions, scenario stress tests, impact forecasts under donor/supply/demand shocks, mitigation recommendations, policy comparisons, and dynamic custom scenarios spanning episode duration, weather, donor supply, hospital demand, operations/inventory, forecast/congestion, and budget controls.",
       "input_hints": "query (natural-language scenario request such as 'What would happen if donors dropped by 50% next week?', 'Compare PPO, SAC, and DreamerV3 for a 30% donor drop next week.', or a custom scenario override request covering hours, weather, donor/demand rates, inventory, forecast, congestion, transport, lab timing, or budget)",
