@@ -7,6 +7,8 @@
   "tested_baselines": [
     "autogluon",
     "neural_ft_transformer",
+    "sequence_gru",
+    "sequence_lstm",
     "tabpfn",
     "tabular_gbdt"
   ],
@@ -43,7 +45,7 @@
     "tabpfn": {
       "available": true,
       "reason": null,
-      "version": "8.0.2"
+      "version": "8.0.3"
     },
     "autogluon": {
       "available": true,
@@ -82,7 +84,7 @@
     "global_sota_expiry_waste_model": {
       "wape_pass": true,
       "coverage_pass": true,
-      "worst_group_wape": 0.1522613689501817,
+      "worst_group_wape": 0.15289385650973097,
       "worst_group_wape_pass": true
     },
     "global_sota_stockout_hazard_model": {
@@ -113,6 +115,15 @@
       "operational_ready": false,
       "reason": "proxy_policy_requires_real_outreach_utility_validation"
     },
+    "global_sota_ideal_donor_probability_model": {
+      "mae_pass": true,
+      "rmse_pass": true,
+      "good_enough_auc_pass": true,
+      "good_enough_brier_pass": false,
+      "score_range_pass": true,
+      "operational_ready": false,
+      "reason": "requires_real_operational_context"
+    },
     "global_sota_donor_time_to_donation_model": {
       "wape_pass": true,
       "coverage_pass": true,
@@ -137,17 +148,7 @@
       "allowed": false
     },
     {
-      "check": "donor_time_to_donation",
-      "proxy_derived_features": [
-        "readiness_score",
-        "response_readiness_index",
-        "donor_momentum",
-        "operational_outreach_priority"
-      ],
-      "allowed": false
-    },
-    {
-      "check": "donor_next_donation_hazard",
+      "check": "ideal_donor_probability",
       "proxy_derived_features": [
         "readiness_score",
         "response_readiness_index",

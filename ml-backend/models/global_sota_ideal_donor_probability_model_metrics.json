@@ -1,0 +1,199 @@
+{
+  "task": "ideal_donor_probability_score_0_to_1",
+  "winner": "tabular_gbdt",
+  "selection_metric": "validation_rmse_among_deployable_models",
+  "validation_protocol": "donor_group_holdout",
+  "validation_comparison": {
+    "neural_ft_transformer": {
+      "rmse": 0.02108876340099632,
+      "mae": 0.015166507102549076,
+      "r2": 0.9874888062477112,
+      "wape": 0.02348346720471455,
+      "auc_good_enough": 0.9956464283099579,
+      "average_precision_good_enough": 0.9944574157499648,
+      "brier_good_enough": 0.17827829330161707,
+      "ece_good_enough": 0.34040404644718875,
+      "f1_at_0_70": 0.9601872530493042,
+      "precision_at_0_70": 0.9712833434703275,
+      "recall_at_0_70": 0.9493418259023354,
+      "true_good_enough_rate": 0.4361111111111111,
+      "pred_good_enough_rate": 0.4262592592592593,
+      "pred_ideal_rate_at_0_90": 0.06569444444444444,
+      "mean_predicted_probability": 0.6425984501838684,
+      "median_predicted_probability": 0.6669921875,
+      "score_min": 0.01026153564453125,
+      "score_max": 0.97705078125,
+      "output_range_pass": true
+    },
+    "tabular_gbdt": {
+      "rmse": 0.013713657536399443,
+      "mae": 0.01042795181274414,
+      "r2": 0.9947094321250916,
+      "wape": 0.016146397929975624,
+      "auc_good_enough": 0.9981926007272374,
+      "average_precision_good_enough": 0.9977367279230615,
+      "brier_good_enough": 0.179347148582452,
+      "ece_good_enough": 0.34736463397920686,
+      "f1_at_0_70": 0.9722772486996685,
+      "precision_at_0_70": 0.9702319287934206,
+      "recall_at_0_70": 0.9743312101910828,
+      "true_good_enough_rate": 0.4361111111111111,
+      "pred_good_enough_rate": 0.4379537037037037,
+      "pred_ideal_rate_at_0_90": 0.059805555555555556,
+      "mean_predicted_probability": 0.6456922292709351,
+      "median_predicted_probability": 0.670573890209198,
+      "score_min": 0.05064887925982475,
+      "score_max": 0.9602075219154358,
+      "output_range_pass": true
+    }
+  },
+  "test_comparison": {
+    "neural_ft_transformer": {
+      "rmse": 0.021276682977000354,
+      "mae": 0.015351662412285805,
+      "r2": 0.9870501756668091,
+      "wape": 0.023744584752582565,
+      "auc_good_enough": 0.9956143771263666,
+      "average_precision_good_enough": 0.9944317449788755,
+      "brier_good_enough": 0.17885876673174575,
+      "ece_good_enough": 0.3407814446908456,
+      "f1_at_0_70": 0.9596578851471566,
+      "precision_at_0_70": 0.970517461900323,
+      "recall_at_0_70": 0.9490386449875988,
+      "true_good_enough_rate": 0.43678703703703703,
+      "pred_good_enough_rate": 0.4271203703703704,
+      "pred_ideal_rate_at_0_90": 0.06339814814814815,
+      "mean_predicted_probability": 0.6432567834854126,
+      "median_predicted_probability": 0.66748046875,
+      "score_min": 0.0133819580078125,
+      "score_max": 0.978515625,
+      "output_range_pass": true
+    },
+    "tabular_gbdt": {
+      "rmse": 0.013947780805539206,
+      "mae": 0.010562999173998833,
+      "r2": 0.9944350123405457,
+      "wape": 0.016337904767093066,
+      "auc_good_enough": 0.9981756081530624,
+      "average_precision_good_enough": 0.997720194392664,
+      "brier_good_enough": 0.1800919740340205,
+      "ece_good_enough": 0.3485718447207991,
+      "f1_at_0_70": 0.9723926380368099,
+      "precision_at_0_70": 0.9704013342622501,
+      "recall_at_0_70": 0.9743921310919382,
+      "true_good_enough_rate": 0.43678703703703703,
+      "pred_good_enough_rate": 0.4385833333333333,
+      "pred_ideal_rate_at_0_90": 0.057777777777777775,
+      "mean_predicted_probability": 0.6465674042701721,
+      "median_predicted_probability": 0.6709955334663391,
+      "score_min": 0.043005816638469696,
+      "score_max": 0.9613049626350403,
+      "output_range_pass": true
+    }
+  },
+  "target_metadata": {
+    "target_source": "provided_score:ideal_donor_probability",
+    "proxy_target": false,
+    "score_col": "ideal_donor_probability",
+    "label_col": null,
+    "good_enough_threshold": 0.7,
+    "ideal_threshold": 0.9,
+    "endpoint": 1.0,
+    "interpretation": {
+      "0.0": "not ideal",
+      "0.7": "good enough donor candidate",
+      "1.0": "ideal donor endpoint"
+    }
+  },
+  "proxy_target": false,
+  "score_output_schema": {
+    "output_name": "ideal_donor_probability",
+    "range": [
+      0.0,
+      1.0
+    ],
+    "not_ideal_reference": 0.0,
+    "good_enough_threshold": 0.7,
+    "ideal_endpoint": 1.0,
+    "near_ideal_review_threshold": 0.9,
+    "interpretation": "0 means not ideal; 0.70 or higher is good enough; 1.0 is the ideal donor endpoint."
+  },
+  "prediction_export": "/kaggle/working/generated_data/quebec_ideal_donor_probability_test_predictions.parquet",
+  "neural_overall": {
+    "rmse": 0.021276682977000354,
+    "mae": 0.015351662412285805,
+    "r2": 0.9870501756668091,
+    "wape": 0.023744584752582565,
+    "auc_good_enough": 0.9956143771263666,
+    "average_precision_good_enough": 0.9944317449788755,
+    "brier_good_enough": 0.17885876673174575,
+    "ece_good_enough": 0.3407814446908456,
+    "f1_at_0_70": 0.9596578851471566,
+    "precision_at_0_70": 0.970517461900323,
+    "recall_at_0_70": 0.9490386449875988,
+    "true_good_enough_rate": 0.43678703703703703,
+    "pred_good_enough_rate": 0.4271203703703704,
+    "pred_ideal_rate_at_0_90": 0.06339814814814815,
+    "mean_predicted_probability": 0.6432567834854126,
+    "median_predicted_probability": 0.66748046875,
+    "score_min": 0.0133819580078125,
+    "score_max": 0.978515625,
+    "output_range_pass": true
+  },
+  "tabular_overall": {
+    "rmse": 0.013947780805539206,
+    "mae": 0.010562999173998833,
+    "r2": 0.9944350123405457,
+    "wape": 0.016337904767093066,
+    "auc_good_enough": 0.9981756081530624,
+    "average_precision_good_enough": 0.997720194392664,
+    "brier_good_enough": 0.1800919740340205,
+    "ece_good_enough": 0.3485718447207991,
+    "f1_at_0_70": 0.9723926380368099,
+    "precision_at_0_70": 0.9704013342622501,
+    "recall_at_0_70": 0.9743921310919382,
+    "true_good_enough_rate": 0.43678703703703703,
+    "pred_good_enough_rate": 0.4385833333333333,
+    "pred_ideal_rate_at_0_90": 0.057777777777777775,
+    "mean_predicted_probability": 0.6465674042701721,
+    "median_predicted_probability": 0.6709955334663391,
+    "score_min": 0.043005816638469696,
+    "score_max": 0.9613049626350403,
+    "output_range_pass": true
+  },
+  "sota_baselines": {
+    "availability": {
+      "tabpfn": {
+        "available": false,
+        "reason": "row_limit_exceeded",
+        "version": "8.0.3"
+      },
+      "autogluon": {
+        "available": false,
+        "reason": "row_limit_exceeded",
+        "version": null
+      },
+      "optuna": {
+        "available": true,
+        "reason": null,
+        "version": "4.8.0"
+      },
+      "tabm": {
+        "available": true,
+        "reason": "installed_but_adapter_disabled",
+        "version": "0.0.3"
+      },
+      "tabr": {
+        "available": false,
+        "reason": "research_reference_no_stable_notebook_adapter",
+        "version": null
+      }
+    }
+  },
+  "best_valid_loss": 0.00044603166419879666,
+  "epochs_ran": 30,
+  "lr": 0.0005,
+  "dropout": 0.15,
+  "hidden_dim": 384,
+  "n_layers": 3
+}

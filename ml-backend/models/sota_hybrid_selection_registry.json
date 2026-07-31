@@ -2,585 +2,1257 @@
   "demand": {
     "Plasma | A+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.1706991463027896,
-      "tabular_metric": 0.16880019069309377,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.16880019069309377,
+      "candidates": {
+        "neural_ft_transformer": 0.16916246617144573,
+        "tabular_gbdt": 0.16880019069309377,
+        "sequence_lstm": 0.1789481960853217,
+        "sequence_gru": 0.1836421718512353
+      },
+      "neural_metric": 0.16916246617144573,
+      "tabular_metric": 0.16880019069309377
     },
     "Plasma | A-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.1601955612643832,
-      "tabular_metric": 0.1573286434972677,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.1573286434972677,
+      "candidates": {
+        "neural_ft_transformer": 0.1612546520941426,
+        "tabular_gbdt": 0.1573286434972677,
+        "sequence_lstm": 0.16997511134861354,
+        "sequence_gru": 0.17341053181403476
+      },
+      "neural_metric": 0.1612546520941426,
+      "tabular_metric": 0.1573286434972677
     },
     "Plasma | AB+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.17419404275999506,
-      "tabular_metric": 0.17308908931563,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.17308908931563,
+      "candidates": {
+        "neural_ft_transformer": 0.17918841446608222,
+        "tabular_gbdt": 0.17308908931563,
+        "sequence_lstm": 0.1875782205929489,
+        "sequence_gru": 0.1897145623380513
+      },
+      "neural_metric": 0.17918841446608222,
+      "tabular_metric": 0.17308908931563
     },
     "Plasma | AB-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.1646185769683292,
-      "tabular_metric": 0.16308877560207302,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.16308877560207302,
+      "candidates": {
+        "neural_ft_transformer": 0.16441127423114585,
+        "tabular_gbdt": 0.16308877560207302,
+        "sequence_lstm": 0.1763847998909467,
+        "sequence_gru": 0.17111029282640988
+      },
+      "neural_metric": 0.16441127423114585,
+      "tabular_metric": 0.16308877560207302
     },
     "Plasma | B+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.16551617370528904,
-      "tabular_metric": 0.16487707965874518,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.16487707965874518,
+      "candidates": {
+        "neural_ft_transformer": 0.168826217915139,
+        "tabular_gbdt": 0.16487707965874518,
+        "sequence_lstm": 0.1793466795022853,
+        "sequence_gru": 0.1834686924623102
+      },
+      "neural_metric": 0.168826217915139,
+      "tabular_metric": 0.16487707965874518
     },
     "Plasma | B-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.17605165217287103,
-      "tabular_metric": 0.1753864332237986,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.1753864332237986,
+      "candidates": {
+        "neural_ft_transformer": 0.18009284356736413,
+        "tabular_gbdt": 0.1753864332237986,
+        "sequence_lstm": 0.18625548026266936,
+        "sequence_gru": 0.1876733815996548
+      },
+      "neural_metric": 0.18009284356736413,
+      "tabular_metric": 0.1753864332237986
     },
     "Plasma | O+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.15841795175765808,
-      "tabular_metric": 0.1562792447899114,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.1562792447899114,
+      "candidates": {
+        "neural_ft_transformer": 0.15842084466731102,
+        "tabular_gbdt": 0.1562792447899114,
+        "sequence_lstm": 0.1784765171608977,
+        "sequence_gru": 0.1721716671414165
+      },
+      "neural_metric": 0.15842084466731102,
+      "tabular_metric": 0.1562792447899114
     },
     "Plasma | O-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.17095134088915068,
-      "tabular_metric": 0.16984669268180375,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.16984669268180375,
+      "candidates": {
+        "neural_ft_transformer": 0.17261050671159786,
+        "tabular_gbdt": 0.16984669268180375,
+        "sequence_lstm": 0.18519066877292212,
+        "sequence_gru": 0.18182947916733705
+      },
+      "neural_metric": 0.17261050671159786,
+      "tabular_metric": 0.16984669268180375
     },
     "Platelets | A+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.18089813556559117,
-      "tabular_metric": 0.17958629353716737,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.17958629353716737,
+      "candidates": {
+        "neural_ft_transformer": 0.18513748815025838,
+        "tabular_gbdt": 0.17958629353716737,
+        "sequence_lstm": 0.18869450669550844,
+        "sequence_gru": 0.19780695575025203
+      },
+      "neural_metric": 0.18513748815025838,
+      "tabular_metric": 0.17958629353716737
     },
     "Platelets | A-": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.1855548459715384,
-      "tabular_metric": 0.18629859184784145,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.18629859184784145,
+      "candidates": {
+        "neural_ft_transformer": 0.19217926551119055,
+        "tabular_gbdt": 0.18629859184784145,
+        "sequence_lstm": 0.19361243903520944,
+        "sequence_gru": 0.20027762750764333
+      },
+      "neural_metric": 0.19217926551119055,
+      "tabular_metric": 0.18629859184784145
     },
     "Platelets | AB+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.1764375928192179,
-      "tabular_metric": 0.17395214704568862,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.17395214704568862,
+      "candidates": {
+        "neural_ft_transformer": 0.17986397513900346,
+        "tabular_gbdt": 0.17395214704568862,
+        "sequence_lstm": 0.1821780611002949,
+        "sequence_gru": 0.19598650021683284
+      },
+      "neural_metric": 0.17986397513900346,
+      "tabular_metric": 0.17395214704568862
     },
     "Platelets | AB-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.17374625503511215,
-      "tabular_metric": 0.17072958286993603,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.17072958286993603,
+      "candidates": {
+        "neural_ft_transformer": 0.17221160227256005,
+        "tabular_gbdt": 0.17072958286993603,
+        "sequence_lstm": 0.18131265608259053,
+        "sequence_gru": 0.1818356855944574
+      },
+      "neural_metric": 0.17221160227256005,
+      "tabular_metric": 0.17072958286993603
     },
     "Platelets | B+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.18225933964230034,
-      "tabular_metric": 0.1809079460560062,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.1809079460560062,
+      "candidates": {
+        "neural_ft_transformer": 0.1856851265371645,
+        "tabular_gbdt": 0.1809079460560062,
+        "sequence_lstm": 0.19369876832534783,
+        "sequence_gru": 0.1987297067779117
+      },
+      "neural_metric": 0.1856851265371645,
+      "tabular_metric": 0.1809079460560062
     },
     "Platelets | B-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.16852763263313023,
-      "tabular_metric": 0.16630900671183227,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.16630900671183227,
+      "candidates": {
+        "neural_ft_transformer": 0.16996346951304725,
+        "tabular_gbdt": 0.16630900671183227,
+        "sequence_lstm": 0.17955150421573207,
+        "sequence_gru": 0.17890625142137592
+      },
+      "neural_metric": 0.16996346951304725,
+      "tabular_metric": 0.16630900671183227
     },
     "Platelets | O+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.1747479830393789,
-      "tabular_metric": 0.1746001294766606,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.1746001294766606,
+      "candidates": {
+        "neural_ft_transformer": 0.17860670267238138,
+        "tabular_gbdt": 0.1746001294766606,
+        "sequence_lstm": 0.18518549002729892,
+        "sequence_gru": 0.18902108604318318
+      },
+      "neural_metric": 0.17860670267238138,
+      "tabular_metric": 0.1746001294766606
     },
     "Platelets | O-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.18349563859604,
-      "tabular_metric": 0.18273986744858126,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.18273986744858126,
+      "candidates": {
+        "neural_ft_transformer": 0.18431853393453654,
+        "tabular_gbdt": 0.18273986744858126,
+        "sequence_lstm": 0.19448316955371708,
+        "sequence_gru": 0.19760855977974567
+      },
+      "neural_metric": 0.18431853393453654,
+      "tabular_metric": 0.18273986744858126
     },
     "Red blood cells | A+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.13747340112499268,
-      "tabular_metric": 0.13493866291443268,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.13493866291443268,
+      "candidates": {
+        "neural_ft_transformer": 0.1394660259511163,
+        "tabular_gbdt": 0.13493866291443268,
+        "sequence_lstm": 0.15051370873037087,
+        "sequence_gru": 0.14436937177172104
+      },
+      "neural_metric": 0.1394660259511163,
+      "tabular_metric": 0.13493866291443268
     },
     "Red blood cells | A-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.13221906454362828,
-      "tabular_metric": 0.12979790912982758,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.12979790912982758,
+      "candidates": {
+        "neural_ft_transformer": 0.13354828612380365,
+        "tabular_gbdt": 0.12979790912982758,
+        "sequence_lstm": 0.14686064308210353,
+        "sequence_gru": 0.1428818165283919
+      },
+      "neural_metric": 0.13354828612380365,
+      "tabular_metric": 0.12979790912982758
     },
     "Red blood cells | AB+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.12871586690785247,
-      "tabular_metric": 0.12453183544255668,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.12453183544255668,
+      "candidates": {
+        "neural_ft_transformer": 0.12931437193031448,
+        "tabular_gbdt": 0.12453183544255668,
+        "sequence_lstm": 0.14336049079461477,
+        "sequence_gru": 0.13720244791312675
+      },
+      "neural_metric": 0.12931437193031448,
+      "tabular_metric": 0.12453183544255668
     },
     "Red blood cells | AB-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.13468506896655852,
-      "tabular_metric": 0.1299044342953424,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.1299044342953424,
+      "candidates": {
+        "neural_ft_transformer": 0.13539239774888195,
+        "tabular_gbdt": 0.1299044342953424,
+        "sequence_lstm": 0.14304692553098441,
+        "sequence_gru": 0.14100447002862593
+      },
+      "neural_metric": 0.13539239774888195,
+      "tabular_metric": 0.1299044342953424
     },
     "Red blood cells | B+": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.13301393745465145,
-      "tabular_metric": 0.13228655991164884,
-      "metric": "wape"
+      "selected": "neural_ft_transformer",
+      "metric": "wape",
+      "selected_metric": 0.13200002001791214,
+      "candidates": {
+        "neural_ft_transformer": 0.13200002001791214,
+        "tabular_gbdt": 0.13228655991164884,
+        "sequence_lstm": 0.1527356030109177,
+        "sequence_gru": 0.14837108545918376
+      },
+      "neural_metric": 0.13200002001791214,
+      "tabular_metric": 0.13228655991164884
     },
     "Red blood cells | B-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.13866396786238566,
-      "tabular_metric": 0.13392980558710607,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.13392980558710607,
+      "candidates": {
+        "neural_ft_transformer": 0.13915855102628696,
+        "tabular_gbdt": 0.13392980558710607,
+        "sequence_lstm": 0.14594763424686474,
+        "sequence_gru": 0.144246311688103
+      },
+      "neural_metric": 0.13915855102628696,
+      "tabular_metric": 0.13392980558710607
     },
     "Red blood cells | O+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.1380528688461056,
-      "tabular_metric": 0.13370320783803866,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.13370320783803866,
+      "candidates": {
+        "neural_ft_transformer": 0.1363150030511567,
+        "tabular_gbdt": 0.13370320783803866,
+        "sequence_lstm": 0.15377023383611227,
+        "sequence_gru": 0.15057718534945724
+      },
+      "neural_metric": 0.1363150030511567,
+      "tabular_metric": 0.13370320783803866
     },
     "Red blood cells | O-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.13124141149082758,
-      "tabular_metric": 0.1298104182964874,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.1298104182964874,
+      "candidates": {
+        "neural_ft_transformer": 0.13114847624608716,
+        "tabular_gbdt": 0.1298104182964874,
+        "sequence_lstm": 0.14281745146930686,
+        "sequence_gru": 0.1386779873522846
+      },
+      "neural_metric": 0.13114847624608716,
+      "tabular_metric": 0.1298104182964874
     }
   },
   "supply": {
     "Plasma | A+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.23273712006613123,
-      "tabular_metric": 0.22914920837077896,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.22914920837077896,
+      "candidates": {
+        "neural_ft_transformer": 0.23348573385308338,
+        "tabular_gbdt": 0.22914920837077896,
+        "sequence_lstm": 0.23040173718853635,
+        "sequence_gru": 0.24929212692302966
+      },
+      "neural_metric": 0.23348573385308338,
+      "tabular_metric": 0.22914920837077896
     },
     "Plasma | A-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.23600802604079593,
-      "tabular_metric": 0.23579097838058458,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.23579097838058458,
+      "candidates": {
+        "neural_ft_transformer": 0.23625117531106352,
+        "tabular_gbdt": 0.23579097838058458,
+        "sequence_lstm": 0.23704413584016618,
+        "sequence_gru": 0.24294160399080839
+      },
+      "neural_metric": 0.23625117531106352,
+      "tabular_metric": 0.23579097838058458
     },
     "Plasma | AB+": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.23287943950556755,
-      "tabular_metric": 0.23092051853820056,
-      "metric": "wape"
+      "selected": "neural_ft_transformer",
+      "metric": "wape",
+      "selected_metric": 0.22971302345607025,
+      "candidates": {
+        "neural_ft_transformer": 0.22971302345607025,
+        "tabular_gbdt": 0.23092051853820056,
+        "sequence_lstm": 0.23061033212488904,
+        "sequence_gru": 0.24635031678107558
+      },
+      "neural_metric": 0.22971302345607025,
+      "tabular_metric": 0.23092051853820056
     },
     "Plasma | AB-": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.2333104053490314,
-      "tabular_metric": 0.2333120402159177,
-      "metric": "wape"
+      "selected": "sequence_lstm",
+      "metric": "wape",
+      "selected_metric": 0.23065032718619177,
+      "candidates": {
+        "neural_ft_transformer": 0.23499657889913736,
+        "tabular_gbdt": 0.2333120402159177,
+        "sequence_lstm": 0.23065032718619177,
+        "sequence_gru": 0.24326643587622507
+      },
+      "neural_metric": 0.23499657889913736,
+      "tabular_metric": 0.2333120402159177
     },
     "Plasma | B+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.23245306917843114,
-      "tabular_metric": 0.2313233148495276,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.2313233148495276,
+      "candidates": {
+        "neural_ft_transformer": 0.2314797337650195,
+        "tabular_gbdt": 0.2313233148495276,
+        "sequence_lstm": 0.2316049469564159,
+        "sequence_gru": 0.2415295181138997
+      },
+      "neural_metric": 0.2314797337650195,
+      "tabular_metric": 0.2313233148495276
     },
     "Plasma | B-": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.23319839014624819,
-      "tabular_metric": 0.23092388322674828,
-      "metric": "wape"
+      "selected": "sequence_lstm",
+      "metric": "wape",
+      "selected_metric": 0.2258005179030614,
+      "candidates": {
+        "neural_ft_transformer": 0.2339086756419189,
+        "tabular_gbdt": 0.23092388322674828,
+        "sequence_lstm": 0.2258005179030614,
+        "sequence_gru": 0.24426769872499737
+      },
+      "neural_metric": 0.2339086756419189,
+      "tabular_metric": 0.23092388322674828
     },
     "Plasma | O+": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.23580648719682157,
-      "tabular_metric": 0.23472101175228466,
-      "metric": "wape"
+      "selected": "neural_ft_transformer",
+      "metric": "wape",
+      "selected_metric": 0.22999000217204793,
+      "candidates": {
+        "neural_ft_transformer": 0.22999000217204793,
+        "tabular_gbdt": 0.23472101175228466,
+        "sequence_lstm": 0.23324847530423012,
+        "sequence_gru": 0.25077735155388986
+      },
+      "neural_metric": 0.22999000217204793,
+      "tabular_metric": 0.23472101175228466
     },
     "Plasma | O-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.2341385998822297,
-      "tabular_metric": 0.23190923466827482,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.23190923466827482,
+      "candidates": {
+        "neural_ft_transformer": 0.23317569615136705,
+        "tabular_gbdt": 0.23190923466827482,
+        "sequence_lstm": 0.2340443352920858,
+        "sequence_gru": 0.2441627503683218
+      },
+      "neural_metric": 0.23317569615136705,
+      "tabular_metric": 0.23190923466827482
     },
     "Platelets | A+": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.2167958684959835,
-      "tabular_metric": 0.21176740583950446,
-      "metric": "wape"
+      "selected": "sequence_lstm",
+      "metric": "wape",
+      "selected_metric": 0.2113502920062832,
+      "candidates": {
+        "neural_ft_transformer": 0.21979109910885977,
+        "tabular_gbdt": 0.21176740583950446,
+        "sequence_lstm": 0.2113502920062832,
+        "sequence_gru": 0.21393071157610438
+      },
+      "neural_metric": 0.21979109910885977,
+      "tabular_metric": 0.21176740583950446
     },
     "Platelets | A-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.19542790243250885,
-      "tabular_metric": 0.19432183745057421,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.19432183745057421,
+      "candidates": {
+        "neural_ft_transformer": 0.19452008978516985,
+        "tabular_gbdt": 0.19432183745057421,
+        "sequence_lstm": 0.20005095596454284,
+        "sequence_gru": 0.20613441097748733
+      },
+      "neural_metric": 0.19452008978516985,
+      "tabular_metric": 0.19432183745057421
     },
     "Platelets | AB+": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.21588823235630636,
-      "tabular_metric": 0.217061775908874,
-      "metric": "wape"
+      "selected": "sequence_lstm",
+      "metric": "wape",
+      "selected_metric": 0.21656394528877118,
+      "candidates": {
+        "neural_ft_transformer": 0.2209774335033309,
+        "tabular_gbdt": 0.217061775908874,
+        "sequence_lstm": 0.21656394528877118,
+        "sequence_gru": 0.22028442400295295
+      },
+      "neural_metric": 0.2209774335033309,
+      "tabular_metric": 0.217061775908874
     },
     "Platelets | AB-": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.19644048443152667,
-      "tabular_metric": 0.19547816171484983,
-      "metric": "wape"
+      "selected": "neural_ft_transformer",
+      "metric": "wape",
+      "selected_metric": 0.19380100878081424,
+      "candidates": {
+        "neural_ft_transformer": 0.19380100878081424,
+        "tabular_gbdt": 0.19547816171484983,
+        "sequence_lstm": 0.20000557652685913,
+        "sequence_gru": 0.20747824141111482
+      },
+      "neural_metric": 0.19380100878081424,
+      "tabular_metric": 0.19547816171484983
     },
     "Platelets | B+": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.21258202667240586,
-      "tabular_metric": 0.21274483744874192,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.21274483744874192,
+      "candidates": {
+        "neural_ft_transformer": 0.22143240758824437,
+        "tabular_gbdt": 0.21274483744874192,
+        "sequence_lstm": 0.2138581503017133,
+        "sequence_gru": 0.21611456658465344
+      },
+      "neural_metric": 0.22143240758824437,
+      "tabular_metric": 0.21274483744874192
     },
     "Platelets | B-": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.18614682276538244,
-      "tabular_metric": 0.18917953171289556,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.18917953171289556,
+      "candidates": {
+        "neural_ft_transformer": 0.19167832914406008,
+        "tabular_gbdt": 0.18917953171289556,
+        "sequence_lstm": 0.1917297889813231,
+        "sequence_gru": 0.20138151896295084
+      },
+      "neural_metric": 0.19167832914406008,
+      "tabular_metric": 0.18917953171289556
     },
     "Platelets | O+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.2378242603628936,
-      "tabular_metric": 0.23464204067282285,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.23464204067282285,
+      "candidates": {
+        "neural_ft_transformer": 0.23952441650064804,
+        "tabular_gbdt": 0.23464204067282285,
+        "sequence_lstm": 0.23643246407597981,
+        "sequence_gru": 0.23667762505370443
+      },
+      "neural_metric": 0.23952441650064804,
+      "tabular_metric": 0.23464204067282285
     },
     "Platelets | O-": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.1987086402052627,
-      "tabular_metric": 0.19809993883296936,
-      "metric": "wape"
+      "selected": "neural_ft_transformer",
+      "metric": "wape",
+      "selected_metric": 0.19642869304976882,
+      "candidates": {
+        "neural_ft_transformer": 0.19642869304976882,
+        "tabular_gbdt": 0.19809993883296936,
+        "sequence_lstm": 0.20293733735833083,
+        "sequence_gru": 0.21131036603761819
+      },
+      "neural_metric": 0.19642869304976882,
+      "tabular_metric": 0.19809993883296936
     },
     "Red blood cells | A+": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.17672581392915798,
-      "tabular_metric": 0.17338500467020954,
-      "metric": "wape"
+      "selected": "neural_ft_transformer",
+      "metric": "wape",
+      "selected_metric": 0.17324518900869476,
+      "candidates": {
+        "neural_ft_transformer": 0.17324518900869476,
+        "tabular_gbdt": 0.17338500467020954,
+        "sequence_lstm": 0.1799690541124114,
+        "sequence_gru": 0.19873110105652309
+      },
+      "neural_metric": 0.17324518900869476,
+      "tabular_metric": 0.17338500467020954
     },
     "Red blood cells | A-": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.17834453134320707,
-      "tabular_metric": 0.17812949575151565,
-      "metric": "wape"
+      "selected": "neural_ft_transformer",
+      "metric": "wape",
+      "selected_metric": 0.17776532592177402,
+      "candidates": {
+        "neural_ft_transformer": 0.17776532592177402,
+        "tabular_gbdt": 0.17812949575151565,
+        "sequence_lstm": 0.1820191373469639,
+        "sequence_gru": 0.19181442079851868
+      },
+      "neural_metric": 0.17776532592177402,
+      "tabular_metric": 0.17812949575151565
     },
     "Red blood cells | AB+": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.17885178364469015,
-      "tabular_metric": 0.17707658998858103,
-      "metric": "wape"
+      "selected": "neural_ft_transformer",
+      "metric": "wape",
+      "selected_metric": 0.17462942631774858,
+      "candidates": {
+        "neural_ft_transformer": 0.17462942631774858,
+        "tabular_gbdt": 0.17707658998858103,
+        "sequence_lstm": 0.1846676499623175,
+        "sequence_gru": 0.19769316619656424
+      },
+      "neural_metric": 0.17462942631774858,
+      "tabular_metric": 0.17707658998858103
     },
     "Red blood cells | AB-": {
       "selected": "neural_ft_transformer",
-      "neural_metric": 0.18215005939451617,
-      "tabular_metric": 0.1824097761231756,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.18153960328466104,
+      "candidates": {
+        "neural_ft_transformer": 0.18153960328466104,
+        "tabular_gbdt": 0.1824097761231756,
+        "sequence_lstm": 0.18665063268784396,
+        "sequence_gru": 0.19221098966998115
+      },
+      "neural_metric": 0.18153960328466104,
+      "tabular_metric": 0.1824097761231756
     },
     "Red blood cells | B+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.18241258111660688,
-      "tabular_metric": 0.18055841061233457,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.18055841061233457,
+      "candidates": {
+        "neural_ft_transformer": 0.183177236412848,
+        "tabular_gbdt": 0.18055841061233457,
+        "sequence_lstm": 0.18279768732383875,
+        "sequence_gru": 0.19629325800781586
+      },
+      "neural_metric": 0.183177236412848,
+      "tabular_metric": 0.18055841061233457
     },
     "Red blood cells | B-": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.1890935155820563,
-      "tabular_metric": 0.19081493388278117,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.19081493388278117,
+      "candidates": {
+        "neural_ft_transformer": 0.19090418741513646,
+        "tabular_gbdt": 0.19081493388278117,
+        "sequence_lstm": 0.1947401311966192,
+        "sequence_gru": 0.19969720654308468
+      },
+      "neural_metric": 0.19090418741513646,
+      "tabular_metric": 0.19081493388278117
     },
     "Red blood cells | O+": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.1888969447264425,
-      "tabular_metric": 0.18724734866448522,
-      "metric": "wape"
+      "selected": "neural_ft_transformer",
+      "metric": "wape",
+      "selected_metric": 0.18314758097033088,
+      "candidates": {
+        "neural_ft_transformer": 0.18314758097033088,
+        "tabular_gbdt": 0.18724734866448522,
+        "sequence_lstm": 0.19236861323302992,
+        "sequence_gru": 0.20772663355733434
+      },
+      "neural_metric": 0.18314758097033088,
+      "tabular_metric": 0.18724734866448522
     },
     "Red blood cells | O-": {
       "selected": "neural_ft_transformer",
-      "neural_metric": 0.17288720867172697,
-      "tabular_metric": 0.1764427541225748,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.17192924155285622,
+      "candidates": {
+        "neural_ft_transformer": 0.17192924155285622,
+        "tabular_gbdt": 0.1764427541225748,
+        "sequence_lstm": 0.17813898374051668,
+        "sequence_gru": 0.18748771427407923
+      },
+      "neural_metric": 0.17192924155285622,
+      "tabular_metric": 0.1764427541225748
     }
   },
   "waste": {
     "Plasma | A+": {
       "selected": "neural_ft_transformer",
-      "neural_metric": 0.13034551114459159,
-      "tabular_metric": 0.13382640960807188,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.13373511676913138,
+      "candidates": {
+        "neural_ft_transformer": 0.13373511676913138,
+        "tabular_gbdt": 0.13382640960808495,
+        "sequence_lstm": 0.14301935182348374,
+        "sequence_gru": 0.14026569045708065
+      },
+      "neural_metric": 0.13373511676913138,
+      "tabular_metric": 0.13382640960808495
     },
     "Plasma | A-": {
       "selected": "neural_ft_transformer",
-      "neural_metric": 0.1522613689501817,
-      "tabular_metric": 0.1528938565090098,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.15196015371529012,
+      "candidates": {
+        "neural_ft_transformer": 0.15196015371529012,
+        "tabular_gbdt": 0.15289385650973097,
+        "sequence_lstm": 0.16070313625358737,
+        "sequence_gru": 0.15889130201083232
+      },
+      "neural_metric": 0.15196015371529012,
+      "tabular_metric": 0.15289385650973097
     },
     "Plasma | AB+": {
       "selected": "neural_ft_transformer",
-      "neural_metric": 0.13674726340159152,
-      "tabular_metric": 0.14021386860608315,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.1381425154666734,
+      "candidates": {
+        "neural_ft_transformer": 0.1381425154666734,
+        "tabular_gbdt": 0.1402138686061117,
+        "sequence_lstm": 0.15245766583997197,
+        "sequence_gru": 0.14480804548052414
+      },
+      "neural_metric": 0.1381425154666734,
+      "tabular_metric": 0.1402138686061117
     },
     "Plasma | AB-": {
       "selected": "neural_ft_transformer",
-      "neural_metric": 0.15131163832014075,
-      "tabular_metric": 0.15168570381477867,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.1516301713519043,
+      "candidates": {
+        "neural_ft_transformer": 0.1516301713519043,
+        "tabular_gbdt": 0.15168570381479138,
+        "sequence_lstm": 0.15191902479203293,
+        "sequence_gru": 0.15271065280749632
+      },
+      "neural_metric": 0.1516301713519043,
+      "tabular_metric": 0.15168570381479138
     },
     "Plasma | B+": {
       "selected": "neural_ft_transformer",
-      "neural_metric": 0.1318281833948974,
-      "tabular_metric": 0.1330140249581918,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.13165129428821218,
+      "candidates": {
+        "neural_ft_transformer": 0.13165129428821218,
+        "tabular_gbdt": 0.1330140249581134,
+        "sequence_lstm": 0.14333903145113536,
+        "sequence_gru": 0.14038194879361818
+      },
+      "neural_metric": 0.13165129428821218,
+      "tabular_metric": 0.1330140249581134
     },
     "Plasma | B-": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.1292033049501994,
-      "tabular_metric": 0.1306921030149703,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.13069210301502895,
+      "candidates": {
+        "neural_ft_transformer": 0.13385616887853613,
+        "tabular_gbdt": 0.13069210301502895,
+        "sequence_lstm": 0.14197306326661746,
+        "sequence_gru": 0.13615283611620063
+      },
+      "neural_metric": 0.13385616887853613,
+      "tabular_metric": 0.13069210301502895
     },
     "Plasma | O+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.13187454788319264,
-      "tabular_metric": 0.13073511290421133,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.130735112904139,
+      "candidates": {
+        "neural_ft_transformer": 0.13308385153637362,
+        "tabular_gbdt": 0.130735112904139,
+        "sequence_lstm": 0.149480249927323,
+        "sequence_gru": 0.1391734731018975
+      },
+      "neural_metric": 0.13308385153637362,
+      "tabular_metric": 0.130735112904139
     },
     "Plasma | O-": {
       "selected": "neural_ft_transformer",
-      "neural_metric": 0.1443015278603467,
-      "tabular_metric": 0.14583572851283538,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.1453401865265889,
+      "candidates": {
+        "neural_ft_transformer": 0.1453401865265889,
+        "tabular_gbdt": 0.1458357285127503,
+        "sequence_lstm": 0.14981350996490847,
+        "sequence_gru": 0.14745222254917925
+      },
+      "neural_metric": 0.1453401865265889,
+      "tabular_metric": 0.1458357285127503
     },
     "Platelets | A+": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.10782940188645661,
-      "tabular_metric": 0.10839463303164242,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.1083946330317343,
+      "candidates": {
+        "neural_ft_transformer": 0.11026292638070175,
+        "tabular_gbdt": 0.1083946330317343,
+        "sequence_lstm": 0.1228659076074303,
+        "sequence_gru": 0.12400691432231849
+      },
+      "neural_metric": 0.11026292638070175,
+      "tabular_metric": 0.1083946330317343
     },
     "Platelets | A-": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.09656056396498956,
-      "tabular_metric": 0.0971032976243436,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.09710329762436315,
+      "candidates": {
+        "neural_ft_transformer": 0.09810449241790502,
+        "tabular_gbdt": 0.09710329762436315,
+        "sequence_lstm": 0.11039486392102932,
+        "sequence_gru": 0.10573595633008641
+      },
+      "neural_metric": 0.09810449241790502,
+      "tabular_metric": 0.09710329762436315
     },
     "Platelets | AB+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.11737838047746377,
-      "tabular_metric": 0.1140928871181198,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.11409288711835253,
+      "candidates": {
+        "neural_ft_transformer": 0.12238016651496829,
+        "tabular_gbdt": 0.11409288711835253,
+        "sequence_lstm": 0.13287915834938388,
+        "sequence_gru": 0.1294933539360035
+      },
+      "neural_metric": 0.12238016651496829,
+      "tabular_metric": 0.11409288711835253
     },
     "Platelets | AB-": {
       "selected": "neural_ft_transformer",
-      "neural_metric": 0.09156389900411975,
-      "tabular_metric": 0.09282839946276991,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.0928259963412541,
+      "candidates": {
+        "neural_ft_transformer": 0.0928259963412541,
+        "tabular_gbdt": 0.09282839946273104,
+        "sequence_lstm": 0.10524760321253664,
+        "sequence_gru": 0.10406363450277906
+      },
+      "neural_metric": 0.0928259963412541,
+      "tabular_metric": 0.09282839946273104
     },
     "Platelets | B+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.10800803682701457,
-      "tabular_metric": 0.1070748205066017,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.10707482050677297,
+      "candidates": {
+        "neural_ft_transformer": 0.10932565892177956,
+        "tabular_gbdt": 0.10707482050677297,
+        "sequence_lstm": 0.11887394358167241,
+        "sequence_gru": 0.12127766565783502
+      },
+      "neural_metric": 0.10932565892177956,
+      "tabular_metric": 0.10707482050677297
     },
     "Platelets | B-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.09206252906533222,
-      "tabular_metric": 0.08765939674458982,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.08765939674424665,
+      "candidates": {
+        "neural_ft_transformer": 0.09027105583148826,
+        "tabular_gbdt": 0.08765939674424665,
+        "sequence_lstm": 0.10693832212241575,
+        "sequence_gru": 0.09731319345263502
+      },
+      "neural_metric": 0.09027105583148826,
+      "tabular_metric": 0.08765939674424665
     },
     "Platelets | O+": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.12605398394662667,
-      "tabular_metric": 0.12810847306836434,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.12810847306879106,
+      "candidates": {
+        "neural_ft_transformer": 0.1316247974752043,
+        "tabular_gbdt": 0.12810847306879106,
+        "sequence_lstm": 0.14322155709699613,
+        "sequence_gru": 0.146505229575113
+      },
+      "neural_metric": 0.1316247974752043,
+      "tabular_metric": 0.12810847306879106
     },
     "Platelets | O-": {
       "selected": "neural_ft_transformer",
-      "neural_metric": 0.09344961487341519,
-      "tabular_metric": 0.09388105056203179,
-      "metric": "wape"
+      "metric": "wape",
+      "selected_metric": 0.0934287892533386,
+      "candidates": {
+        "neural_ft_transformer": 0.0934287892533386,
+        "tabular_gbdt": 0.09388105056194265,
+        "sequence_lstm": 0.11003565216041292,
+        "sequence_gru": 0.10768245764723551
+      },
+      "neural_metric": 0.0934287892533386,
+      "tabular_metric": 0.09388105056194265
     },
     "Red blood cells | A+": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.06445591262189639,
-      "tabular_metric": 0.06540162058449503,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.06540162058441847,
+      "candidates": {
+        "neural_ft_transformer": 0.07471499336711716,
+        "tabular_gbdt": 0.06540162058441847,
+        "sequence_lstm": 0.06855516306837059,
+        "sequence_gru": 0.07606374511428965
+      },
+      "neural_metric": 0.07471499336711716,
+      "tabular_metric": 0.06540162058441847
     },
     "Red blood cells | A-": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.0644482440614785,
-      "tabular_metric": 0.06746180270581752,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.0674618027057413,
+      "candidates": {
+        "neural_ft_transformer": 0.06955789724967502,
+        "tabular_gbdt": 0.0674618027057413,
+        "sequence_lstm": 0.06947975764334503,
+        "sequence_gru": 0.0721854253130905
+      },
+      "neural_metric": 0.06955789724967502,
+      "tabular_metric": 0.0674618027057413
     },
     "Red blood cells | AB+": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.06742330155684194,
-      "tabular_metric": 0.07006525190419192,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.0700652519040483,
+      "candidates": {
+        "neural_ft_transformer": 0.07603926123332438,
+        "tabular_gbdt": 0.0700652519040483,
+        "sequence_lstm": 0.0706602738843389,
+        "sequence_gru": 0.07886805624225211
+      },
+      "neural_metric": 0.07603926123332438,
+      "tabular_metric": 0.0700652519040483
     },
     "Red blood cells | AB-": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.06838953245753217,
-      "tabular_metric": 0.07032336224271632,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.07032336224278263,
+      "candidates": {
+        "neural_ft_transformer": 0.07509479800630664,
+        "tabular_gbdt": 0.07032336224278263,
+        "sequence_lstm": 0.07259803937025441,
+        "sequence_gru": 0.07550278656675144
+      },
+      "neural_metric": 0.07509479800630664,
+      "tabular_metric": 0.07032336224278263
     },
     "Red blood cells | B+": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.07107504874113439,
-      "tabular_metric": 0.07265682790506711,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.0726568279050264,
+      "candidates": {
+        "neural_ft_transformer": 0.07808187226962968,
+        "tabular_gbdt": 0.0726568279050264,
+        "sequence_lstm": 0.07530537948250375,
+        "sequence_gru": 0.08095546416328324
+      },
+      "neural_metric": 0.07808187226962968,
+      "tabular_metric": 0.0726568279050264
     },
     "Red blood cells | B-": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.0734774371231762,
-      "tabular_metric": 0.07497271524598344,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.07497271524609359,
+      "candidates": {
+        "neural_ft_transformer": 0.07980123732703376,
+        "tabular_gbdt": 0.07497271524609359,
+        "sequence_lstm": 0.07768678154537975,
+        "sequence_gru": 0.08227227541808528
+      },
+      "neural_metric": 0.07980123732703376,
+      "tabular_metric": 0.07497271524609359
     },
     "Red blood cells | O+": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.06443409092911018,
-      "tabular_metric": 0.06473185264947931,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.06473185264941182,
+      "candidates": {
+        "neural_ft_transformer": 0.06939795168706828,
+        "tabular_gbdt": 0.06473185264941182,
+        "sequence_lstm": 0.06791600481962005,
+        "sequence_gru": 0.0831964760561998
+      },
+      "neural_metric": 0.06939795168706828,
+      "tabular_metric": 0.06473185264941182
     },
     "Red blood cells | O-": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.06799089446729581,
-      "tabular_metric": 0.07022059873694234,
-      "metric": "wape"
+      "selected": "tabular_gbdt",
+      "metric": "wape",
+      "selected_metric": 0.07022059873694848,
+      "candidates": {
+        "neural_ft_transformer": 0.07295260103732765,
+        "tabular_gbdt": 0.07022059873694848,
+        "sequence_lstm": 0.07635947718510577,
+        "sequence_gru": 0.08005465063096069
+      },
+      "neural_metric": 0.07295260103732765,
+      "tabular_metric": 0.07022059873694848
     }
   },
   "stockout": {
     "Plasma | A+": {
-      "selected": "neural_ft_transformer",
-      "neural_metric": 0.9814536406072141,
-      "tabular_metric": 0.9813002638946882,
-      "metric": "auc"
+      "selected": "tabular_gbdt",
+      "metric": "auc",
+      "selected_metric": 0.9813002638946882,
+      "candidates": {
+        "neural_ft_transformer": 0.9796905969823821,
+        "tabular_gbdt": 0.9813002638946882,
+        "sequence_lstm": 0.9806970084443933,
+        "sequence_gru": 0.9807770482198246
+      },
+      "neural_metric": 0.9796905969823821,
+      "tabular_metric": 0.9813002638946882
     },
     "Plasma | A-": {
       "selected": "neural_ft_transformer",
-      "neural_metric": 0.9656693056242783,
-      "tabular_metric": 0.9652304139864752,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9662691736763978,
+      "candidates": {
+        "neural_ft_transformer": 0.9662691736763978,
+        "tabular_gbdt": 0.9652304139864752,
+        "sequence_lstm": 0.9647842652152401,
+        "sequence_gru": 0.9647097146627083
+      },
+      "neural_metric": 0.9662691736763978,
+      "tabular_metric": 0.9652304139864752
     },
     "Plasma | AB+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9748232406890779,
-      "tabular_metric": 0.9766638478169898,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9766638478169898,
+      "candidates": {
+        "neural_ft_transformer": 0.9749142357720741,
+        "tabular_gbdt": 0.9766638478169898,
+        "sequence_lstm": 0.9758276375133678,
+        "sequence_gru": 0.9764273695773469
+      },
+      "neural_metric": 0.9749142357720741,
+      "tabular_metric": 0.9766638478169898
     },
     "Plasma | AB-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9706165089935144,
-      "tabular_metric": 0.9719286042790302,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9719286042790302,
+      "candidates": {
+        "neural_ft_transformer": 0.9691488943874946,
+        "tabular_gbdt": 0.9719286042790302,
+        "sequence_lstm": 0.9710026150051122,
+        "sequence_gru": 0.9711359625283957
+      },
+      "neural_metric": 0.9691488943874946,
+      "tabular_metric": 0.9719286042790302
     },
     "Plasma | B+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9830729729967378,
-      "tabular_metric": 0.9843284356397337,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9843284356397337,
+      "candidates": {
+        "neural_ft_transformer": 0.9823487826109895,
+        "tabular_gbdt": 0.9843284356397337,
+        "sequence_lstm": 0.9822265600956677,
+        "sequence_gru": 0.9824157851697486
+      },
+      "neural_metric": 0.9823487826109895,
+      "tabular_metric": 0.9843284356397337
     },
     "Plasma | B-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9666723837347486,
-      "tabular_metric": 0.9682291606444742,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9682291606444742,
+      "candidates": {
+        "neural_ft_transformer": 0.9672917863075576,
+        "tabular_gbdt": 0.9682291606444742,
+        "sequence_lstm": 0.9664669868224793,
+        "sequence_gru": 0.9671779267213192
+      },
+      "neural_metric": 0.9672917863075576,
+      "tabular_metric": 0.9682291606444742
     },
     "Plasma | O+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9877681201881039,
-      "tabular_metric": 0.9878319924214208,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9878319924214208,
+      "candidates": {
+        "neural_ft_transformer": 0.9870212663295092,
+        "tabular_gbdt": 0.9878319924214208,
+        "sequence_lstm": 0.9877710708075775,
+        "sequence_gru": 0.986690102685029
+      },
+      "neural_metric": 0.9870212663295092,
+      "tabular_metric": 0.9878319924214208
     },
     "Plasma | O-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9649652747032758,
-      "tabular_metric": 0.9677860634269222,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9677860634269222,
+      "candidates": {
+        "neural_ft_transformer": 0.9632760096450603,
+        "tabular_gbdt": 0.9677860634269222,
+        "sequence_lstm": 0.9650522162721252,
+        "sequence_gru": 0.965123116961113
+      },
+      "neural_metric": 0.9632760096450603,
+      "tabular_metric": 0.9677860634269222
     },
     "Platelets | A+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9362198650462531,
-      "tabular_metric": 0.9421577618076963,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9421577618076963,
+      "candidates": {
+        "neural_ft_transformer": 0.9335901737086856,
+        "tabular_gbdt": 0.9421577618076963,
+        "sequence_lstm": 0.933828892631719,
+        "sequence_gru": 0.9408245676955416
+      },
+      "neural_metric": 0.9335901737086856,
+      "tabular_metric": 0.9421577618076963
     },
     "Platelets | A-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.8599399457584307,
-      "tabular_metric": 0.8727797775222255,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.8727797775222255,
+      "candidates": {
+        "neural_ft_transformer": 0.8620687491560833,
+        "tabular_gbdt": 0.8727797775222255,
+        "sequence_lstm": 0.8526733524110794,
+        "sequence_gru": 0.8617535196032123
+      },
+      "neural_metric": 0.8620687491560833,
+      "tabular_metric": 0.8727797775222255
     },
     "Platelets | AB+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9322161482834372,
-      "tabular_metric": 0.9397098558645497,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9397098558645497,
+      "candidates": {
+        "neural_ft_transformer": 0.9334149418894109,
+        "tabular_gbdt": 0.9397098558645497,
+        "sequence_lstm": 0.9320675946089219,
+        "sequence_gru": 0.9328291721030786
+      },
+      "neural_metric": 0.9334149418894109,
+      "tabular_metric": 0.9397098558645497
     },
     "Platelets | AB-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.8948938346544346,
-      "tabular_metric": 0.9010129375188045,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9010129375188045,
+      "candidates": {
+        "neural_ft_transformer": 0.8898309622792977,
+        "tabular_gbdt": 0.9010129375188045,
+        "sequence_lstm": 0.8870845361049305,
+        "sequence_gru": 0.8975265827460721
+      },
+      "neural_metric": 0.8898309622792977,
+      "tabular_metric": 0.9010129375188045
     },
     "Platelets | B+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9452718028182654,
-      "tabular_metric": 0.9481229964650622,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9481229964650622,
+      "candidates": {
+        "neural_ft_transformer": 0.9445047697448066,
+        "tabular_gbdt": 0.9481229964650622,
+        "sequence_lstm": 0.9446370635804561,
+        "sequence_gru": 0.9461722918986974
+      },
+      "neural_metric": 0.9445047697448066,
+      "tabular_metric": 0.9481229964650622
     },
     "Platelets | B-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9114742535198385,
-      "tabular_metric": 0.9135538132811267,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9135538132811267,
+      "candidates": {
+        "neural_ft_transformer": 0.9120852808592992,
+        "tabular_gbdt": 0.9135538132811267,
+        "sequence_lstm": 0.90744903671397,
+        "sequence_gru": 0.9118388031163933
+      },
+      "neural_metric": 0.9120852808592992,
+      "tabular_metric": 0.9135538132811267
     },
     "Platelets | O+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9577110402626352,
-      "tabular_metric": 0.9600471448501469,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9600471448501469,
+      "candidates": {
+        "neural_ft_transformer": 0.9558764146006172,
+        "tabular_gbdt": 0.9600471448501469,
+        "sequence_lstm": 0.956802291933624,
+        "sequence_gru": 0.9554691451971001
+      },
+      "neural_metric": 0.9558764146006172,
+      "tabular_metric": 0.9600471448501469
     },
     "Platelets | O-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9080939271464055,
-      "tabular_metric": 0.9194612559969655,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9194612559969655,
+      "candidates": {
+        "neural_ft_transformer": 0.9064471094039146,
+        "tabular_gbdt": 0.9194612559969655,
+        "sequence_lstm": 0.9008480212606799,
+        "sequence_gru": 0.9108029031557785
+      },
+      "neural_metric": 0.9064471094039146,
+      "tabular_metric": 0.9194612559969655
     },
     "Red blood cells | A+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9700836548850132,
-      "tabular_metric": 0.9714452847661676,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9714452847661676,
+      "candidates": {
+        "neural_ft_transformer": 0.9689217471832073,
+        "tabular_gbdt": 0.9714452847661676,
+        "sequence_lstm": 0.9676764932860009,
+        "sequence_gru": 0.9688853218089211
+      },
+      "neural_metric": 0.9689217471832073,
+      "tabular_metric": 0.9714452847661676
     },
     "Red blood cells | A-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.970750651843229,
-      "tabular_metric": 0.9732620910903981,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9732620910903981,
+      "candidates": {
+        "neural_ft_transformer": 0.9716588034772735,
+        "tabular_gbdt": 0.9732620910903981,
+        "sequence_lstm": 0.9695001426745142,
+        "sequence_gru": 0.9717581086171423
+      },
+      "neural_metric": 0.9716588034772735,
+      "tabular_metric": 0.9732620910903981
     },
     "Red blood cells | AB+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9684615960197793,
-      "tabular_metric": 0.969833189388953,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.969833189388953,
+      "candidates": {
+        "neural_ft_transformer": 0.9674484368401228,
+        "tabular_gbdt": 0.969833189388953,
+        "sequence_lstm": 0.9674739600177045,
+        "sequence_gru": 0.9697225361097477
+      },
+      "neural_metric": 0.9674484368401228,
+      "tabular_metric": 0.969833189388953
     },
     "Red blood cells | AB-": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9575095385174419,
-      "tabular_metric": 0.9577037911821705,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9577037911821705,
+      "candidates": {
+        "neural_ft_transformer": 0.9551788093507753,
+        "tabular_gbdt": 0.9577037911821705,
+        "sequence_lstm": 0.9522856104651163,
+        "sequence_gru": 0.9565420603197675
+      },
+      "neural_metric": 0.9551788093507753,
+      "tabular_metric": 0.9577037911821705
     },
     "Red blood cells | B+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9667731173287879,
-      "tabular_metric": 0.9672810472354146,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9672810472354146,
+      "candidates": {
+        "neural_ft_transformer": 0.964817070514661,
+        "tabular_gbdt": 0.9672810472354146,
+        "sequence_lstm": 0.9656521740512839,
+        "sequence_gru": 0.9652905025215262
+      },
+      "neural_metric": 0.964817070514661,
+      "tabular_metric": 0.9672810472354146
     },
     "Red blood cells | B-": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.93196536130892,
-      "tabular_metric": 0.9363354865132419,
-      "metric": "auc"
+      "selected": "sequence_gru",
+      "metric": "auc",
+      "selected_metric": 0.937915686709294,
+      "candidates": {
+        "neural_ft_transformer": 0.9303077641704565,
+        "tabular_gbdt": 0.9363354865132419,
+        "sequence_lstm": 0.9307382183981165,
+        "sequence_gru": 0.937915686709294
+      },
+      "neural_metric": 0.9303077641704565,
+      "tabular_metric": 0.9363354865132419
     },
     "Red blood cells | O+": {
       "selected": "tabular_gbdt",
-      "neural_metric": 0.9740483039053203,
-      "tabular_metric": 0.9766046633307838,
-      "metric": "auc"
+      "metric": "auc",
+      "selected_metric": 0.9766046633307838,
+      "candidates": {
+        "neural_ft_transformer": 0.9736764698070711,
+        "tabular_gbdt": 0.9766046633307838,
+        "sequence_lstm": 0.9741147028514364,
+        "sequence_gru": 0.9760723097802991
+      },
+      "neural_metric": 0.9736764698070711,
+      "tabular_metric": 0.9766046633307838
     },
     "Red blood cells | O-": {
-      "selected": "tabular_gbdt",
-      "neural_metric": 0.9557835406443933,
-      "tabular_metric": 0.9586305256557475,
-      "metric": "auc"
+      "selected": "sequence_gru",
+      "metric": "auc",
+      "selected_metric": 0.9586952298605511,
+      "candidates": {
+        "neural_ft_transformer": 0.9567744090172507,
+        "tabular_gbdt": 0.9586305256557475,
+        "sequence_lstm": 0.9564145202902992,
+        "sequence_gru": 0.9586952298605511
+      },
+      "neural_metric": 0.9567744090172507,
+      "tabular_metric": 0.9586305256557475
     }
   },
   "donor": {
@@ -588,6 +1260,12 @@
     "time_to_donation": "tabular_gbdt",
     "contact_response": "proxy_global_model",
     "contact_propensity": "proxy_global_model",
+    "ideal_donor_probability": "tabular_gbdt",
+    "ideal_donor_good_enough_threshold": 0.7,
+    "ideal_donor_output_range": [
+      0.0,
+      1.0
+    ],
     "priority_policy": "policy_model"
   }
 }

@@ -5,17 +5,17 @@
   "validation_protocol": "donor_group_holdout",
   "validation_comparison": {
     "neural_ft_transformer": {
-      "accuracy": 0.9012407407407408,
-      "balanced_accuracy": 0.9007094480207222,
-      "precision": 0.8969800888826679,
-      "recall": 0.9147455570623082,
-      "f1": 0.9057757204190887,
-      "brier": 0.06979290350676694,
-      "ece": 0.01171986918206569,
+      "accuracy": 0.9016944444444445,
+      "balanced_accuracy": 0.9012982291901475,
+      "precision": 0.9000898345986508,
+      "recall": 0.9117657554778389,
+      "f1": 0.9058901741789656,
+      "brier": 0.06959093120284338,
+      "ece": 0.009159911661788301,
       "positive_rate": 0.5189259259259259,
       "threshold": 0.44,
-      "auc": 0.9698639837629859,
-      "average_precision": 0.973251841448227
+      "auc": 0.9698844329864245,
+      "average_precision": 0.9733341861685268
     },
     "tabular_gbdt": {
       "accuracy": 0.9034629629629629,
@@ -33,17 +33,17 @@
   },
   "test_comparison": {
     "neural_ft_transformer": {
-      "accuracy": 0.8988055555555555,
-      "balanced_accuracy": 0.8981673639581098,
-      "precision": 0.8926178001357726,
-      "recall": 0.9150606709493219,
-      "f1": 0.9036999180537321,
-      "brier": 0.07070065680313795,
-      "ece": 0.009669596124026543,
+      "accuracy": 0.8995648148148148,
+      "balanced_accuracy": 0.8990580177801075,
+      "precision": 0.8958950190094084,
+      "recall": 0.9124732334047109,
+      "f1": 0.9041081358239699,
+      "brier": 0.07047816038889801,
+      "ece": 0.008249225230128703,
       "positive_rate": 0.5188888888888888,
       "threshold": 0.44,
-      "auc": 0.9690549341611814,
-      "average_precision": 0.9725574098667376
+      "auc": 0.969233215861155,
+      "average_precision": 0.972796586807335
     },
     "tabular_gbdt": {
       "accuracy": 0.9015,
@@ -64,7 +64,7 @@
       "tabpfn": {
         "available": false,
         "reason": "row_limit_exceeded",
-        "version": "8.0.2"
+        "version": "8.0.3"
       },
       "autogluon": {
         "available": false,
@@ -90,17 +90,17 @@
     "thresholds": {}
   },
   "neural_overall": {
-    "accuracy": 0.8988055555555555,
-    "balanced_accuracy": 0.8981673639581098,
-    "precision": 0.8926178001357726,
-    "recall": 0.9150606709493219,
-    "f1": 0.9036999180537321,
-    "brier": 0.07070065680313795,
-    "ece": 0.009669596124026543,
+    "accuracy": 0.8995648148148148,
+    "balanced_accuracy": 0.8990580177801075,
+    "precision": 0.8958950190094084,
+    "recall": 0.9124732334047109,
+    "f1": 0.9041081358239699,
+    "brier": 0.07047816038889801,
+    "ece": 0.008249225230128703,
     "positive_rate": 0.5188888888888888,
     "threshold": 0.44,
-    "auc": 0.9690549341611814,
-    "average_precision": 0.9725574098667376
+    "auc": 0.969233215861155,
+    "average_precision": 0.972796586807335
   },
   "tabular_overall": {
     "accuracy": 0.9015,
@@ -115,8 +115,12 @@
     "auc": 0.970283722132382,
     "average_precision": 0.9737943588383514
   },
-  "best_valid_loss": 0.2140009210065559,
+  "best_valid_loss": 0.2138905589069639,
   "epochs_ran": 30,
+  "lr": 0.0005,
+  "dropout": 0.15,
+  "hidden_dim": 384,
+  "n_layers": 3,
   "proxy_only": true,
   "operational_ready": false,
   "note": "Uses donated_next_6m as contact-readiness proxy. Requires real contact-response labels before operational use."
