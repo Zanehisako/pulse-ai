@@ -4101,7 +4101,7 @@ class DynamicXLAMOrchestrator:
             return find_hybrid_stockout_regression_runtime(self.registry) is not None
         if not self.enable_external_fallback:
             return False
-        if definition.adapter == "db_query":
+        if definition.adapter in {"db_query", "db_schema"}:
             return self.db_fallback_enabled
         if definition.adapter == "simulation_query":
             return self.simulation_tool_enabled
@@ -4118,7 +4118,7 @@ class DynamicXLAMOrchestrator:
             return False
         if definition.adapter == "stockout_hybrid":
             return find_hybrid_stockout_regression_runtime(self.registry) is not None
-        if definition.adapter == "db_query":
+        if definition.adapter in {"db_query", "db_schema"}:
             return self.db_fallback_enabled
         if definition.adapter == "simulation_query":
             return self.simulation_tool_enabled
