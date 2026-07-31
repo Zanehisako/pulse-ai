@@ -139,7 +139,7 @@ def _mlflow_subprocess_env() -> dict[str, str]:
     env["PIOS_MLFLOW_HTTP_TIMEOUT_SECONDS"] = str(_mlflow_http_timeout())
     env["MLFLOW_HTTP_REQUEST_TIMEOUT"] = str(int(_mlflow_http_timeout()))
     env["MLFLOW_HTTP_REQUEST_MAX_RETRIES"] = "1"
-    _append_env_pythonpath(env, _mlflow_local_load_python_paths())
+    _append_env_pythonpath(env, [PROJECT_ROOT, *_mlflow_local_load_python_paths()])
     return env
 
 
