@@ -2,7 +2,7 @@
   "mlflow": {
     "subprocess": {
       "enabled": true,
-      "timeout_seconds": 180,
+      "timeout_seconds": 15,
       "env": {
         "OMP_NUM_THREADS": "1",
         "MKL_NUM_THREADS": "1",
@@ -24,7 +24,7 @@
     "preflight_failure_policy": {
       "use_local_before_remote": true
     },
-    "http_timeout_seconds": 10,
+    "http_timeout_seconds": 3,
     "missing_datetime_policy": {
       "action": "fill",
       "source": "request_time"
