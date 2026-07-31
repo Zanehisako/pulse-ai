@@ -61,6 +61,7 @@ export interface StreamEvent {
   }>;
   step?: number;
   tool?: string;
+  command?: string;
   text?: string;
   token?: string;
   output?: unknown;

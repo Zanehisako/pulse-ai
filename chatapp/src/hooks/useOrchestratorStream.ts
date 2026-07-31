@@ -148,22 +148,54 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
           }
         } else if (event.type === 'tool_started') {
           updated.phase = 'executing_tool';
-          updated.steps = (updated.steps || []).map(s =>
-            s.step === event.step ? { ...s, status: 'executing', tool: event.tool || s.tool } : s
-          );
+          const targetStepIndex = event.step || 1;
+          let stepFound = false;
+
+          updated.steps = (updated.steps || []).map(s => {
+            if (s.step === targetStepIndex || s.tool === event.tool) {
+              stepFound = true;
+              return { ...s, status: 'executing', tool: event.tool || s.tool };
+            }
+            return s;
+          });
+
+          if (!stepFound && event.tool) {
+            updated.steps = [...(updated.steps || []), {
+              step: targetStepIndex,
+              tool: event.tool,
+              command: event.command,
+              status: 'executing'
+            }];
+          }
         } else if (event.type === 'tool_finished') {
           const isSuccess = event.success !== false && !event.error;
           updated.phase = isSuccess ? 'tool_completed' : 'tool_failed';
-          updated.steps = (updated.steps || []).map(s =>
-            s.step === event.step
-              ? {
-                  ...s,
-                  status: isSuccess ? ('success' as const) : ('failed' as const),
-                  output: event.output,
-                  error: event.error || (isSuccess ? undefined : 'Tool execution failed or was skipped.')
-                }
-              : s
-          );
+          const targetStepIndex = event.step || 1;
+          let stepFound = false;
+
+          updated.steps = (updated.steps || []).map(s => {
+            if (s.step === targetStepIndex || s.tool === event.tool) {
+              stepFound = true;
+              return {
+                ...s,
+                status: isSuccess ? ('success' as const) : ('failed' as const),
+                output: event.output,
+                error: event.error || (isSuccess ? undefined : 'Tool execution failed or was skipped.')
+              };
+            }
+            return s;
+          });
+
+          if (!stepFound && event.tool) {
+            updated.steps = [...(updated.steps || []), {
+              step: targetStepIndex,
+              tool: event.tool,
+              command: event.command,
+              status: isSuccess ? ('success' as const) : ('failed' as const),
+              output: event.output,
+              error: event.error || (isSuccess ? undefined : 'Tool execution failed.')
+            }];
+          }
         } else if (event.type === 'token') {
           updated.phase = 'generating_response';
           const newContent = event.text !== undefined ? event.text : ((updated.markdown || '') + (event.token || ''));
@@ -172,6 +204,10 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
           updated.phase = 'completed';
           const summary = event.markdown || (event.result ? event.result.summary : null);
           if (summary) updated.markdown = summary;
+          // Finalize all remaining executing/pending steps as finished
+          updated.steps = (updated.steps || []).map(s =>
+            s.status === 'executing' ? { ...s, status: 'success' } : s
+          );
           if (updated.telemetry) {
             updated.telemetry = {
               ...updated.telemetry,
@@ -188,7 +224,7 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
         try {
           const event: StreamEvent = JSON.parse(msgEvent.data);
           handleEvent(event);
-          if (event.type === 'final' || event.type === 'error') {
+          if (event.type === 'final' || event.type === 'error' || event.phase === 'completed') {
             wsRef.current?.removeEventListener('message', onWsMessage);
             setIsStreaming(false);
           }
