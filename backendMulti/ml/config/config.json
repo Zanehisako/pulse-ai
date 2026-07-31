@@ -1248,7 +1248,24 @@
       "enabled": true,
       "adapter": "db_schema",
       "entrypoint": "ml.core.external_tools.execute_db_schema_tool",
-      "description": "Returns the complete database schema including all tables, columns, data types, primary/identity keys, and field aliases.",
+      "description": "Returns the complete database schema including all tables, columns, data types, primary/identity keys, and field aliases. Use it to inspect available tables and column names before running database analytics or queries.",
+      "input_hints": "table (optional string, e.g. 'donors' or 'hospitals')",
+      "examples": [
+        {
+          "kind": "good",
+          "user_query": "What tables and columns are available in the database?",
+          "arguments": {},
+          "why": "Database schema lookup should use db_schema_tool."
+        },
+        {
+          "kind": "good",
+          "user_query": "Show the database schema for hospitals",
+          "arguments": {
+            "table": "hospitals"
+          },
+          "why": "Table-specific schema lookup should use db_schema_tool."
+        }
+      ],
       "permissions": [
         "read_reference_data"
       ],
