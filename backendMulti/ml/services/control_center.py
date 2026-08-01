@@ -14,6 +14,11 @@ from ml.core.model_loading import (
     run_prediction_batch_with_fallback,
     run_prediction_with_fallback,
 )
+from ml.core.response_compaction import (
+    compact_prediction_output,
+    compact_prediction_row,
+    configured_compact_keys,
+)
 from ml.core.startup import (
     get_orchestrator,
     get_orchestrator_config_status,
@@ -75,92 +80,29 @@ def _prediction_summary_value(output):
     return str(output)
 
 
+def _compact_keys_from_orchestrator():
+    """Compact-key whitelist from the ready orchestrator config, else None."""
+    try:
+        import ml.core.startup as startup
+
+        if not startup._initialized or startup._orchestrator is None:
+            return None
+        return configured_compact_keys(
+            getattr(startup._orchestrator, "orchestrator_config", None)
+        )
+    except Exception:
+        return None
+
+
 def _compact_prediction_row(row):
-    if not isinstance(row, dict):
-        return row
-    public_keys = (
-        "index",
-        "rank",
-        "donor_id",
-        "blood_type",
-        "country_code",
-        "region",
-        "preferred_site",
-        "recency_days",
-        "donation_count_last_12m",
-        "eligibility_status",
-        "model_id",
-        "model_score",
-        "prediction",
-        "probability",
-        "prediction_name",
-        "prediction_unit",
-        "prediction_task_type",
-    )
-    compact = {key: row[key] for key in public_keys if key in row}
-    model_output = row.get("model_output")
-    if isinstance(model_output, dict):
-        for key in (
-            "prediction",
-            "probability",
-            "prediction_name",
-            "prediction_unit",
-            "prediction_task_type",
-        ):
-            if key in model_output and key not in compact:
-                compact[key] = model_output[key]
-    return compact or {
-        key: value
-        for key, value in row.items()
-        if key not in {"model_output", "feature_resolution"}
-    }
+    return compact_prediction_row(row)
 
 
 def _compact_prediction_output(output):
-    if not isinstance(output, dict):
-        return output
-    important_keys = {
-        "answer",
-        "results",
-        "data",
-        "query_kind",
-        "model_id",
-        "entity_key",
-        "row_count",
-        "prediction",
-        "probability",
-        "prediction_name",
-        "prediction_unit",
-        "prediction_task_type",
-        "stockout_probability",
-        "estimated_days_until_stockout",
-        "horizon",
-        "risk_level",
-        "recommended_action",
-        "confidence",
-        "blood_component",
-        "blood_group",
-        "location",
-        "worst_component",
-        "worst_blood_group",
-        "component_count",
-        "worst_component_prediction",
-        "warnings",
-        "filters",
-        "fields",
-        "table",
-        "aggregate",
-        "limit",
-    }
-    compact = {
-        key: value
-        for key, value in output.items()
-        if key in important_keys or str(key).startswith("risk_")
-    }
-    rows = output.get("rows")
-    if isinstance(rows, list):
-        compact["rows"] = [_compact_prediction_row(row) for row in rows]
-    return compact or output
+    return compact_prediction_output(
+        output,
+        compact_keys=_compact_keys_from_orchestrator(),
+    )
 
 
 def public_prediction_response(result, *, tools_used=None):
