@@ -4,6 +4,7 @@ DynamicXLAMOrchestrator with external tools (db_tool, search, llm_api, simulatio
 
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 import json
 import logging
@@ -35,7 +36,9 @@ from ml.core.external_tools import (
     is_structured_db_query,
 )
 from ml.orchestrator.context_fitting import (
+    _fit_cache_key,
     align_down,
+    free_memory_bytes,
     fit_context,
 )
 from ml.core.feature_extraction import extract_nl_features, route_models
@@ -820,17 +823,23 @@ class DynamicXLAMOrchestrator:
         layout) must be reflected here, or the fit verdict will not match the
         actual load.
         """
+        n_batch = max(1, int(hw["n_batch"]))
+        configured_ubatch = max(
+            1,
+            int(self._planner_ctx_conf("n_ubatch", n_batch)),
+        )
         return {
             "n_gpu_layers": hw["n_gpu_layers"],
             "n_threads": hw["n_threads"],
-            "n_batch": hw["n_batch"],
-            "n_ubatch": hw["n_batch"],
-            "n_seq_max": 1,
-            "flash_attn": False,
-            "offload_kqv": True,
-            "swa_full": None,
-            "type_k": None,
-            "type_v": None,
+            "n_batch": n_batch,
+            "n_ubatch": min(n_batch, configured_ubatch),
+            "n_threads_batch": hw.get("n_threads_batch"),
+            "n_seq_max": max(1, int(self._planner_ctx_conf("n_seq_max", 1))),
+            "flash_attn": bool(self._planner_ctx_conf("flash_attn", False)),
+            "offload_kqv": bool(self._planner_ctx_conf("offload_kqv", True)),
+            "swa_full": self._planner_ctx_conf("swa_full", None),
+            "type_k": self._planner_ctx_conf("type_k", None),
+            "type_v": self._planner_ctx_conf("type_v", None),
             "use_mmap": hw["use_mmap"],
             "use_mlock": hw["use_mlock"],
         }
@@ -856,18 +865,34 @@ class DynamicXLAMOrchestrator:
         if free_bytes is None:
             free_bytes = int(self._available_ram_gb() * 1024**3)
 
+        minimum_context = self._planner_context_minimum()
+        maximum_context = self._planner_context_maximum()
+        alignment = self._planner_context_alignment()
+        reserve_bytes = self._planner_context_reserve_bytes()
+        probe_step = self._planner_context_probe_step()
+        runtime_config = self._planner_runtime_config(hw)
+        cache_key = _fit_cache_key(
+            model_path,
+            runtime_config,
+            minimum_context,
+            maximum_context,
+            alignment,
+            reserve_bytes,
+            probe_step,
+        )
+
         try:
             result = fit_context(
                 model_path=model_path,
-                runtime_config=self._planner_runtime_config(hw),
-                minimum_context=self._planner_context_minimum(),
-                maximum_context=self._planner_context_maximum(),
-                alignment=self._planner_context_alignment(),
-                reserve_bytes=self._planner_context_reserve_bytes(),
-                probe_step=self._planner_context_probe_step(),
+                runtime_config=runtime_config,
+                minimum_context=minimum_context,
+                maximum_context=maximum_context,
+                alignment=alignment,
+                reserve_bytes=reserve_bytes,
+                probe_step=probe_step,
                 free_bytes=free_bytes,
                 cache_path=Path(model_path).parent / CONTEXT_FIT_CACHE_FILENAME,
-                cache_key=model_path,
+                cache_key=cache_key,
             )
         except Exception as exc:
             logger.warning(
@@ -892,24 +917,8 @@ class DynamicXLAMOrchestrator:
         return result.chosen_context
 
     def _available_ram_gb(self) -> float:
-        try:
-            pages = os.sysconf("SC_AVPHYS_PAGES")
-            page_size = os.sysconf("SC_PAGE_SIZE")
-            if pages > 0 and page_size > 0:
-                return (pages * page_size) / (1024**3)
-        except (AttributeError, ValueError, OSError):
-            pass
-        try:
-            meminfo = Path("/proc/meminfo")
-            if meminfo.exists():
-                for line in meminfo.read_text(encoding="utf-8").splitlines():
-                    if line.startswith("MemAvailable:"):
-                        parts = line.split()
-                        if len(parts) >= 2:
-                            return float(parts[1]) / (1024**2)
-        except (OSError, ValueError):
-            pass
-        return 4.0
+        available_bytes = free_memory_bytes()
+        return available_bytes / (1024**3) if available_bytes > 0 else 0.0
 
     def _free_vram_mb(self) -> int | None:
         try:
@@ -976,6 +985,20 @@ class DynamicXLAMOrchestrator:
             if not directory.exists():
                 continue
             for path in sorted(directory.glob("*.gguf")):
+                discovery_config = dict(
+                    getattr(self, "orchestrator_config", {}).get(
+                        "local_model_discovery", {}
+                    )
+                    or {}
+                )
+                included = _clean_list(discovery_config.get("include_patterns"))
+                if included and not any(
+                    fnmatch.fnmatch(path.name, pattern) for pattern in included
+                ):
+                    continue
+                excluded = _clean_list(discovery_config.get("exclude_patterns"))
+                if any(fnmatch.fnmatch(path.name, pattern) for pattern in excluded):
+                    continue
                 try:
                     if path.stat().st_size < MIN_LOCAL_GGUF_SIZE_BYTES:
                         continue
@@ -1032,8 +1055,20 @@ class DynamicXLAMOrchestrator:
         if variant is None:
             return None
         direct = self._compute_target_path(variant)
+        if self.local_model_path:
+            configured_path = Path(self.local_model_path).expanduser()
+            if (
+                configured_path.suffix.lower() == ".gguf"
+                and _model_filename_key(variant.filename)
+                != _model_filename_key(configured_path.name)
+            ):
+                direct = None
         try:
-            if direct.exists() and direct.stat().st_size >= MIN_LOCAL_GGUF_SIZE_BYTES:
+            if (
+                direct is not None
+                and direct.exists()
+                and direct.stat().st_size >= MIN_LOCAL_GGUF_SIZE_BYTES
+            ):
                 return direct
         except OSError:
             pass
@@ -1760,6 +1795,7 @@ class DynamicXLAMOrchestrator:
                 hw["n_gpu_layers"],
             )
 
+            planner_runtime = self._planner_runtime_config(hw)
             n_ctx = self._resolve_planner_context(str(model_path), hw)
             logger.info("LLM context window: %s", n_ctx)
 
@@ -1773,6 +1809,13 @@ class DynamicXLAMOrchestrator:
                         n_threads=hw["n_threads"],
                         n_gpu_layers=hw["n_gpu_layers"],
                         n_batch=hw["n_batch"],
+                        n_ubatch=planner_runtime["n_ubatch"],
+                        n_threads_batch=planner_runtime.get("n_threads_batch"),
+                        flash_attn=planner_runtime["flash_attn"],
+                        offload_kqv=planner_runtime["offload_kqv"],
+                        swa_full=planner_runtime["swa_full"],
+                        type_k=planner_runtime["type_k"],
+                        type_v=planner_runtime["type_v"],
                         use_mlock=hw["use_mlock"],
                         use_mmap=hw["use_mmap"],
                         verbose=False,
@@ -3456,6 +3499,23 @@ class DynamicXLAMOrchestrator:
             raise RuntimeError(
                 "orchestrator.llm_planner_context.probe_step must be positive."
             )
+        for key in ("n_ubatch", "n_seq_max"):
+            value = llm_planner_context_config.get(key)
+            if value is not None and as_int(value, 0) <= 0:
+                raise RuntimeError(
+                    f"orchestrator.llm_planner_context.{key} must be positive."
+                )
+        for key in ("flash_attn", "offload_kqv"):
+            value = llm_planner_context_config.get(key)
+            if value is not None and not isinstance(value, bool):
+                raise RuntimeError(
+                    f"orchestrator.llm_planner_context.{key} must be a boolean."
+                )
+        swa_full = llm_planner_context_config.get("swa_full")
+        if swa_full is not None and not isinstance(swa_full, bool):
+            raise RuntimeError(
+                "orchestrator.llm_planner_context.swa_full must be a boolean or null."
+            )
         retry_enabled = llm_planner_context_config.get("retry_on_load_failure")
         if retry_enabled is not None and not isinstance(retry_enabled, bool):
             raise RuntimeError(
@@ -3479,6 +3539,26 @@ class DynamicXLAMOrchestrator:
                 "orchestrator.llm_planner_context.max_retries must be >= 0."
             )
 
+    def _validate_local_model_discovery_config(
+        self, local_model_discovery_config: dict[str, Any]
+    ) -> None:
+        if not isinstance(local_model_discovery_config, dict):
+            raise RuntimeError(
+                "orchestrator.local_model_discovery must be an object."
+            )
+        for key in ("include_patterns", "exclude_patterns"):
+            value = local_model_discovery_config.get(key)
+            if value is None:
+                continue
+            if not isinstance(value, list) or any(
+                not isinstance(pattern, str) or not pattern.strip()
+                for pattern in value
+            ):
+                raise RuntimeError(
+                    f"orchestrator.local_model_discovery.{key} must be a list "
+                    "of non-empty strings."
+                )
+
     def _build_external_tools_runtime_state(self) -> dict[str, Any]:
         payload = self._load_external_tools_config()
         orchestrator_config = dict(payload.get("orchestrator") or {})
@@ -3499,8 +3579,12 @@ class DynamicXLAMOrchestrator:
         dynamic_planning_config = dict(orchestrator_config.get("dynamic_planning") or {})
         direct_response_config = dict(dynamic_planning_config.get("direct_response") or {})
         llm_planner_context_config = dict(orchestrator_config.get("llm_planner_context") or {})
+        local_model_discovery_config = dict(
+            orchestrator_config.get("local_model_discovery") or {}
+        )
         self._validate_plan_validation_config(dynamic_planning_config)
         self._validate_llm_planner_context_config(llm_planner_context_config)
+        self._validate_local_model_discovery_config(local_model_discovery_config)
 
         planner_example_limit = max(
             0,

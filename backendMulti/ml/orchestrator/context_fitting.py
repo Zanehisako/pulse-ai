@@ -4,9 +4,10 @@ All architecture-specific memory accounting is delegated to llama.cpp itself:
 
 * native context window  -> ``llama_model_n_ctx_train`` on a real model load
 * model tensor bytes     -> ``llama_model_size``
-* per-candidate context  -> the KV cache and compute-buffer reservations that
-  llama.cpp prints while constructing a ``llama_context`` (``llama_kv_cache:
-  size = ... MiB`` and ``sched_reserve: <device> compute buffer size = ...``)
+* per-candidate context  -> the KV cache, compute-buffer, and output-buffer
+  reservations that llama.cpp prints while constructing a ``llama_context``
+  (both the legacy summary lines and current per-device buffer lines are
+  supported)
 
 The staging ``llama_get_memory_breakdown`` API is not used because it returns
 a C++ ``std::map`` (unreachable from ctypes), and this llama.cpp build aborts
@@ -27,7 +28,9 @@ import io
 import json
 import logging
 import os
+import platform
 import re
+import subprocess
 import time
 from contextlib import redirect_stderr
 from dataclasses import dataclass
@@ -36,12 +39,25 @@ from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
-KV_CACHE_SIZE_RE = re.compile(r"llama_kv_cache: size =\s*([\d.]+) MiB")
+KV_CACHE_SIZE_RE = re.compile(
+    r"llama_kv_cache:\s+size\s*=\s*([\d.]+) MiB",
+    flags=re.IGNORECASE,
+)
+KV_CACHE_BUFFER_SIZE_RE = re.compile(
+    r"llama_kv_cache:\s+\S+\s+KV buffer size\s*=\s*([\d.]+) MiB",
+    flags=re.IGNORECASE,
+)
 COMPUTE_BUFFER_SIZE_RE = re.compile(
-    r"sched_reserve:\s+\S+? compute buffer size =\s*([\d.]+) MiB"
+    r"sched_reserve:\s+\S+\s+compute buffer size\s*=\s*([\d.]+) MiB",
+    flags=re.IGNORECASE,
+)
+CONTEXT_COMPUTE_BUFFER_SIZE_RE = re.compile(
+    r"llama_context:\s+\S+\s+compute buffer size\s+(?:is|=)\s*([\d.]+) MiB",
+    flags=re.IGNORECASE,
 )
 OUTPUT_BUFFER_SIZE_RE = re.compile(
-    r"llama_context:\s+\S+\s+output buffer size =\s*([\d.]+) MiB"
+    r"llama_context:\s+\S+\s+output buffer size\s+(?:is|=)\s*([\d.]+) MiB",
+    flags=re.IGNORECASE,
 )
 
 
@@ -81,18 +97,20 @@ def choose_context_size(
     that the preflight reports as fitting in memory, never below
     ``minimum_context``.
     """
-    if native_context <= 0:
-        raise ValueError("GGUF model did not provide a valid native context")
+    lower, upper = _context_bounds(
+        native_context=native_context,
+        minimum_context=minimum_context,
+        maximum_context=maximum_context,
+        alignment=alignment,
+    )
 
-    upper = native_context
-
-    if maximum_context is not None:
-        upper = min(upper, maximum_context)
-
-    lower = min(minimum_context, upper)
-
-    lower = max(alignment, align_down(lower, alignment))
-    upper = max(lower, align_down(upper, alignment))
+    if upper < alignment:
+        device_usage = preflight(upper)
+        if bool(device_usage) and all(device.fits for device in device_usage):
+            return upper
+        raise MemoryError(
+            f"Model does not fit even at {lower:,} context tokens"
+        )
 
     best: int | None = None
     low_units = lower // alignment
@@ -119,13 +137,92 @@ def choose_context_size(
     return best
 
 
+def _context_bounds(
+    *,
+    native_context: int,
+    minimum_context: int,
+    maximum_context: int | None,
+    alignment: int,
+) -> tuple[int, int]:
+    """Return the aligned search bounds without exceeding model capacity."""
+    if native_context <= 0:
+        raise ValueError("GGUF model did not provide a valid native context")
+    if minimum_context <= 0:
+        raise ValueError("minimum context must be positive")
+    if alignment <= 0:
+        raise ValueError("alignment must be positive")
+    if maximum_context is not None and maximum_context <= 0:
+        raise ValueError("maximum context must be positive when provided")
+
+    raw_upper = native_context
+    if maximum_context is not None:
+        raw_upper = min(raw_upper, maximum_context)
+    if raw_upper <= 0:
+        raise ValueError("context bounds do not contain a positive window")
+
+    # If a model's native window is smaller than the configured alignment,
+    # there is no aligned candidate. Its native window is still the only safe
+    # candidate, so handle that case explicitly rather than rounding to zero.
+    upper = raw_upper if raw_upper < alignment else align_down(raw_upper, alignment)
+    if upper <= 0:
+        upper = raw_upper
+
+    requested_lower = min(max(1, minimum_context), upper)
+    if upper < alignment:
+        return upper, upper
+
+    lower = ((requested_lower + alignment - 1) // alignment) * alignment
+    if lower > upper:
+        lower = upper
+    return lower, upper
+
+
+def _parse_macos_available_memory(vm_stat_output: str) -> int:
+    """Estimate reclaimable unified memory from ``vm_stat`` output."""
+    page_match = re.search(r"page size of\s+(\d+)\s+bytes", vm_stat_output)
+    if not page_match:
+        return 0
+    page_size = int(page_match.group(1))
+    pages: dict[str, int] = {}
+    for line in vm_stat_output.splitlines():
+        match = re.match(r"Pages\s+(.+?):\s+(\d+)", line)
+        if match:
+            pages[match.group(1).strip().lower()] = int(match.group(2))
+    available_pages = sum(
+        pages.get(name, 0)
+        for name in ("free", "inactive", "speculative", "purgeable")
+    )
+    return max(0, available_pages * page_size)
+
+
+def _macos_available_memory_bytes() -> int:
+    try:
+        result = subprocess.run(
+            ["vm_stat"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return 0
+    if result.returncode != 0:
+        return 0
+    return _parse_macos_available_memory(result.stdout)
+
+
 def free_memory_bytes() -> int:
-    """Best-effort currently free physical memory in bytes (0 if unknown)."""
+    """Best-effort currently available physical memory in bytes."""
+    if platform.system() == "Darwin":
+        available = _macos_available_memory_bytes()
+        if available > 0:
+            return available
+
     try:
         pages = os.sysconf("SC_AVPHYS_PAGES")
         page_size = os.sysconf("SC_PAGE_SIZE")
         if pages > 0 and page_size > 0:
-            return (pages * page_size) // (1024 * 1024) * (1024 * 1024)
+            return pages * page_size
     except (AttributeError, ValueError, OSError):
         pass
     meminfo = Path("/proc/meminfo")
@@ -145,13 +242,19 @@ def _parse_context_memory(stderr_text: str) -> tuple[int, int, int] | None:
     Returns ``(kv_bytes, compute_bytes, output_bytes)`` or ``None`` when the
     expected accounting lines are missing (candidate could not be judged).
     """
-    kv = sum(
-        int(round(float(match) * 1024 * 1024))
-        for match in KV_CACHE_SIZE_RE.findall(stderr_text)
+    kv_summary_matches = KV_CACHE_SIZE_RE.findall(stderr_text)
+    kv_matches = (
+        kv_summary_matches
+        if kv_summary_matches
+        else KV_CACHE_BUFFER_SIZE_RE.findall(stderr_text)
     )
+    kv = sum(int(round(float(match) * 1024 * 1024)) for match in kv_matches)
+
+    compute_matches = COMPUTE_BUFFER_SIZE_RE.findall(stderr_text)
+    if not compute_matches:
+        compute_matches = CONTEXT_COMPUTE_BUFFER_SIZE_RE.findall(stderr_text)
     compute = sum(
-        int(round(float(match) * 1024 * 1024))
-        for match in COMPUTE_BUFFER_SIZE_RE.findall(stderr_text)
+        int(round(float(match) * 1024 * 1024)) for match in compute_matches
     )
     output = sum(
         int(round(float(match) * 1024 * 1024))
@@ -180,10 +283,21 @@ def _build_context_params(runtime_config: dict[str, Any], n_ctx: int) -> Any:
 
     params = llama_cpp.llama_context_default_params()
     params.n_ctx = max(1, int(n_ctx))
-    params.n_batch = max(1, int(runtime_config.get("n_batch") or 512))
-    params.n_ubatch = max(
-        1, int(runtime_config.get("n_ubatch") or params.n_batch)
+    params.n_batch = min(
+        params.n_ctx,
+        max(1, int(runtime_config.get("n_batch") or 512)),
     )
+    params.n_ubatch = max(
+        1,
+        min(
+            params.n_batch,
+            int(runtime_config.get("n_ubatch") or params.n_batch),
+        ),
+    )
+    if runtime_config.get("n_threads") is not None:
+        params.n_threads = max(1, int(runtime_config["n_threads"]))
+    if runtime_config.get("n_threads_batch") is not None:
+        params.n_threads_batch = max(1, int(runtime_config["n_threads_batch"]))
     params.n_seq_max = max(1, int(runtime_config.get("n_seq_max") or 1))
     params.embeddings = False
     flash_attn = bool(runtime_config.get("flash_attn", False))
@@ -192,7 +306,7 @@ def _build_context_params(runtime_config: dict[str, Any], n_ctx: int) -> Any:
         if flash_attn
         else llama_cpp.LLAMA_FLASH_ATTN_TYPE_DISABLED
     )
-    params.offload_kqv = bool(runtime_config.get("offload_kqv", False))
+    params.offload_kqv = bool(runtime_config.get("offload_kqv", True))
     if runtime_config.get("swa_full") is not None:
         params.swa_full = bool(runtime_config["swa_full"])
     if runtime_config.get("type_k") is not None:
@@ -222,31 +336,46 @@ def probe_context_memory(
 ) -> tuple[int, int, int] | None:
     """Construct a candidate context and return its llama.cpp-reported memory.
 
-    Returns ``(model_bytes, kv_bytes, compute_bytes)`` where the context
-    reservation is ``kv + compute + output``, or ``None`` when the candidate
-    could not be created or its accounting lines could not be parsed.
+    Returns ``(model_bytes, kv_bytes, compute_and_output_bytes)`` where the
+    context reservation is ``kv + compute + output``, or ``None`` when the
+    candidate could not be created or its accounting lines could not be
+    parsed.
     """
     buffer = io.StringIO()
+    ctx = None
+    llama_logger = logging.getLogger("llama-cpp-python")
+    previous_log_level = llama_logger.level
     try:
         from llama_cpp._internals import LlamaContext
+        from llama_cpp._logger import set_verbose
 
+        # LlamaModel/LlamaContext's ``verbose`` argument does not set the
+        # package logger when the low-level wrappers are used directly. The
+        # application loads its real model with verbose=False, so explicitly
+        # enable logging only for this short accounting probe and restore the
+        # prior level afterwards.
+        set_verbose(True)
         with redirect_stderr(buffer):
             ctx = LlamaContext(
                 model=model,
                 params=_build_context_params(runtime_config, n_ctx),
-                verbose=False,
+                verbose=True,
             )
-        parsed = _parse_context_memory(buffer.getvalue())
+            parsed = _parse_context_memory(buffer.getvalue())
+            if parsed is None:
+                return None
+            model_bytes = model.size()
+            return model_bytes, parsed[0], parsed[1] + parsed[2]
     except Exception as exc:  # allocation failure surfaces as exceptions
         logger.debug("context probe at n_ctx=%s failed: %s", n_ctx, exc)
         return None
-    if parsed is None:
-        return None
-    try:
-        ctx.close()
-    except Exception:
-        pass
-    return model.size(), parsed[0], parsed[1] + parsed[2]
+    finally:
+        if ctx is not None:
+            try:
+                ctx.close()
+            except Exception:
+                pass
+        llama_logger.setLevel(previous_log_level)
 
 
 _DEVICE_MEMORY_UNFITTABLE = 2**62
@@ -275,8 +404,19 @@ def _fit_cache_key(
     reserve_bytes: int,
     probe_step: int,
 ) -> str:
+    model_identity: dict[str, Any] = {"model_path": str(model_path)}
+    try:
+        model_stat = Path(model_path).stat()
+        model_identity.update(
+            {
+                "model_size_bytes": model_stat.st_size,
+                "model_mtime_ns": model_stat.st_mtime_ns,
+            }
+        )
+    except OSError:
+        pass
     payload = {
-        "model_path": str(model_path),
+        "model": model_identity,
         "runtime": runtime_config,
         "minimum_context": minimum_context,
         "maximum_context": maximum_context,
@@ -388,8 +528,6 @@ def fit_context(
                     required_bytes=int(entry.get("required_bytes") or 0),
                     cached=True,
                 )
-        cache_path = None
-
     if free_bytes is None:
         free_bytes = free_memory_bytes()
     if free_bytes <= 0:
@@ -408,7 +546,12 @@ def fit_context(
         def probe(n_ctx: int) -> tuple[int, int, int] | None:
             return probe_context_memory(model, n_ctx, runtime_config)
 
-        minimum = max(alignment, align_down(minimum_context, alignment))
+        minimum, search_upper = _context_bounds(
+            native_context=native_context,
+            minimum_context=minimum_context,
+            maximum_context=maximum_context,
+            alignment=alignment,
+        )
         base_probe = probe(minimum)
         if base_probe is None:
             raise MemoryError(
@@ -416,27 +559,43 @@ def fit_context(
             )
         model_bytes, base_kv, base_compute = base_probe
 
-        upper = native_context
-        if maximum_context is not None:
-            upper = min(upper, maximum_context)
+        base_required = model_bytes + base_kv + base_compute
+        if base_required > free_bytes - reserve_bytes:
+            raise MemoryError(
+                f"Model does not fit even at {minimum:,} context tokens"
+            )
 
-        step_probe = probe(minimum + probe_step)
+        upper = search_upper
+        step_context = min(minimum + probe_step, upper)
+        step_probe = (
+            probe(step_context) if step_context > minimum else None
+        )
         if step_probe is not None:
-            _, step_kv, _ = step_probe
-            slope = max(0.0, (step_kv - base_kv) / float(max(1, probe_step)))
+            _, step_kv, step_compute = step_probe
+            step_delta = step_context - minimum
+            slope = max(
+                0.0,
+                (
+                    (step_kv + step_compute)
+                    - (base_kv + base_compute)
+                )
+                / float(max(1, step_delta)),
+            )
             if slope <= 0:
                 logger.warning(
                     "Context probe slope could not be measured at %s tokens "
-                    "(base kv=%s, step kv=%s); capping search at %s",
-                    probe_step,
-                    base_kv,
-                    step_kv,
+                    "(base context=%s, step context=%s); capping search at %s",
+                    step_delta,
+                    base_kv + base_compute,
+                    step_kv + step_compute,
                     minimum,
                 )
                 upper = minimum
             else:
-                overhead = model_bytes + base_compute + base_kv
-                affordable = int((free_bytes - reserve_bytes - overhead) / slope)
+                affordable = int(
+                    (free_bytes - reserve_bytes - model_bytes - base_kv - base_compute)
+                    / slope
+                )
                 upper = min(
                     upper,
                     max(minimum, align_down(minimum + affordable, alignment)),
@@ -451,6 +610,10 @@ def fit_context(
             upper = minimum
 
         def preflight(n_ctx: int) -> list[DeviceMemory]:
+            if n_ctx in probed:
+                kv, compute = probed[n_ctx]
+                required = model_bytes + kv + compute
+                return _device_memory_for(required, free_bytes, reserve_bytes)
             probe_result = probe(n_ctx)
             if probe_result is None:
                 return _device_memory_for(
@@ -461,7 +624,9 @@ def fit_context(
             required = model_bytes + kv + compute
             return _device_memory_for(required, free_bytes, reserve_bytes)
 
-        probed: dict[int, tuple[int, int]] = {}
+        probed: dict[int, tuple[int, int]] = {
+            minimum: (base_kv, base_compute)
+        }
         chosen = choose_context_size(
             native_context=native_context,
             preflight=preflight,

@@ -466,6 +466,27 @@ class OrchestratorExternalToolsTests(unittest.TestCase):
         self.assertEqual(qwen["name"], "My Local Model")
         self.assertEqual(qwen["prompt_mode"], "completion")
 
+    def test_local_model_discovery_excludes_configured_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            model_path = Path(tmp_dir) / "qwen2-7b-instruct-q4_0.gguf"
+            projector_path = Path(tmp_dir) / "mmproj-qwen2-7b-instruct.gguf"
+            for path in (model_path, projector_path):
+                with path.open("wb") as handle:
+                    handle.truncate(128 * 1024 * 1024)
+
+            env = {
+                "PIOS_XLAM_DISABLE_LLM": "1",
+                "PIOS_XLAM_MODEL_DIR": tmp_dir,
+                "PIOS_XLAM_MODEL_PATH": "",
+            }
+            with patch.dict(os.environ, env, clear=False):
+                orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
+                models = orchestrator.list_available_models()
+
+        model_ids = {row["id"] for row in models}
+        self.assertIn("qwen2_7b_instruct_q4_0", model_ids)
+        self.assertNotIn("mmproj_qwen2_7b_instruct", model_ids)
+
     def test_local_gguf_capabilities_are_loaded_from_cache(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             qwen_path = Path(tmp_dir) / "qwen2-7b-instruct-q4_0.gguf"
@@ -2634,7 +2655,8 @@ class OrchestratorExternalToolsTests(unittest.TestCase):
                 _, kwargs = fit_context.call_args
                 self.assertEqual(kwargs["minimum_context"], 4096)
                 self.assertIsNone(kwargs["maximum_context"])
-                self.assertEqual(kwargs["cache_key"], "/tmp/model.gguf")
+                self.assertRegex(kwargs["cache_key"], r"^[0-9a-f]{64}$")
+                self.assertEqual(kwargs["runtime_config"]["n_ubatch"], 256)
 
     def test_planner_context_fit_failure_falls_back_to_minimum(self):
         env = {"PIOS_XLAM_DISABLE_LLM": "1"}
@@ -2684,6 +2706,11 @@ class OrchestratorExternalToolsTests(unittest.TestCase):
                 {"alignment": 32},
                 {"reserve_bytes": -1},
                 {"probe_step": 0},
+                {"n_ubatch": 0},
+                {"n_seq_max": 0},
+                {"flash_attn": "yes"},
+                {"offload_kqv": "yes"},
+                {"swa_full": "yes"},
                 {"retry_on_load_failure": "yes"},
                 {"retry_factor": 1.5},
                 {"retry_factor": "oops"},
@@ -2699,6 +2726,21 @@ class OrchestratorExternalToolsTests(unittest.TestCase):
         with patch.dict(os.environ, env, clear=False):
             orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
             orchestrator._validate_llm_planner_context_config(section)
+
+    def test_config_local_model_discovery_section_is_valid(self):
+        payload = json.loads(EXTERNAL_TOOLS_CONFIG_PATH.read_text(encoding="utf-8"))
+        section = payload["orchestrator"]["local_model_discovery"]
+        env = {"PIOS_XLAM_DISABLE_LLM": "1"}
+        with patch.dict(os.environ, env, clear=False):
+            orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
+            orchestrator._validate_local_model_discovery_config(section)
+            for bad in [
+                {"exclude_patterns": "mmproj*"},
+                {"exclude_patterns": [""]},
+                {"include_patterns": [None]},
+            ]:
+                with self.assertRaises(RuntimeError, msg=bad):
+                    orchestrator._validate_local_model_discovery_config(bad)
 
     def test_stockout_call_query_adds_configured_row_source_before_scoring(self):
         orchestrator_config = {
@@ -4451,4 +4493,3 @@ class OrchestratorExternalToolsTests(unittest.TestCase):
         self.assertNotIn("eligible_to_donate", filters)
         self.assertEqual(filters.get("hospital_name"), "central hospital")
         self.assertEqual(filters.get("blood_type"), "O+")
-

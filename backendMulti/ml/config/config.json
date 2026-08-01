@@ -1794,12 +1794,24 @@
       "completion_tokens": 256,
       "context_reserve_tokens": 128
     },
+    "local_model_discovery": {
+      "exclude_patterns": [
+        "mmproj*"
+      ]
+    },
     "llm_planner_context": {
       "minimum_context": 4096,
       "maximum_context": 0,
       "alignment": 256,
       "reserve_bytes": 1073741824,
       "probe_step": 4096,
+      "n_ubatch": 512,
+      "n_seq_max": 1,
+      "flash_attn": false,
+      "offload_kqv": true,
+      "swa_full": null,
+      "type_k": null,
+      "type_v": null,
       "retry_on_load_failure": true,
       "retry_factor": 0.85,
       "max_retries": 3

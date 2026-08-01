@@ -1,11 +1,15 @@
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
+
+import ml.orchestrator.context_fitting as context_fitting
 
 from ml.orchestrator.context_fitting import (
     DeviceMemory,
     FitResult,
     _fit_cache_key,
+    _parse_macos_available_memory,
     _parse_context_memory,
     align_down,
     cached_fit_still_fits,
@@ -93,6 +97,17 @@ class ChooseContextSizeTests(unittest.TestCase):
                 preflight=lambda n: [DeviceMemory(1, 1, 0)],
             )
 
+    def test_native_window_below_alignment_is_not_rounded_up(self):
+        self.assertEqual(
+            choose_context_size(
+                native_context=128,
+                preflight=lambda n: [DeviceMemory(1, 1, 0)],
+                minimum_context=4096,
+                alignment=256,
+            ),
+            128,
+        )
+
     def test_reserve_bytes_reduces_available_memory(self):
         free_bytes = 4096
         required = 2048
@@ -156,6 +171,41 @@ class ContextMemoryParseTests(unittest.TestCase):
         )
         self.assertIsNone(_parse_context_memory(""))
 
+    def test_parses_current_llama_context_accounting_format(self):
+        current = (
+            "llama_kv_cache:       MTL0 KV buffer size =   160.00 MiB\n"
+            "llama_context:        MTL0 compute buffer size is  12.50 MiB\n"
+            "llama_context:        CPU compute buffer size is   3.00 MiB\n"
+            "llama_context:        CPU output buffer size =     1.00 MiB\n"
+        )
+        kv_bytes, compute_bytes, output_bytes = _parse_context_memory(current)
+        self.assertEqual(kv_bytes, int(round(160 * 1024 * 1024)))
+        self.assertEqual(compute_bytes, int(round(15.5 * 1024 * 1024)))
+        self.assertEqual(output_bytes, int(round(1024 * 1024)))
+
+    def test_summary_kv_accounting_is_not_double_counted(self):
+        mixed = (
+            "llama_kv_cache: MTL0 KV buffer size = 10.00 MiB\n"
+            "llama_kv_cache: size = 20.00 MiB\n"
+            "sched_reserve: MTL0 compute buffer size = 3.00 MiB\n"
+        )
+        kv_bytes, compute_bytes, _ = _parse_context_memory(mixed)
+        self.assertEqual(kv_bytes, int(round(20 * 1024 * 1024)))
+        self.assertEqual(compute_bytes, int(round(3 * 1024 * 1024)))
+
+    def test_parses_macos_vm_stat_available_memory(self):
+        vm_stat = (
+            "Mach Virtual Memory Statistics: (page size of 16384 bytes)\n"
+            "Pages free: 10\n"
+            "Pages inactive: 20\n"
+            "Pages speculative: 3\n"
+            "Pages purgeable: 2\n"
+        )
+        self.assertEqual(
+            _parse_macos_available_memory(vm_stat),
+            35 * 16384,
+        )
+
 
 class FitCacheTests(unittest.TestCase):
     def test_fit_cache_key_is_stable(self):
@@ -212,6 +262,36 @@ class FitCacheTests(unittest.TestCase):
         self.assertTrue(cached_fit_still_fits(entry, 150, 50))
         self.assertFalse(cached_fit_still_fits(entry, 149, 50))
         self.assertFalse(cached_fit_still_fits({}, 1000, 0))
+
+
+class FitContextBoundsTests(unittest.TestCase):
+    def test_fit_does_not_probe_above_a_small_model_native_window(self):
+        class SmallModel:
+            def n_ctx_train(self):
+                return 128
+
+            def close(self):
+                return None
+
+        with (
+            patch.object(context_fitting, "load_probe_model", return_value=SmallModel()),
+            patch.object(
+                context_fitting,
+                "probe_context_memory",
+                return_value=(100, 10, 10),
+            ) as probe,
+        ):
+            result = context_fitting.fit_context(
+                model_path="/tmp/small-model.gguf",
+                runtime_config={},
+                minimum_context=4096,
+                alignment=256,
+                reserve_bytes=0,
+                free_bytes=1000,
+            )
+
+        self.assertEqual(result.chosen_context, 128)
+        self.assertEqual([call.args[1] for call in probe.call_args_list], [128])
 
 
 if __name__ == "__main__":
