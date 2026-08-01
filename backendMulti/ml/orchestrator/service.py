@@ -34,6 +34,10 @@ from ml.core.external_tools import (
     is_external_output_success,
     is_structured_db_query,
 )
+from ml.orchestrator.context_fitting import (
+    align_down,
+    fit_context,
+)
 from ml.core.feature_extraction import extract_nl_features, route_models
 from ml.core.forecast_horizon import (
     ForecastHorizon,
@@ -97,6 +101,20 @@ def _clean_list(value: Any) -> list[str]:
     if isinstance(value, (list, tuple, set)):
         return [str(item).strip() for item in value if str(item).strip()]
     return []
+
+
+SUPPORTED_EXTERNAL_ADAPTERS = frozenset(
+    {
+        "db_query",
+        "db_schema",
+        "search",
+        "llm_api",
+        "simulation_query",
+        "digital_twin",
+        "stockout_hybrid",
+        "model",
+    }
+)
 
 
 def _first_existing_path(candidates: list[Path]) -> Path:
@@ -227,30 +245,26 @@ CAPABILITY_SIDECAR_FILENAMES = (
 )
 HANDSHAKE_JSON_PROMPT = 'Return only this exact JSON object and nothing else: {"ok":true}'
 HANDSHAKE_MAX_TOKENS = 48
-# Context window for the planner LLM. The xLAM-7b-fc-r model (Mistral-7B base)
-# natively supports far more than this; 4096 leaves comfortable room for the
-# planning prompt (template + tool descriptions + workflow examples). But the KV
-# cache for that window costs memory ON TOP OF the model weights, so the safe
-# window depends on how much RAM is left after the model loads: a ~4GB quant on
-# an 8GB Mac must stay at 2048 (4096 exhausts unified memory and llama.cpp fails
-# to decode), while a ~2.6GB quant on the same machine comfortably reaches 4096.
-# `_auto_planner_n_ctx` computes the largest window that fits; these bound it.
-# The budgeted prompt builder then trims the tool list to whatever window is
-# active. All overridable per-machine via PIOS_XLAM_N_CTX.
+# Context window for the planner LLM. xLAM-7b-fc-r (Mistral-7B base) natively
+# supports far more than the old 4096 cap; the usable window is whatever fits in
+# memory on top of the model weights. Sizing is delegated to llama.cpp itself
+# (see ml.orchestrator.context_fitting): the native window comes from
+# llama_model_n_ctx_train, and per-candidate KV and compute reservations are read
+# from llama.cpp's own context accounting, so the model's native window is used
+# whenever it fits. The constants below are only fallbacks when the
+# orchestrator.llm_planner_context config section is absent; the config file
+# drives behavior (and PIOS_XLAM_N_CTX still overrides the fitted result
+# outright). The budgeted prompt builder trims the tool list to whatever window
+# is active.
 DEFAULT_PLANNER_N_CTX = 4096
-LOW_RAM_PLANNER_N_CTX = 2048
-# Supported context windows, largest first — the auto-sizer picks the biggest one
-# whose KV cache fits in the RAM left after the model weights.
-PLANNER_N_CTX_CANDIDATES = (4096, 3072, 2048, 1024)
-# KV-cache cost per token for xLAM-7b-fc-r (Mistral-7B, GQA 8 KV heads × 128 dim ×
-# 32 layers × 2 tensors × 2 bytes f16 ≈ 128 KB/token).
-PLANNER_KV_MB_PER_TOKEN = 0.125
-# RAM that must stay free for the OS, the Python/Django backend, and llama.cpp
-# compute buffers — i.e. everything that is NOT model weights or KV cache.
-# Calibrated against an 8GB Apple Silicon host: a ~4GB quant keeps 2048 (works)
-# but is denied 4096 (observed llama_decode failure), while a ~2.6GB quant reaches
-# 4096. Overridable via PIOS_XLAM_RESERVED_MB.
-PLANNER_RESERVED_NON_KV_MB = 3900
+PLANNER_CONTEXT_DEFAULT_MINIMUM = 4096
+PLANNER_CONTEXT_DEFAULT_MAXIMUM = 0  # 0 = the model's native window
+PLANNER_CONTEXT_DEFAULT_ALIGNMENT = 256
+PLANNER_CONTEXT_DEFAULT_RESERVE_BYTES = 1024 * 1024 * 1024  # 1 GiB
+PLANNER_CONTEXT_DEFAULT_RETRY_FACTOR = 0.85
+PLANNER_CONTEXT_DEFAULT_MAX_RETRIES = 3
+PLANNER_CONTEXT_DEFAULT_PROBE_STEP = 4096
+CONTEXT_FIT_CACHE_FILENAME = "context_fit_cache.json"
 ARGUMENT_REFERENCE_PATTERN = re.compile(
     r"\$(?:request|last|steps)(?:\.[A-Za-z0-9_]+)*"
 )
@@ -701,47 +715,21 @@ class DynamicXLAMOrchestrator:
             pass
         return 0.0
 
-    def _auto_planner_n_ctx(self, total_ram_mb: float, model_mb: float | None) -> int:
-        """Largest supported context window whose KV cache fits in the RAM left
-        after the model weights and fixed runtime overhead.
-
-        This is what lets a small quant (e.g. ~2.6GB) use 4096 on an 8GB host
-        while a large quant (e.g. ~4GB) is held to 2048 on the same host. Falls
-        back to the conservative low-RAM window when sizes are unknown.
-        """
-        if not model_mb or model_mb <= 0 or total_ram_mb <= 0:
-            return LOW_RAM_PLANNER_N_CTX
-        reserved = self._env_int_override("PIOS_XLAM_RESERVED_MB")
-        reserved_mb = float(reserved) if reserved is not None else PLANNER_RESERVED_NON_KV_MB
-        kv_budget_mb = total_ram_mb - model_mb - reserved_mb
-        smallest = min(PLANNER_N_CTX_CANDIDATES)
-        if kv_budget_mb <= 0:
-            return smallest
-        affordable_tokens = kv_budget_mb / PLANNER_KV_MB_PER_TOKEN
-        for candidate in PLANNER_N_CTX_CANDIDATES:  # largest first
-            if affordable_tokens >= candidate:
-                return candidate
-        return smallest
-
     def _get_hardware_config(self, model_mb: float | None = None) -> dict[str, Any]:
         system = platform.system()
         machine = platform.machine()
         cpu_cores = os.cpu_count() or 4
         env_threads = self._env_int_override("PIOS_XLAM_CPU_THREADS")
-        env_ctx = self._env_int_override("PIOS_XLAM_N_CTX")
         env_batch = self._env_int_override("PIOS_XLAM_N_BATCH")
         env_gpu_layers = self._env_int_override("PIOS_XLAM_N_GPU_LAYERS")
         total_ram_mb = self._total_ram_mb()
-        # RAM-aware default; the explicit env override always wins.
-        auto_ctx = self._auto_planner_n_ctx(total_ram_mb, model_mb)
 
         if system == "Darwin" and machine == "arm64":
             total_ram_gb = (total_ram_mb / 1024) if total_ram_mb > 0 else 8.0
             logger.info(
-                "Apple Silicon detected (RAM: ~%.1f GB, model: ~%s MB, ctx: %s)",
+                "Apple Silicon detected (RAM: ~%.1f GB, model: ~%s MB)",
                 total_ram_gb,
                 round(model_mb) if model_mb else "?",
-                env_ctx if env_ctx is not None else auto_ctx,
             )
             return {
                 "type": "Metal (Low RAM)" if total_ram_gb < 12 else "Metal (High RAM)",
@@ -749,7 +737,6 @@ class DynamicXLAMOrchestrator:
                 "n_threads": max(
                     1, env_threads if env_threads is not None else (4 if total_ram_gb < 12 else 6)
                 ),
-                "n_ctx": max(512, env_ctx if env_ctx is not None else auto_ctx),
                 "n_batch": max(32, env_batch if env_batch is not None else 512),
                 "use_mmap": True,
                 "use_mlock": False,
@@ -762,9 +749,6 @@ class DynamicXLAMOrchestrator:
                 "type": "CUDA",
                 "n_gpu_layers": env_gpu_layers if env_gpu_layers is not None else -1,
                 "n_threads": max(1, env_threads if env_threads is not None else 8),
-                # KV cache lives in VRAM on CUDA, not system RAM, so use the full
-                # default window here rather than the RAM-budgeted one.
-                "n_ctx": max(512, env_ctx if env_ctx is not None else DEFAULT_PLANNER_N_CTX),
                 "n_batch": max(32, env_batch if env_batch is not None else 1024),
                 "use_mmap": True,
                 "use_mlock": False,
@@ -781,20 +765,131 @@ class DynamicXLAMOrchestrator:
                 "macOS to use Metal; Docker on this machine will use CPU."
             )
         logger.info(
-            "No GPU detected. Using CPU mode (RAM: ~%s MB, model: ~%s MB, ctx: %s).",
+            "No GPU detected. Using CPU mode (RAM: ~%s MB, model: ~%s MB).",
             round(total_ram_mb) if total_ram_mb else "?",
             round(model_mb) if model_mb else "?",
-            env_ctx if env_ctx is not None else auto_ctx,
         )
         return {
             "type": "CPU",
             "n_gpu_layers": env_gpu_layers if env_gpu_layers is not None else 0,
             "n_threads": max(1, env_threads if env_threads is not None else cpu_cores),
-            "n_ctx": max(512, env_ctx if env_ctx is not None else auto_ctx),
             "n_batch": max(32, env_batch if env_batch is not None else 256),
             "use_mmap": True,
             "use_mlock": False,
         }
+
+    def _planner_context_config(self) -> dict[str, Any]:
+        """Config section orchestrator.llm_planner_context (absent → empty)."""
+        return dict(getattr(self, "llm_planner_context_config", None) or {})
+
+    def _planner_ctx_conf(self, name: str, default: Any) -> Any:
+        value = self._planner_context_config().get(name)
+        return default if value is None else value
+
+    def _planner_context_minimum(self) -> int:
+        return int(self._planner_ctx_conf("minimum_context", PLANNER_CONTEXT_DEFAULT_MINIMUM))
+
+    def _planner_context_maximum(self) -> int | None:
+        value = int(self._planner_ctx_conf("maximum_context", PLANNER_CONTEXT_DEFAULT_MAXIMUM))
+        return None if value <= 0 else value
+
+    def _planner_context_alignment(self) -> int:
+        return int(self._planner_ctx_conf("alignment", PLANNER_CONTEXT_DEFAULT_ALIGNMENT))
+
+    def _planner_context_reserve_bytes(self) -> int:
+        return int(
+            self._planner_ctx_conf("reserve_bytes", PLANNER_CONTEXT_DEFAULT_RESERVE_BYTES)
+        )
+
+    def _planner_context_probe_step(self) -> int:
+        return int(self._planner_ctx_conf("probe_step", PLANNER_CONTEXT_DEFAULT_PROBE_STEP))
+
+    def _planner_context_retry_enabled(self) -> bool:
+        return bool(self._planner_ctx_conf("retry_on_load_failure", True))
+
+    def _planner_context_retry_factor(self) -> float:
+        return float(self._planner_ctx_conf("retry_factor", PLANNER_CONTEXT_DEFAULT_RETRY_FACTOR))
+
+    def _planner_context_max_retries(self) -> int:
+        return int(self._planner_ctx_conf("max_retries", PLANNER_CONTEXT_DEFAULT_MAX_RETRIES))
+
+    def _planner_runtime_config(self, hw: dict[str, Any]) -> dict[str, Any]:
+        """Probe parameters that mirror the real Llama load in _load_llm_impl.
+
+        Anything that changes memory accounting (offload, batching, KV cache
+        layout) must be reflected here, or the fit verdict will not match the
+        actual load.
+        """
+        return {
+            "n_gpu_layers": hw["n_gpu_layers"],
+            "n_threads": hw["n_threads"],
+            "n_batch": hw["n_batch"],
+            "n_ubatch": hw["n_batch"],
+            "n_seq_max": 1,
+            "flash_attn": False,
+            "offload_kqv": True,
+            "swa_full": None,
+            "type_k": None,
+            "type_v": None,
+            "use_mmap": hw["use_mmap"],
+            "use_mlock": hw["use_mlock"],
+        }
+
+    def _resolve_planner_context(self, model_path: str, hw: dict[str, Any]) -> int:
+        """Largest context window that fits this model on this host.
+
+        Explicit PIOS_XLAM_N_CTX always wins. Otherwise the window is fitted
+        from llama.cpp's own memory accounting (ml.orchestrator.context_fitting),
+        so the model's native window is used whenever it fits. On any fitting
+        failure the configured minimum is used so the planner stays available.
+        """
+        env_ctx = self._env_int_override("PIOS_XLAM_N_CTX")
+        if env_ctx is not None:
+            logger.info("Planner context from PIOS_XLAM_N_CTX: %s", env_ctx)
+            return max(512, env_ctx)
+
+        free_bytes = None
+        if hw.get("type") == "CUDA":
+            vram = self._free_vram_mb()
+            if vram:
+                free_bytes = int(vram * 1024 * 1024)
+        if free_bytes is None:
+            free_bytes = int(self._available_ram_gb() * 1024**3)
+
+        try:
+            result = fit_context(
+                model_path=model_path,
+                runtime_config=self._planner_runtime_config(hw),
+                minimum_context=self._planner_context_minimum(),
+                maximum_context=self._planner_context_maximum(),
+                alignment=self._planner_context_alignment(),
+                reserve_bytes=self._planner_context_reserve_bytes(),
+                probe_step=self._planner_context_probe_step(),
+                free_bytes=free_bytes,
+                cache_path=Path(model_path).parent / CONTEXT_FIT_CACHE_FILENAME,
+                cache_key=model_path,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Planner context fitting failed (%s); using minimum context %s.",
+                exc,
+                self._planner_context_minimum(),
+            )
+            return self._planner_context_minimum()
+
+        logger.info(
+            "Planner context fitted: chosen=%s native=%s model_mb=%s "
+            "context_mb=%s compute_mb=%s required_mb=%s free_mb=%s cached=%s",
+            result.chosen_context,
+            result.native_context,
+            round(result.model_bytes / (1024**2)),
+            round(result.context_bytes / (1024**2)),
+            round(result.compute_bytes / (1024**2)),
+            round(result.required_bytes / (1024**2)),
+            round(result.free_bytes / (1024**2)),
+            result.cached,
+        )
+        return result.chosen_context
 
     def _available_ram_gb(self) -> float:
         try:
@@ -1652,9 +1747,6 @@ class DynamicXLAMOrchestrator:
             self._llm_error = f"llama_cpp import failed: {exc}"
             return
         try:
-            # Size the context window against this specific quant's footprint:
-            # the actual GGUF file size (mmap-resident) is the most accurate, with
-            # the catalog estimate as a fallback.
             model_mb: float | None = None
             try:
                 model_mb = Path(model_path).stat().st_size / (1024**2)
@@ -1663,21 +1755,52 @@ class DynamicXLAMOrchestrator:
             hw = self._get_hardware_config(model_mb=model_mb)
             logger.info("Auto config: %s", hw["type"])
             logger.info(
-                "LLM settings: threads=%s, layers=%s, context=%s",
+                "LLM settings: threads=%s, layers=%s",
                 hw["n_threads"],
                 hw["n_gpu_layers"],
-                hw["n_ctx"],
             )
-            llm = Llama(
-                model_path=str(model_path),
-                n_ctx=hw["n_ctx"],
-                n_threads=hw["n_threads"],
-                n_gpu_layers=hw["n_gpu_layers"],
-                n_batch=hw["n_batch"],
-                use_mlock=hw["use_mlock"],
-                use_mmap=hw["use_mmap"],
-                verbose=False,
-            )
+
+            n_ctx = self._resolve_planner_context(str(model_path), hw)
+            logger.info("LLM context window: %s", n_ctx)
+
+            llm = None
+            load_error: Exception | None = None
+            for attempt in range(self._planner_context_max_retries() + 1):
+                try:
+                    llm = Llama(
+                        model_path=str(model_path),
+                        n_ctx=n_ctx,
+                        n_threads=hw["n_threads"],
+                        n_gpu_layers=hw["n_gpu_layers"],
+                        n_batch=hw["n_batch"],
+                        use_mlock=hw["use_mlock"],
+                        use_mmap=hw["use_mmap"],
+                        verbose=False,
+                    )
+                    break
+                except Exception as exc:
+                    load_error = exc
+                    if not self._planner_context_retry_enabled():
+                        raise
+                    reduced = align_down(
+                        max(
+                            self._planner_context_minimum(),
+                            int(n_ctx * self._planner_context_retry_factor()),
+                        )
+                    )
+                    if reduced >= n_ctx or attempt >= self._planner_context_max_retries():
+                        raise
+                    logger.warning(
+                        "Planner LLM load failed at context %s (%s); retrying "
+                        "at %s.",
+                        n_ctx,
+                        exc,
+                        reduced,
+                    )
+                    n_ctx = reduced
+            if llm is None:
+                raise load_error or RuntimeError("Planner LLM load failed.")
+
             active_capabilities = self._resolved_capabilities(
                 model_path,
                 variant=variant,
@@ -1695,7 +1818,7 @@ class DynamicXLAMOrchestrator:
                 if start_variant_id != current_variant_id:
                     self._llm_error = "Stale LLM load discarded."
                     return
-                self._llm_n_ctx = hw["n_ctx"]
+                self._llm_n_ctx = n_ctx
                 self._llm = llm
                 self._grammar = None
                 self._llm_error = None
@@ -3248,6 +3371,114 @@ class DynamicXLAMOrchestrator:
             raise RuntimeError(f"No enabled external tool configured for adapter '{adapter}'.")
         return ""
 
+    def _validate_plan_validation_config(self, dynamic_planning_config: dict[str, Any]) -> None:
+        """Fail fast on invalid plan-validation rules from config."""
+        plan_validation = dynamic_planning_config.get("plan_validation")
+        if plan_validation is None:
+            return
+        if not isinstance(plan_validation, dict):
+            raise RuntimeError("dynamic_planning.plan_validation must be an object.")
+        if "enabled" in plan_validation and not isinstance(
+            plan_validation.get("enabled"), bool
+        ):
+            raise RuntimeError(
+                "dynamic_planning.plan_validation.enabled must be a boolean."
+            )
+        rules = plan_validation.get("rules")
+        if rules is None:
+            return
+        if not isinstance(rules, list):
+            raise RuntimeError(
+                "dynamic_planning.plan_validation.rules must be a list."
+            )
+        seen: set[str] = set()
+        for rule in rules:
+            if not isinstance(rule, dict):
+                raise RuntimeError(
+                    "Each dynamic_planning.plan_validation rule must be an object."
+                )
+            rule_id = str(rule.get("id") or "").strip()
+            if not rule_id:
+                raise RuntimeError(
+                    "Each plan_validation rule must have a non-empty id."
+                )
+            if rule_id in seen:
+                raise RuntimeError(f"Duplicate plan_validation rule id: {rule_id}")
+            seen.add(rule_id)
+            if "enabled" in rule and not isinstance(rule.get("enabled"), bool):
+                raise RuntimeError(
+                    f"plan_validation rule '{rule_id}' enabled must be a boolean."
+                )
+            keep_adapters = _clean_list(rule.get("keep_adapters"))
+            for adapter in keep_adapters:
+                if safe_slug(adapter) not in SUPPORTED_EXTERNAL_ADAPTERS:
+                    raise RuntimeError(
+                        f"plan_validation rule '{rule_id}' has unsupported "
+                        f"adapter '{adapter}'. Supported adapters: "
+                        f"{', '.join(sorted(SUPPORTED_EXTERNAL_ADAPTERS))}."
+                    )
+            if rule.get("max_steps") is not None and as_int(
+                rule.get("max_steps"), 0
+            ) <= 0:
+                raise RuntimeError(
+                    f"plan_validation rule '{rule_id}' max_steps must be positive."
+                )
+
+    def _validate_llm_planner_context_config(
+        self, llm_planner_context_config: dict[str, Any]
+    ) -> None:
+        """Fail fast on invalid orchestrator.llm_planner_context config."""
+        if not isinstance(llm_planner_context_config, dict):
+            raise RuntimeError("orchestrator.llm_planner_context must be an object.")
+        minimum = llm_planner_context_config.get("minimum_context")
+        if minimum is not None and as_int(minimum, 0) <= 0:
+            raise RuntimeError(
+                "orchestrator.llm_planner_context.minimum_context must be positive."
+            )
+        maximum = llm_planner_context_config.get("maximum_context")
+        if maximum is not None and as_int(maximum, -1) < 0:
+            raise RuntimeError(
+                "orchestrator.llm_planner_context.maximum_context must be >= 0 "
+                "(0 means the model's native window)."
+            )
+        alignment = llm_planner_context_config.get("alignment")
+        if alignment is not None and as_int(alignment, 0) < 64:
+            raise RuntimeError(
+                "orchestrator.llm_planner_context.alignment must be >= 64."
+            )
+        reserve = llm_planner_context_config.get("reserve_bytes")
+        if reserve is not None and as_int(reserve, -1) < 0:
+            raise RuntimeError(
+                "orchestrator.llm_planner_context.reserve_bytes must be >= 0."
+            )
+        probe_step = llm_planner_context_config.get("probe_step")
+        if probe_step is not None and as_int(probe_step, 0) <= 0:
+            raise RuntimeError(
+                "orchestrator.llm_planner_context.probe_step must be positive."
+            )
+        retry_enabled = llm_planner_context_config.get("retry_on_load_failure")
+        if retry_enabled is not None and not isinstance(retry_enabled, bool):
+            raise RuntimeError(
+                "orchestrator.llm_planner_context.retry_on_load_failure must be a boolean."
+            )
+        retry_factor = llm_planner_context_config.get("retry_factor")
+        if retry_factor is not None:
+            try:
+                factor = float(retry_factor)
+            except (TypeError, ValueError):
+                raise RuntimeError(
+                    "orchestrator.llm_planner_context.retry_factor must be a number."
+                ) from None
+            if not (0.0 < factor < 1.0):
+                raise RuntimeError(
+                    "orchestrator.llm_planner_context.retry_factor must be in (0, 1)."
+                )
+        max_retries = llm_planner_context_config.get("max_retries")
+        if max_retries is not None and as_int(max_retries, -1) < 0:
+            raise RuntimeError(
+                "orchestrator.llm_planner_context.max_retries must be >= 0."
+            )
+
     def _build_external_tools_runtime_state(self) -> dict[str, Any]:
         payload = self._load_external_tools_config()
         orchestrator_config = dict(payload.get("orchestrator") or {})
@@ -3267,6 +3498,9 @@ class DynamicXLAMOrchestrator:
         planning_limits_config = dict(orchestrator_config.get("planning_limits") or {})
         dynamic_planning_config = dict(orchestrator_config.get("dynamic_planning") or {})
         direct_response_config = dict(dynamic_planning_config.get("direct_response") or {})
+        llm_planner_context_config = dict(orchestrator_config.get("llm_planner_context") or {})
+        self._validate_plan_validation_config(dynamic_planning_config)
+        self._validate_llm_planner_context_config(llm_planner_context_config)
 
         planner_example_limit = max(
             0,
@@ -3443,6 +3677,7 @@ class DynamicXLAMOrchestrator:
             "planning_limits_config": planning_limits_config,
             "dynamic_planning_config": dynamic_planning_config,
             "direct_response_config": direct_response_config,
+            "llm_planner_context_config": llm_planner_context_config,
             "planner_example_limit": planner_example_limit,
             "planner_schema_field_limit": planner_schema_field_limit,
             "planner_tool_description_chars": planner_tool_description_chars,
@@ -3480,6 +3715,7 @@ class DynamicXLAMOrchestrator:
                 "prompt_templates": getattr(self, "prompt_templates", {}),
                 "planning_limits": getattr(self, "planning_limits_config", {}),
                 "dynamic_planning": getattr(self, "dynamic_planning_config", {}),
+                "llm_planner_context": getattr(self, "llm_planner_context_config", {}),
                 "external_fallback_order": getattr(self, "external_fallback_order", []),
             }
         else:
@@ -3491,6 +3727,7 @@ class DynamicXLAMOrchestrator:
                 "prompt_templates": state["prompt_templates"],
                 "planning_limits": state["planning_limits_config"],
                 "dynamic_planning": state["dynamic_planning_config"],
+                "llm_planner_context": state["llm_planner_context_config"],
                 "external_fallback_order": state["external_fallback_order"],
             }
         return hashlib.sha256(
@@ -3552,15 +3789,7 @@ class DynamicXLAMOrchestrator:
             "timeout_seconds",
         }
         supported_types = {"external"}
-        supported_adapters = {
-            "db_query",
-            "db_schema",
-            "search",
-            "llm_api",
-            "simulation_query",
-            "digital_twin",
-            "stockout_hybrid",
-        }
+        supported_adapters = SUPPORTED_EXTERNAL_ADAPTERS
         definitions: list[ExternalToolDefinition] = []
         seen: set[str] = set()
         for row in rows:
@@ -4552,6 +4781,141 @@ class DynamicXLAMOrchestrator:
         )
         return self._append_row_scoring_step(query, with_source, allowed_models)
 
+    def _plan_validation_config(self) -> dict[str, Any]:
+        config = self.dynamic_planning_config.get("plan_validation")
+        return config if isinstance(config, dict) else {}
+
+    def _plan_validation_rules(self) -> list[dict[str, Any]]:
+        rules = self._plan_validation_config().get("rules")
+        if not isinstance(rules, list):
+            return []
+        return [rule for rule in rules if isinstance(rule, dict)]
+
+    def _adapter_for_step(self, step: ToolCall) -> str:
+        definition = self._tool_definition(step.name)
+        if definition is not None:
+            return definition.adapter
+        runtime = self._model_tool_runtime(step.name)
+        return "model" if runtime is not None else ""
+
+    def _step_references(self, step: ToolCall) -> set[int]:
+        """Original 1-based step positions referenced by a tool call."""
+        blob = " ".join(
+            [
+                str(step.arguments or ""),
+                str(step.reasoning or ""),
+            ]
+        )
+        return {
+            int(match.group(1))
+            for match in re.finditer(r"\$steps\.(\d+)", blob)
+        }
+
+    def _dependency_referenced_steps(self, steps: list[ToolCall]) -> set[int]:
+        """List positions of steps referenced by later steps via ``$steps.N``."""
+        referenced: set[int] = set()
+        for index, step in enumerate(steps):
+            for target in self._step_references(step):
+                if 1 <= target <= len(steps):
+                    referenced.add(target - 1)
+        return referenced
+
+    def _repair_plan_for_validation_rules(
+        self,
+        query: str,
+        plan: ExecutionPlan,
+    ) -> ExecutionPlan:
+        """Drop steps that violate configured plan-validation rules.
+
+        Rules are defined in ``dynamic_planning.plan_validation``; a rule
+        matches the query like direct-response rules and may constrain the
+        plan to a set of adapters (``keep_adapters``) and a max step count.
+        Steps referenced by later steps via ``$steps.N`` are preserved so
+        dependency chains stay valid. Dropped steps are logged for audit.
+        """
+        config = self._plan_validation_config()
+        if config.get("enabled") is not True or not plan.steps:
+            return plan
+        rules = self._plan_validation_rules()
+        if not rules:
+            return plan
+        query_tokens = self._tokenize_query(query)
+        steps = list(plan.steps)
+        dropped: list[str] = []
+        for rule in rules:
+            if rule.get("enabled") is False:
+                continue
+            if not self._direct_response_rule_matches(query, query_tokens, rule):
+                continue
+            keep_adapters = {
+                safe_slug(item) for item in _clean_list(rule.get("keep_adapters"))
+            }
+            if not keep_adapters:
+                continue
+            kept_by_index = {
+                index: step
+                for index, step in enumerate(steps)
+                if self._adapter_for_step(step) in keep_adapters
+            }
+            referenced_by_kept: set[int] = set()
+            for step in kept_by_index.values():
+                for target in self._step_references(step):
+                    if 1 <= target <= len(steps):
+                        referenced_by_kept.add(target - 1)
+            for index, step in enumerate(steps):
+                if index in kept_by_index:
+                    continue
+                if index in referenced_by_kept:
+                    kept_by_index[index] = step
+                else:
+                    adapter = self._adapter_for_step(step)
+                    dropped.append(
+                        f"{step.name} (adapter={adapter or 'unknown'}) rejected by "
+                        f"rule '{rule.get('id')}'"
+                    )
+            max_steps = max(0, as_int(rule.get("max_steps"), 0))
+            if max_steps:
+                adapter_kept = [
+                    (index, step)
+                    for index, step in sorted(kept_by_index.items())
+                    if self._adapter_for_step(step) in keep_adapters
+                ]
+                if len(adapter_kept) > max_steps:
+                    allowed_indices = {
+                        index for index, _step in adapter_kept[:max_steps]
+                    }
+                    kept_by_index = {
+                        index: step
+                        for index, step in kept_by_index.items()
+                        if index in allowed_indices
+                        or self._adapter_for_step(step) not in keep_adapters
+                    }
+                    dropped.append(
+                        f"steps beyond max_steps={max_steps} truncated by rule "
+                        f"'{rule.get('id')}'"
+                    )
+            steps = [step for _index, step in sorted(kept_by_index.items())]
+        if dropped:
+            logger.warning(
+                "Plan validation dropped %s step(s) for query %r: %s",
+                len(dropped),
+                query,
+                "; ".join(dropped),
+            )
+        if len(steps) == len(plan.steps):
+            return plan
+        reasoning = plan.reasoning
+        if dropped:
+            reasoning = (
+                f"{reasoning} Configured plan rules removed unrelated steps "
+                "not needed for this query."
+            )
+        return ExecutionPlan(
+            steps=steps,
+            reasoning=reasoning,
+            is_multi_step=len(steps) > 1,
+        )
+
     def _result_output_value_from_paths(
         self,
         results: list[ExecutionResult],
@@ -5415,6 +5779,7 @@ class DynamicXLAMOrchestrator:
         )
         repaired = self._repair_plan_for_simulation_query(query, execution_plan)
         repaired = self._repair_plan_for_row_scoring(query, repaired, allowed_models)
+        repaired = self._repair_plan_for_validation_rules(query, repaired)
         return repaired, "llm"
 
     # ══════════════════════════════════════════════════════

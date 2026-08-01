@@ -1794,6 +1794,59 @@
       "completion_tokens": 256,
       "context_reserve_tokens": 128
     },
+    "llm_planner_context": {
+      "minimum_context": 4096,
+      "maximum_context": 0,
+      "alignment": 256,
+      "reserve_bytes": 1073741824,
+      "probe_step": 4096,
+      "retry_on_load_failure": true,
+      "retry_factor": 0.85,
+      "max_retries": 3
+    },
+    "api_output_compact_keys": [
+      "answer",
+      "results",
+      "data",
+      "query_kind",
+      "model_id",
+      "entity_key",
+      "row_count",
+      "prediction",
+      "probability",
+      "prediction_name",
+      "prediction_unit",
+      "prediction_task_type",
+      "stockout_probability",
+      "estimated_days_until_stockout",
+      "horizon",
+      "risk_level",
+      "recommended_action",
+      "confidence",
+      "blood_component",
+      "blood_group",
+      "location",
+      "worst_component",
+      "worst_blood_group",
+      "component_count",
+      "worst_component_prediction",
+      "warnings",
+      "filters",
+      "fields",
+      "table",
+      "aggregate",
+      "limit",
+      "tables",
+      "table_names",
+      "logical_table",
+      "default_table_name",
+      "column_count",
+      "columns",
+      "identity_fields",
+      "field_aliases",
+      "ignored_filter_fields",
+      "aliases"
+    ],
     "dynamic_planning": {
       "prefer_planner_terms": [
         "stockout",
@@ -1868,6 +1921,35 @@
             ],
             "reasoning": "Configured direct response: conceptual donor category question does not require model or database execution.",
             "response_markdown": "Common donor categories include:\\n\\n1. **Whole blood donors** - donate complete blood for broad transfusion use.\\n2. **Plasma donors** - donate plasma used in plasma-derived therapies and some clinical support.\\n3. **Platelet donors** - donate platelets often used for oncology, surgery, and trauma support.\\n4. **Rare blood type donors** - donors with uncommon blood groups who may be prioritized for matching needs.\\n5. **Regular donors** - donors with a recent and reliable donation history.\\n\\nFor eligibility or donor ranking, use configured prediction/database tools because those require current donor data."
+          }
+        ]
+      },
+      "plan_validation": {
+        "enabled": true,
+        "rules": [
+          {
+            "id": "schema_inspection_single_step",
+            "enabled": true,
+            "description": "Metadata/schema inspection questions must be answered by the schema inspection tool alone.",
+            "trigger_terms": [
+              "schema",
+              "table structure",
+              "database structure",
+              "data types",
+              "columns"
+            ],
+            "blocked_terms": [
+              "stockout",
+              "shortage",
+              "predict",
+              "forecast",
+              "rank",
+              "simulate"
+            ],
+            "keep_adapters": [
+              "db_schema"
+            ],
+            "max_steps": 1
           }
         ]
       },
@@ -2151,7 +2233,7 @@
     },
     "prompts": {
       "llm_api_system": "You are a factual analytics assistant. If data is uncertain, state limitations clearly.",
-      "planning": "You are an ML orchestrator.\nAvailable tools:\n{tools_description}{workflow_examples}\nUser query: \"{query}\"\n\nInstructions:\n1. Analyze the query.\n2. Use ONLY the tools listed above.\n3. Choose tools by matching the user request to each tool's description, input hints, examples, feature names, and contracts.\n4. If the request contains multiple actions, plan multiple tool calls in dependency order instead of stopping after the first matching tool.\n5. If a later action needs an earlier result, reference it with $steps.N.output.field; N is the 1-based prior step number.\n6. Use predictive ML models when the user asks to predict, classify, score, rank, estimate, or forecast an outcome from feature values or bounded rows.\n7. Use retrieval/analytics tools only when their description says they answer stored-data or external-information questions.\n8. Do not substitute one tool category for another unless the listed tool metadata says it supports that task.\n9. Pass only explicit, non-null user inputs and bounded structured arguments required by the selected tool contract.\n10. NEVER ask any retrieval tool for a full table or an unbounded result set.\n11. Just retrieve/compute the data; the final summary will handle comparison and wording.\n12. NEVER invent, pad, or fill missing model features with null/NaN.\n13. For feature-store-backed models, IDs are optional lookup hints only; pass known non-null features and omit unknown values so the resolver can complete them from configured feature sources.\n14. If the query includes a forecast horizon/timeframe, prefer a predictive model whose Forecast horizon line matches it.\n15. If no listed tool metadata matches the request, return an empty tool_calls list.\n16. Return JSON with a top-level 'reasoning' field containing a brief user-visible planning rationale, not private chain-of-thought.\n17. Return a 'tool_calls' list. Each tool call needs 'name', 'arguments', and a brief user-visible 'reasoning' field explaining why that tool is used.\nJSON output:",
+      "planning": "You are an ML orchestrator.\nAvailable tools:\n{tools_description}{workflow_examples}\nUser query: \"{query}\"\n\nInstructions:\n1. Analyze the query.\n2. Use ONLY the tools listed above.\n3. Choose tools by matching the user request to each tool's description, input hints, examples, feature names, and contracts.\n4. If the request contains multiple actions, plan multiple tool calls in dependency order instead of stopping after the first matching tool.\n5. If a later action needs an earlier result, reference it with $steps.N.output.field; N is the 1-based prior step number.\n6. Use predictive ML models when the user asks to predict, classify, score, rank, estimate, or forecast an outcome from feature values or bounded rows.\n7. Use retrieval/analytics tools only when their description says they answer stored-data or external-information questions.\n8. Do not substitute one tool category for another unless the listed tool metadata says it supports that task.\n9. Pass only explicit, non-null user inputs and bounded structured arguments required by the selected tool contract.\n10. NEVER ask any retrieval tool for a full table or an unbounded result set.\n11. Just retrieve/compute the data; the final summary will handle comparison and wording.\n12. NEVER invent, pad, or fill missing model features with null/NaN.\n13. For feature-store-backed models, IDs are optional lookup hints only; pass known non-null features and omit unknown values so the resolver can complete them from configured feature sources.\n14. If the query includes a forecast horizon/timeframe, prefer a predictive model whose Forecast horizon line matches it.\n15. If no listed tool metadata matches the request, return an empty tool_calls list.\n16. Return JSON with a top-level 'reasoning' field containing a brief user-visible planning rationale, not private chain-of-thought.\n17. Return a 'tool_calls' list. Each tool call needs 'name', 'arguments', and a brief user-visible 'reasoning' field explaining why that tool is used.\n18. If the query asks only to inspect metadata (schema, tables, columns, data types), return exactly one tool call for the schema inspection tool and no other analytics or predictive steps.\nJSON output:",
       "summarizer": "You are a helpful assistant.\nUser Query: \"{query}\"\n\nRESULTS DATA (FACTUAL GROUND TRUTH):\n{data_block}\n\nINSTRUCTION:\nAnswer the user's query using ONLY the results above.\n- Return Markdown text, not plain text or HTML.\n- Use Markdown tables, bold text, bullets, numbered lists, code fences, images, or simple chart-ready Markdown only when they make the answer clearer.\n- Preserve every factual result shown above. Keep the wording simple, but do not drop components, rows, horizons, probabilities, dates, names, or units.\n- For multi-step results, combine the step summaries into one final answer instead of answering each tool in isolation.\n- Use short plain-language sentences or bullets for non-technical users.\n- Use each tool's prediction name/unit as the meaning of the number.\n- For metrics named like `days_until_*`, `hours_until_*`, `time_until_*`, or `time_to_*`, treat the value as remaining time until that event. Lower values mean sooner; a value at the time origin means the event is due now/at the forecast date, not that the event is absent.\n- For component forecasts, answer per component and do not collapse different components into one result.\n- Do not invent thresholds, missing components, causes, or extra values.\n- Do not wrap the whole answer in one code block.\n\nMarkdown answer:"
     }
   }

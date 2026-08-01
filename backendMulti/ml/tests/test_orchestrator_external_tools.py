@@ -65,6 +65,7 @@ else:
 
 from ml.core import model_loading as _model_loading  # noqa: E402
 from ml.orchestrator import service as _orchestrator_service  # noqa: E402
+from ml.orchestrator.context_fitting import FitResult  # noqa: E402
 
 importlib.reload(_model_loading)
 _orchestrator_service = importlib.reload(_orchestrator_service)
@@ -350,7 +351,7 @@ class OrchestratorExternalToolsTests(unittest.TestCase):
             }
             description = orchestrator._build_tools_description([stockout])
 
-        self.assertEqual(planner_tools, {"db_tool", "llm_api"})
+        self.assertEqual(planner_tools, {"db_tool", "db_schema_tool", "llm_api"})
         self.assertEqual(orchestrator.simulation_tool_name, "")
         self.assertEqual(orchestrator.stockout_hybrid_tool_name, "")
         self.assertFalse(orchestrator.simulation_tool_enabled)
@@ -1571,6 +1572,258 @@ class OrchestratorExternalToolsTests(unittest.TestCase):
         tools = orchestrator.list_configured_tools()
         self.assertIn("db_search", tools[1]["aliases"])
 
+    def test_db_schema_tool_available_in_configured_tools_when_db_enabled(self):
+        env = {
+            "PIOS_XLAM_DISABLE_LLM": "1",
+            "PIOS_ORCH_ENABLE_DB_TOOL": "1",
+            "PIOS_ORCH_ENABLE_SEARCH_TOOL": "0",
+            "PIOS_ORCH_ENABLE_SIMULATION_TOOL": "0",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
+
+        tools = {tool["id"]: tool for tool in orchestrator.list_configured_tools()}
+        self.assertEqual(tools["db_schema_tool"]["adapter"], "db_schema")
+        self.assertTrue(tools["db_schema_tool"]["enabled"])
+        self.assertTrue(tools["db_schema_tool"]["available"])
+
+    def test_db_schema_tool_unavailable_when_db_tool_disabled(self):
+        env = {
+            "PIOS_XLAM_DISABLE_LLM": "1",
+            "PIOS_ORCH_ENABLE_DB_TOOL": "0",
+            "PIOS_ORCH_ENABLE_SEARCH_TOOL": "0",
+            "PIOS_ORCH_ENABLE_SIMULATION_TOOL": "0",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
+
+        tools = {tool["id"]: tool for tool in orchestrator.list_configured_tools()}
+        self.assertFalse(tools["db_schema_tool"]["available"])
+        self.assertFalse(tools["db_tool"]["available"])
+
+    def test_db_schema_tool_planner_visibility_follows_external_fallback_flag(self):
+        env = {
+            "PIOS_XLAM_DISABLE_LLM": "1",
+            "PIOS_ORCH_ENABLE_DB_TOOL": "1",
+            "PIOS_ORCH_ENABLE_SEARCH_TOOL": "0",
+            "PIOS_ORCH_ENABLE_SIMULATION_TOOL": "0",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
+
+        planner_names = {tool["name"] for tool in orchestrator._planner_external_tools()}
+        self.assertIn("db_schema_tool", planner_names)
+
+        env["PIOS_ORCH_ENABLE_EXTERNAL_FALLBACK"] = "0"
+        with patch.dict(os.environ, env, clear=False):
+            disabled_orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
+        planner_names = {
+            tool["name"] for tool in disabled_orchestrator._planner_external_tools()
+        }
+        self.assertNotIn("db_schema_tool", planner_names)
+
+    def _schema_validation_orchestrator(self):
+        env = {
+            "PIOS_XLAM_DISABLE_LLM": "1",
+            "PIOS_ORCH_ENABLE_DB_TOOL": "1",
+            "PIOS_ORCH_ENABLE_SEARCH_TOOL": "0",
+            "PIOS_ORCH_ENABLE_SIMULATION_TOOL": "0",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            return DynamicXLAMOrchestrator(registry=_DummyRegistry())
+
+    def test_plan_validation_prunes_unrelated_steps_for_schema_query(self):
+        orchestrator = self._schema_validation_orchestrator()
+        plan = ExecutionPlan(
+            steps=[
+                ToolCall(
+                    name="db_schema_tool",
+                    arguments={"table": "hospitals"},
+                    reasoning="inspect the hospital schema",
+                ),
+                ToolCall(
+                    name="db_tool",
+                    arguments={
+                        "table": "donors",
+                        "aggregate": "list",
+                        "fields": ["donor_id"],
+                        "filters": {"eligible_to_donate": True},
+                    },
+                    reasoning="list eligible donors",
+                ),
+                ToolCall(
+                    name="component_demand_quantile_forecast_model",
+                    arguments={},
+                    reasoning="forecast demand",
+                ),
+            ],
+            reasoning="llm-generated plan with unrelated steps",
+            is_multi_step=True,
+        )
+
+        repaired = orchestrator._repair_plan_for_validation_rules(
+            "Show me the database schema for hospitals",
+            plan,
+        )
+
+        self.assertEqual(
+            [step.name for step in repaired.steps],
+            ["db_schema_tool"],
+        )
+        self.assertFalse(repaired.is_multi_step)
+
+    def test_plan_validation_preserves_dependency_referenced_steps(self):
+        orchestrator = self._schema_validation_orchestrator()
+        plan = ExecutionPlan(
+            steps=[
+                ToolCall(
+                    name="db_tool",
+                    arguments={"table": "donors", "aggregate": "list"},
+                    reasoning="list donor rows",
+                ),
+                ToolCall(
+                    name="db_schema_tool",
+                    arguments={"table": "$steps.1.output.table"},
+                    reasoning="inspect schema for the table above",
+                ),
+            ],
+            reasoning="plan with a step dependency",
+            is_multi_step=True,
+        )
+
+        repaired = orchestrator._repair_plan_for_validation_rules(
+            "Show me the database schema for hospitals",
+            plan,
+        )
+
+        self.assertEqual(
+            [step.name for step in repaired.steps],
+            ["db_tool", "db_schema_tool"],
+        )
+
+    def test_plan_validation_drops_steps_only_referenced_by_dropped_steps(self):
+        orchestrator = self._schema_validation_orchestrator()
+        plan = ExecutionPlan(
+            steps=[
+                ToolCall(
+                    name="db_schema_tool",
+                    arguments={"table": "hospitals"},
+                    reasoning="inspect the hospital schema",
+                ),
+                ToolCall(
+                    name="db_tool",
+                    arguments={"table": "donors", "aggregate": "list"},
+                    reasoning="donor rows for the forecast below",
+                ),
+                ToolCall(
+                    name="component_demand_quantile_forecast_model",
+                    arguments={"rows": "$steps.2.output.rows"},
+                    reasoning="forecast demand from donor rows",
+                ),
+            ],
+            reasoning="model step depends on the donor step",
+            is_multi_step=True,
+        )
+
+        repaired = orchestrator._repair_plan_for_validation_rules(
+            "Show me the database schema for hospitals",
+            plan,
+        )
+
+        self.assertEqual(
+            [step.name for step in repaired.steps],
+            ["db_schema_tool"],
+        )
+
+    def test_plan_validation_ignores_queries_that_do_not_match_rules(self):
+        orchestrator = self._schema_validation_orchestrator()
+        plan = ExecutionPlan(
+            steps=[
+                ToolCall(
+                    name="db_tool",
+                    arguments={"table": "donors", "field": "blood_type"},
+                    reasoning="count blood types",
+                )
+            ],
+            reasoning="single step plan",
+            is_multi_step=False,
+        )
+
+        repaired = orchestrator._repair_plan_for_validation_rules(
+            "How many O+ units are available right now?",
+            plan,
+        )
+
+        self.assertIs(repaired, plan)
+
+    def test_plan_validation_disabled_keeps_plan_unchanged(self):
+        payload = self._minimal_external_tool_config(
+            {
+                "dynamic_planning": {
+                    "plan_validation": {
+                        "enabled": False,
+                        "rules": [
+                            {
+                                "id": "schema_inspection_single_step",
+                                "trigger_terms": ["schema"],
+                                "keep_adapters": ["db_schema"],
+                            }
+                        ],
+                    }
+                }
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / "config.json"
+            config_path.write_text(json.dumps(payload), encoding="utf-8")
+            env = {
+                "PIOS_XLAM_DISABLE_LLM": "1",
+                "PIOS_ORCH_EXTERNAL_TOOLS_CONFIG": str(config_path),
+            }
+            with patch.dict(os.environ, env, clear=False):
+                orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
+
+        plan = ExecutionPlan(
+            steps=[
+                ToolCall(name="db_tool", arguments={}, reasoning="query donors"),
+                ToolCall(name="db_schema_tool", arguments={}, reasoning="schema"),
+            ],
+            reasoning="llm plan",
+            is_multi_step=True,
+        )
+        repaired = orchestrator._repair_plan_for_validation_rules("show the schema", plan)
+        self.assertIs(repaired, plan)
+
+    def test_plan_validation_rejects_unsupported_adapter_in_config(self):
+        payload = self._minimal_external_tool_config(
+            {
+                "dynamic_planning": {
+                    "plan_validation": {
+                        "enabled": True,
+                        "rules": [
+                            {
+                                "id": "bad_rule",
+                                "trigger_terms": ["schema"],
+                                "keep_adapters": ["bogus_adapter"],
+                            }
+                        ],
+                    }
+                }
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / "config.json"
+            config_path.write_text(json.dumps(payload), encoding="utf-8")
+            env = {
+                "PIOS_XLAM_DISABLE_LLM": "1",
+                "PIOS_ORCH_EXTERNAL_TOOLS_CONFIG": str(config_path),
+            }
+            with patch.dict(os.environ, env, clear=False):
+                with self.assertRaises(RuntimeError) as ctx:
+                    DynamicXLAMOrchestrator(registry=_DummyRegistry())
+
+        self.assertIn("unsupported adapter 'bogus_adapter'", str(ctx.exception))
+
     def test_row_scoring_rewrites_model_only_plan_to_db_batch_model_plan(self):
         orchestrator_config = {
             "dynamic_planning": {
@@ -2331,29 +2584,121 @@ class OrchestratorExternalToolsTests(unittest.TestCase):
                     base,
                 )
 
-    def test_auto_planner_n_ctx_scales_with_model_footprint(self):
+    def test_planner_context_env_override_skips_fitting(self):
+        env = {"PIOS_XLAM_DISABLE_LLM": "1", "PIOS_XLAM_N_CTX": "2048"}
+        with patch.dict(os.environ, env, clear=False):
+            orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
+            with patch.object(
+                _orchestrator_service,
+                "fit_context",
+                side_effect=AssertionError("fitting must not run on explicit override"),
+            ):
+                self.assertEqual(
+                    orchestrator._resolve_planner_context(
+                        "/tmp/model.gguf", {"type": "CPU"}
+                    ),
+                    2048,
+                )
+
+    def test_planner_context_uses_fitted_window(self):
+        env = {"PIOS_XLAM_DISABLE_LLM": "1"}
+        hw = {
+            "type": "CPU",
+            "n_gpu_layers": 0,
+            "n_threads": 8,
+            "n_batch": 256,
+            "use_mmap": True,
+            "use_mlock": False,
+        }
+        with patch.dict(os.environ, env, clear=False):
+            os.environ.pop("PIOS_XLAM_N_CTX", None)
+            orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
+            result = FitResult(
+                chosen_context=8192,
+                native_context=262144,
+                model_bytes=1,
+                context_bytes=1,
+                compute_bytes=1,
+                free_bytes=1,
+                required_bytes=3,
+                cached=False,
+            )
+            with patch.object(
+                _orchestrator_service, "fit_context", return_value=result
+            ) as fit_context:
+                self.assertEqual(
+                    orchestrator._resolve_planner_context("/tmp/model.gguf", hw),
+                    8192,
+                )
+                self.assertEqual(fit_context.call_count, 1)
+                _, kwargs = fit_context.call_args
+                self.assertEqual(kwargs["minimum_context"], 4096)
+                self.assertIsNone(kwargs["maximum_context"])
+                self.assertEqual(kwargs["cache_key"], "/tmp/model.gguf")
+
+    def test_planner_context_fit_failure_falls_back_to_minimum(self):
+        env = {"PIOS_XLAM_DISABLE_LLM": "1"}
+        hw = {
+            "type": "CPU",
+            "n_gpu_layers": 0,
+            "n_threads": 8,
+            "n_batch": 256,
+            "use_mmap": True,
+            "use_mlock": False,
+        }
+        with patch.dict(os.environ, env, clear=False):
+            os.environ.pop("PIOS_XLAM_N_CTX", None)
+            orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
+            orchestrator.llm_planner_context_config = {"minimum_context": 2048}
+            with patch.object(
+                _orchestrator_service,
+                "fit_context",
+                side_effect=MemoryError("model does not fit"),
+            ):
+                self.assertEqual(
+                    orchestrator._resolve_planner_context("/tmp/model.gguf", hw),
+                    2048,
+                )
+
+    def test_llm_planner_context_config_validation(self):
         env = {"PIOS_XLAM_DISABLE_LLM": "1"}
         with patch.dict(os.environ, env, clear=False):
-            os.environ.pop("PIOS_XLAM_RESERVED_MB", None)
             orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
-            total_8gb = 8192.0
-            # ~4GB quant on 8GB stays at 2048 (4096 exhausts memory and the GPU
-            # backend fails to decode).
-            self.assertEqual(orchestrator._auto_planner_n_ctx(total_8gb, 4027), 2048)
-            # ~2.6GB quant on the SAME 8GB host now reaches the full 4096.
-            self.assertEqual(orchestrator._auto_planner_n_ctx(total_8gb, 2592), 4096)
-            # The large quant gets 4096 once there is enough RAM (16GB).
-            self.assertEqual(orchestrator._auto_planner_n_ctx(16384.0, 4027), 4096)
-            # Unknown sizes fall back to the conservative window, never crash.
-            self.assertEqual(orchestrator._auto_planner_n_ctx(0.0, None), 2048)
-            self.assertEqual(orchestrator._auto_planner_n_ctx(total_8gb, None), 2048)
-            # A model that barely fits gets the smallest window, not a failure.
-            self.assertEqual(orchestrator._auto_planner_n_ctx(total_8gb, 8000), 1024)
-            # Explicit reserve override is honoured.
-            with patch.dict(os.environ, {"PIOS_XLAM_RESERVED_MB": "6000"}, clear=False):
-                self.assertEqual(
-                    orchestrator._auto_planner_n_ctx(total_8gb, 2592), 1024
-                )
+            orchestrator._validate_llm_planner_context_config({})
+            orchestrator._validate_llm_planner_context_config(
+                {
+                    "minimum_context": 4096,
+                    "maximum_context": 0,
+                    "alignment": 256,
+                    "reserve_bytes": 1073741824,
+                    "probe_step": 4096,
+                    "retry_on_load_failure": True,
+                    "retry_factor": 0.85,
+                    "max_retries": 3,
+                }
+            )
+            for bad in [
+                {"minimum_context": 0},
+                {"minimum_context": -4},
+                {"maximum_context": -1},
+                {"alignment": 32},
+                {"reserve_bytes": -1},
+                {"probe_step": 0},
+                {"retry_on_load_failure": "yes"},
+                {"retry_factor": 1.5},
+                {"retry_factor": "oops"},
+                {"max_retries": -1},
+            ]:
+                with self.assertRaises(RuntimeError, msg=bad):
+                    orchestrator._validate_llm_planner_context_config(bad)
+
+    def test_config_llm_planner_context_section_is_valid(self):
+        payload = json.loads(EXTERNAL_TOOLS_CONFIG_PATH.read_text(encoding="utf-8"))
+        section = payload["orchestrator"]["llm_planner_context"]
+        env = {"PIOS_XLAM_DISABLE_LLM": "1"}
+        with patch.dict(os.environ, env, clear=False):
+            orchestrator = DynamicXLAMOrchestrator(registry=_DummyRegistry())
+            orchestrator._validate_llm_planner_context_config(section)
 
     def test_stockout_call_query_adds_configured_row_source_before_scoring(self):
         orchestrator_config = {
