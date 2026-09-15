@@ -32,7 +32,7 @@ export const rawConfig: EdgeConfigDefinition = {
     default_model: 'Qwen/Qwen2.5-7B-Instruct',
     chat_completions_path: '/v1/chat/completions',
     health_path: '/health',
-    timeout_seconds: 90.0,
+    timeout_seconds: 110.0,
     temperature: 0.1,
     max_tokens: 1024,
     system_prompt:

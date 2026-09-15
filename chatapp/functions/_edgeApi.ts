@@ -288,39 +288,70 @@ export async function handlePredictRequest(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), config.timeoutMs);
 
-      const modalRes = await fetch(targetUrl, {
-        method: 'POST',
-        headers: requestHeaders,
-        body: JSON.stringify(modalPayload),
-        signal: controller.signal,
-      });
+      // Periodic heartbeat to keep SSE connection alive during serverless GPU cold boot
+      const heartbeatInterval = setInterval(async () => {
+        try {
+          await writeSSE({
+            type: 'progress',
+            phase: 'waiting_for_gpu',
+            message: 'Serverless GPU on Modal AI is warming up...',
+          });
+        } catch {
+          // Stream might be closed
+        }
+      }, 15000);
 
-      if (!modalRes.ok) {
+      try {
+        const modalRes = await fetch(targetUrl, {
+          method: 'POST',
+          headers: requestHeaders,
+          body: JSON.stringify(modalPayload),
+          signal: controller.signal,
+        });
+
+        if (!modalRes.ok) {
+          clearTimeout(timeoutId);
+          const errText = await modalRes.text();
+          throw new Error(`Modal GPU HTTP ${modalRes.status}: ${errText}`);
+        }
+
+        if (!modalRes.body) {
+          clearTimeout(timeoutId);
+          throw new Error('Modal response did not contain a readable stream body.');
+        }
+
+        const reader = modalRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let accumulatedText = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const content = parseVLLMStreamChunk(line);
+            if (content) {
+              accumulatedText += content;
+              await writeSSE({
+                type: 'token',
+                phase: 'generating_response',
+                token: content,
+                text: accumulatedText,
+              });
+            }
+          }
+        }
+
         clearTimeout(timeoutId);
-        const errText = await modalRes.text();
-        throw new Error(`Modal GPU HTTP ${modalRes.status}: ${errText}`);
-      }
 
-      if (!modalRes.body) {
-        clearTimeout(timeoutId);
-        throw new Error('Modal response did not contain a readable stream body.');
-      }
-
-      const reader = modalRes.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let accumulatedText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const content = parseVLLMStreamChunk(line);
+        // Process any remainder in buffer
+        if (buffer.trim()) {
+          const content = parseVLLMStreamChunk(buffer);
           if (content) {
             accumulatedText += content;
             await writeSSE({
@@ -331,49 +362,43 @@ export async function handlePredictRequest(
             });
           }
         }
+
+        // 4. Tool finished event
+        await writeSSE({
+          type: 'tool_finished',
+          step: 1,
+          tool: 'modal_vllm_inference',
+          phase: 'tool_completed',
+          success: true,
+          output: {
+            model: config.model,
+            tokens_generated: accumulatedText.length,
+          },
+        });
+
+        // 5. Final summary event
+        await writeSSE({
+          type: 'final',
+          phase: 'completed',
+          markdown: accumulatedText,
+          result: {
+            summary: accumulatedText,
+          },
+        });
+      } finally {
+        clearInterval(heartbeatInterval);
+        clearTimeout(timeoutId);
       }
-
-      clearTimeout(timeoutId);
-
-      // Process any remainder in buffer
-      if (buffer.trim()) {
-        const content = parseVLLMStreamChunk(buffer);
-        if (content) {
-          accumulatedText += content;
-          await writeSSE({
-            type: 'token',
-            phase: 'generating_response',
-            token: content,
-            text: accumulatedText,
-          });
-        }
-      }
-
-      // 4. Tool finished event
-      await writeSSE({
-        type: 'tool_finished',
-        step: 1,
-        tool: 'modal_vllm_inference',
-        phase: 'tool_completed',
-        success: true,
-        output: {
-          model: config.model,
-          tokens_generated: accumulatedText.length,
-        },
-      });
-
-      // 5. Final summary event
-      await writeSSE({
-        type: 'final',
-        phase: 'completed',
-        markdown: accumulatedText,
-        result: {
-          summary: accumulatedText,
-        },
-      });
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      const fallbackMarkdown = `### ⚠️ Decision Support Notice\n\nUnable to reach Modal GPU inference backend:\n\`${errMsg}\`\n\n*Please verify your Modal deployment or consult local blood bank protocols.*`;
+      const isAbort =
+        errMsg.toLowerCase().includes('abort') ||
+        errMsg.toLowerCase().includes('timeout') ||
+        errMsg.toLowerCase().includes('timed out');
+
+      const fallbackMarkdown = isAbort
+        ? `### ⚠️ Modal GPU Serverless Cold-Start\n\nThe serverless GPU on Modal AI was cold-starting (provisioning an NVIDIA A10G container and loading weights). The container is now **waking up or warm**.\n\n**Please resend your query now** — subsequent responses stream within ~2-5 seconds!`
+        : `### ⚠️ Decision Support Notice\n\nUnable to reach Modal GPU inference backend:\n\`${errMsg}\`\n\n*Please verify your Modal deployment or consult local blood bank protocols.*`;
 
       await writeSSE({
         type: 'tool_finished',
@@ -381,7 +406,7 @@ export async function handlePredictRequest(
         tool: 'modal_vllm_inference',
         phase: 'tool_failed',
         success: false,
-        error: errMsg,
+        error: isAbort ? 'Modal GPU cold-start timeout. Container is now warm.' : errMsg,
       });
 
       await writeSSE({

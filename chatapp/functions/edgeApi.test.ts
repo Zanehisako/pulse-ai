@@ -19,7 +19,7 @@ test('resolveEdgeConfig returns defaults when no env is provided', () => {
   assert.equal(config.model, 'Qwen/Qwen2.5-7B-Instruct');
   assert.equal(config.apiUrl, 'https://yassinetakiko--pulseai-vllm-backend-serve.modal.run');
   assert.equal(config.chatPath, '/v1/chat/completions');
-  assert.equal(config.timeoutMs, 90000);
+  assert.equal(config.timeoutMs, 110000);
   assert.equal(config.temperature, 0.1);
 });
 
