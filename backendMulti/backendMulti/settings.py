@@ -251,6 +251,20 @@ def _parse_origins(env_key: str, default: list[str]) -> list[str]:
 _DEFAULT_FRONTEND_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://pulse-ai-chatapp.pages.dev",
+]
+
+_DEFAULT_CORS_REGEXES = [
+    r"^https://.*\.pulse-ai-chatapp\.pages\.dev$",
+    r"^https://.*\.trycloudflare\.com$",
+]
+
+_DEFAULT_CSRF_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://pulse-ai-chatapp.pages.dev",
+    "https://*.trycloudflare.com",
+    "https://*.pages.dev",
 ]
 
 CORS_ALLOWED_ORIGINS = _parse_origins("CORS_ALLOWED_ORIGINS", _DEFAULT_FRONTEND_ORIGINS)
@@ -261,6 +275,8 @@ if _cors_regexes_raw:
     CORS_ALLOWED_ORIGIN_REGEXES = [
         regex.strip() for regex in _cors_regexes_raw.split(",") if regex.strip()
     ]
+else:
+    CORS_ALLOWED_ORIGIN_REGEXES = _DEFAULT_CORS_REGEXES
 
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
@@ -271,7 +287,7 @@ CACHES = {
     }
 }
 
-CSRF_TRUSTED_ORIGINS = _parse_origins("CSRF_TRUSTED_ORIGINS", _DEFAULT_FRONTEND_ORIGINS)
+CSRF_TRUSTED_ORIGINS = _parse_origins("CSRF_TRUSTED_ORIGINS", _DEFAULT_CSRF_ORIGINS)
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"

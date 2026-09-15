@@ -37,3 +37,17 @@ class CorsConfigTests(SimpleTestCase):
                     "https://app.pulse.org",
                 ],
             )
+
+    def test_default_cors_and_csrf_allow_cloudflare_pages_and_tunnels(self):
+        from backendMulti.settings import (
+            CORS_ALLOWED_ORIGINS,
+            CORS_ALLOWED_ORIGIN_REGEXES,
+            CSRF_TRUSTED_ORIGINS,
+        )
+        self.assertIn("https://pulse-ai-chatapp.pages.dev", CORS_ALLOWED_ORIGINS)
+        self.assertTrue(
+            any("trycloudflare" in regex for regex in CORS_ALLOWED_ORIGIN_REGEXES)
+        )
+        self.assertTrue(
+            any("trycloudflare" in origin for origin in CSRF_TRUSTED_ORIGINS)
+        )

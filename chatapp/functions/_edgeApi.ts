@@ -1,12 +1,18 @@
 /**
  * PulseAI Edge API Handler (Cloudflare Pages Functions)
- * Proxies frontend chat requests to Modal AI GPU inference backend (vLLM)
- * with SSE streaming, structured plan/tool telemetry, and zero backend hosting required.
+ * Proxies frontend chat requests to:
+ * 1. The full Django DynamicXLAMOrchestrator (when DJANGO_BACKEND_URL is configured),
+ *    executing real tools, ML models, and clinical alert pipelines.
+ * 2. Fallback direct Modal AI GPU backend (when DJANGO_BACKEND_URL is not configured).
  */
 
 import rawConfig from './config.ts';
 
 export interface EdgeConfig {
+  djangoUrl: string;
+  djangoStatusPath: string;
+  djangoPredictPath: string;
+  djangoTimeoutMs: number;
   apiUrl: string;
   model: string;
   apiKey: string;
@@ -27,6 +33,15 @@ export function resolveEdgeConfig(env?: Record<string, string | undefined>): Edg
     return fallback;
   };
 
+  const rawDjangoUrl = get(
+    'DJANGO_BACKEND_URL',
+    rawConfig.django_backend?.default_url || ''
+  ).trim().replace(/\/+$/, '');
+
+  const djangoTimeoutS = parseFloat(
+    get('DJANGO_BACKEND_TIMEOUT_S', String(rawConfig.django_backend?.timeout_seconds || 120))
+  ) || 120.0;
+
   const rawUrl = get(
     'MODAL_LLM_API_URL',
     rawConfig.remote_llm.default_api_url
@@ -34,9 +49,13 @@ export function resolveEdgeConfig(env?: Record<string, string | undefined>): Edg
 
   const timeoutS = parseFloat(
     get('MODAL_LLM_TIMEOUT_S', String(rawConfig.remote_llm.timeout_seconds))
-  ) || 90.0;
+  ) || 110.0;
 
   return {
+    djangoUrl: rawDjangoUrl,
+    djangoStatusPath: rawConfig.django_backend?.status_path || '/api/ml/orchestrator/status/',
+    djangoPredictPath: rawConfig.django_backend?.predict_stream_path || '/api/ml/predict/nl/?stream=true',
+    djangoTimeoutMs: djangoTimeoutS * 1000,
     apiUrl: rawUrl,
     model: get('MODAL_LLM_MODEL', rawConfig.remote_llm.default_model).trim(),
     apiKey: get('MODAL_LLM_API_KEY', '').trim(),
@@ -98,18 +117,162 @@ export function buildCorsHeaders(config: EdgeConfig): HeadersInit {
   };
 }
 
+export async function forwardToDjangoPredict(
+  request: Request,
+  query: string,
+  features: Record<string, unknown>,
+  isStreaming: boolean,
+  config: EdgeConfig,
+  corsHeaders: HeadersInit
+): Promise<Response> {
+  const basePath = isStreaming
+    ? config.djangoPredictPath
+    : config.djangoPredictPath.replace('?stream=true', '');
+  const targetUrl = `${config.djangoUrl}${basePath}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), config.djangoTimeoutMs);
+
+  try {
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: isStreaming ? 'text/event-stream' : 'application/json',
+      },
+      body: JSON.stringify({ query, features }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (isStreaming && res.body) {
+      return new Response(res.body, {
+        status: res.status,
+        headers: {
+          'Content-Type': 'text/event-stream; charset=utf-8',
+          'Cache-Control': 'no-cache, no-transform',
+          Connection: 'keep-alive',
+          'X-PulseAI-Backend': 'django-orchestrator',
+          ...corsHeaders,
+        },
+      });
+    }
+
+    const resData = await res.text();
+    return new Response(resData, {
+      status: res.status,
+      headers: {
+        'Content-Type': res.headers.get('Content-Type') || 'application/json',
+        'X-PulseAI-Backend': 'django-orchestrator',
+        ...corsHeaders,
+      },
+    });
+  } catch (err: unknown) {
+    clearTimeout(timeoutId);
+    const msg = err instanceof Error ? err.message : String(err);
+
+    if (!isStreaming) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Failed to reach Django orchestrator at ${config.djangoUrl}: ${msg}`,
+          planner_mode: 'django_orchestrator_error',
+        }),
+        {
+          status: 502,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
+
+    (async () => {
+      await writer.write(
+        encoder.encode(
+          `data: ${JSON.stringify({
+            type: 'tool_finished',
+            step: 1,
+            tool: 'django_orchestrator',
+            success: false,
+            error: `Django backend unreachable at ${config.djangoUrl}: ${msg}`,
+          })}\n\n`
+        )
+      );
+      await writer.write(
+        encoder.encode(
+          `data: ${JSON.stringify({
+            type: 'final',
+            phase: 'completed',
+            markdown: `### ⚠️ Django Orchestrator Connection Notice\n\nCould not reach Django backend at \`${config.djangoUrl}\`:\n\`${msg}\`\n\n*Please ensure your Django backend or Cloudflare Tunnel is running.*`,
+            result: {
+              summary: `Django backend unreachable: ${msg}`,
+            },
+          })}\n\n`
+        )
+      );
+      await writer.close();
+    })();
+
+    return new Response(readable, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        ...corsHeaders,
+      },
+    });
+  }
+}
+
 export async function handleStatusRequest(
   config: EdgeConfig,
   corsHeaders: HeadersInit
 ): Promise<Response> {
+  if (config.djangoUrl) {
+    try {
+      const targetUrl = `${config.djangoUrl}${config.djangoStatusPath}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const djangoRes = await fetch(targetUrl, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (djangoRes.ok) {
+        const djangoData = (await djangoRes.json()) as Record<string, unknown>;
+        return new Response(
+          JSON.stringify(
+            {
+              ...djangoData,
+              orchestration_mode: 'django_orchestrator',
+              django_backend_url: config.djangoUrl,
+            },
+            null,
+            2
+          ),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          }
+        );
+      }
+    } catch {
+      // Fallback if Django probe times out or is unreachable
+    }
+  }
+
   const body = {
     llm_ready: true,
     active_model: config.model,
     selected_model_path: config.model,
-    planner_mode: 'modal_serverless_edge',
-    provider: 'modal_vllm',
+    planner_mode: config.djangoUrl ? 'django_orchestrator_unreachable' : 'modal_serverless_edge',
+    provider: config.djangoUrl ? 'django' : 'modal_vllm',
     backend: 'cloudflare_pages_functions',
     modal_endpoint: config.apiUrl,
+    django_backend_configured: Boolean(config.djangoUrl),
     timestamp: new Date().toISOString(),
   };
 
@@ -161,6 +324,19 @@ export async function handlePredictRequest(
     urlObj.searchParams.get('stream') === 'true' ||
     acceptHeader.includes('text/event-stream');
 
+  // If a Django backend URL is configured, forward query directly to the Django Orchestrator!
+  if (config.djangoUrl) {
+    return forwardToDjangoPredict(
+      request,
+      query,
+      features,
+      isStreaming,
+      config,
+      corsHeaders
+    );
+  }
+
+  // Fallback: direct Modal AI serverless edge execution
   const fullPrompt = buildPromptWithFeatures(query, features);
   const targetUrl = `${config.apiUrl}${config.chatPath}`;
 
@@ -184,7 +360,6 @@ export async function handlePredictRequest(
   };
 
   if (!isStreaming) {
-    // Non-streaming execution
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), config.timeoutMs);
@@ -253,14 +428,11 @@ export async function handlePredictRequest(
     await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
   };
 
-  // Run the background stream processing
   (async () => {
     try {
-      // 1. Initial lifecycle progress events
       await writeSSE({ type: 'progress', phase: 'received' });
       await writeSSE({ type: 'progress', phase: 'planning' });
 
-      // 2. Structured Execution Plan event
       await writeSSE({
         type: 'plan',
         phase: 'planned',
@@ -276,7 +448,6 @@ export async function handlePredictRequest(
         ],
       });
 
-      // 3. Tool execution start event
       await writeSSE({
         type: 'tool_started',
         step: 1,
@@ -288,7 +459,6 @@ export async function handlePredictRequest(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), config.timeoutMs);
 
-      // Periodic heartbeat to keep SSE connection alive during serverless GPU cold boot
       const heartbeatInterval = setInterval(async () => {
         try {
           await writeSSE({
@@ -349,7 +519,6 @@ export async function handlePredictRequest(
 
         clearTimeout(timeoutId);
 
-        // Process any remainder in buffer
         if (buffer.trim()) {
           const content = parseVLLMStreamChunk(buffer);
           if (content) {
@@ -363,7 +532,6 @@ export async function handlePredictRequest(
           }
         }
 
-        // 4. Tool finished event
         await writeSSE({
           type: 'tool_finished',
           step: 1,
@@ -376,7 +544,6 @@ export async function handlePredictRequest(
           },
         });
 
-        // 5. Final summary event
         await writeSSE({
           type: 'final',
           phase: 'completed',
@@ -438,7 +605,6 @@ export async function handleEdgeApiRequest(
   const config = resolveEdgeConfig(env);
   const corsHeaders = buildCorsHeaders(config);
 
-  // Handle CORS preflight
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,

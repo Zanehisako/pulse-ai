@@ -230,3 +230,186 @@ test('handleEdgeApiRequest handles backend connection failure gracefully with fa
     globalThis.fetch = originalFetch;
   }
 });
+
+test('resolveEdgeConfig parses DJANGO_BACKEND_URL and DJANGO_BACKEND_TIMEOUT_S', () => {
+  const env = {
+    DJANGO_BACKEND_URL: 'https://pulse-django.trycloudflare.com/',
+    DJANGO_BACKEND_TIMEOUT_S: '90.0',
+  };
+  const config = resolveEdgeConfig(env);
+  assert.equal(config.djangoUrl, 'https://pulse-django.trycloudflare.com');
+  assert.equal(config.djangoTimeoutMs, 90000);
+  assert.equal(config.djangoStatusPath, '/api/ml/orchestrator/status/');
+  assert.equal(config.djangoPredictPath, '/api/ml/predict/nl/?stream=true');
+});
+
+test('handleEdgeApiRequest forwards status to Django when DJANGO_BACKEND_URL is set', async () => {
+  const originalFetch = globalThis.fetch;
+  let requestedUrl = '';
+  globalThis.fetch = async (input: RequestInfo | URL) => {
+    requestedUrl = String(input);
+    if (requestedUrl.includes('/orchestrator/status/')) {
+      return new Response(
+        JSON.stringify({
+          llm_ready: true,
+          active_model: 'DynamicXLAMOrchestrator',
+          tools_count: 5,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    return originalFetch(input);
+  };
+
+  try {
+    const req = new Request(
+      'https://pulse-ai-chatapp.pages.dev/api/ml/orchestrator/status/',
+      { method: 'GET' }
+    );
+    const res = await handleEdgeApiRequest(req, {
+      DJANGO_BACKEND_URL: 'https://pulse-tunnel.trycloudflare.com',
+    });
+    assert.equal(res.status, 200);
+    assert.equal(requestedUrl, 'https://pulse-tunnel.trycloudflare.com/api/ml/orchestrator/status/');
+    const data = (await res.json()) as {
+      llm_ready: boolean;
+      active_model: string;
+      orchestration_mode: string;
+      django_backend_url: string;
+    };
+    assert.equal(data.llm_ready, true);
+    assert.equal(data.orchestration_mode, 'django_orchestrator');
+    assert.equal(data.django_backend_url, 'https://pulse-tunnel.trycloudflare.com');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('handleEdgeApiRequest forwards streaming prediction to Django orchestrator with tools', async () => {
+  const originalFetch = globalThis.fetch;
+  let capturedUrl = '';
+  let capturedBody = '';
+
+  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    capturedUrl = String(input);
+    capturedBody = String(init?.body || '');
+
+    const djangoSSE = [
+      'data: {"type":"progress","phase":"planning"}\n\n',
+      'data: {"type":"plan","phase":"planned","steps":[{"index":1,"tool":"ideal_donor_probability_model"}]}\n\n',
+      'data: {"type":"tool_started","step":1,"tool":"ideal_donor_probability_model"}\n\n',
+      'data: {"type":"tool_finished","step":1,"tool":"ideal_donor_probability_model","success":true,"output":{"probability":0.88}}\n\n',
+      'data: {"type":"final","phase":"completed","markdown":"Donor has an 88% probability of being an ideal whole blood donor."}\n\n',
+    ].join('');
+
+    return new Response(djangoSSE, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'X-PulseAI-Backend': 'django-orchestrator',
+      },
+    });
+  };
+
+  try {
+    const req = new Request(
+      'https://pulse-ai-chatapp.pages.dev/api/ml/predict/nl/?stream=true',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+        body: JSON.stringify({
+          query: 'Evaluate donor 402 with age 30 and weight 70',
+          features: { age: 30, weight: 70 },
+        }),
+      }
+    );
+
+    const res = await handleEdgeApiRequest(req, {
+      DJANGO_BACKEND_URL: 'https://pulse-tunnel.trycloudflare.com',
+    });
+
+    assert.equal(res.status, 200);
+    assert.equal(capturedUrl, 'https://pulse-tunnel.trycloudflare.com/api/ml/predict/nl/?stream=true');
+    assert.match(capturedBody, /"age":30/);
+    assert.equal(res.headers.get('X-PulseAI-Backend'), 'django-orchestrator');
+
+    const text = await res.text();
+    assert.match(text, /ideal_donor_probability_model/);
+    assert.match(text, /"probability":0\.88/);
+    assert.match(text, /Donor has an 88% probability/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('handleEdgeApiRequest forwards non-streaming prediction to Django orchestrator', async () => {
+  const originalFetch = globalThis.fetch;
+  let capturedUrl = '';
+
+  globalThis.fetch = async (input: RequestInfo | URL) => {
+    capturedUrl = String(input);
+    return new Response(
+      JSON.stringify({
+        success: true,
+        answer: 'Donor is eligible and scheduled for donation.',
+        tools_used: ['ideal_donor_probability_model'],
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  };
+
+  try {
+    const req = new Request('https://pulse-ai-chatapp.pages.dev/api/ml/predict/nl', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'Assess donor' }),
+    });
+
+    const res = await handleEdgeApiRequest(req, {
+      DJANGO_BACKEND_URL: 'https://pulse-tunnel.trycloudflare.com',
+    });
+
+    assert.equal(res.status, 200);
+    assert.equal(capturedUrl, 'https://pulse-tunnel.trycloudflare.com/api/ml/predict/nl/');
+    const data = (await res.json()) as { success: boolean; tools_used: string[] };
+    assert.equal(data.success, true);
+    assert.deepEqual(data.tools_used, ['ideal_donor_probability_model']);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('handleEdgeApiRequest handles unreachable Django backend gracefully in streaming mode', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error('connect ECONNREFUSED 127.0.0.1:8000');
+  };
+
+  try {
+    const req = new Request(
+      'https://pulse-ai-chatapp.pages.dev/api/ml/predict/nl/?stream=true',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+        body: JSON.stringify({ query: 'Assess donor' }),
+      }
+    );
+
+    const res = await handleEdgeApiRequest(req, {
+      DJANGO_BACKEND_URL: 'https://pulse-tunnel.trycloudflare.com',
+    });
+
+    assert.equal(res.status, 200);
+    const text = await res.text();
+    assert.match(text, /"type":"tool_finished"/);
+    assert.match(text, /"tool":"django_orchestrator"/);
+    assert.match(text, /"success":false/);
+    assert.match(text, /Django Orchestrator Connection Notice/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+

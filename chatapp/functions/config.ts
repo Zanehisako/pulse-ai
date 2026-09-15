@@ -4,6 +4,12 @@
  */
 
 export interface EdgeConfigDefinition {
+  django_backend: {
+    default_url: string;
+    status_path: string;
+    predict_stream_path: string;
+    timeout_seconds: number;
+  };
   remote_llm: {
     default_api_url: string;
     default_model: string;
@@ -27,6 +33,12 @@ export interface EdgeConfigDefinition {
 }
 
 export const rawConfig: EdgeConfigDefinition = {
+  django_backend: {
+    default_url: '',
+    status_path: '/api/ml/orchestrator/status/',
+    predict_stream_path: '/api/ml/predict/nl/?stream=true',
+    timeout_seconds: 120.0,
+  },
   remote_llm: {
     default_api_url: 'https://yassinetakiko--pulseai-vllm-backend-serve.modal.run',
     default_model: 'Qwen/Qwen2.5-7B-Instruct',
