@@ -242,13 +242,26 @@ KEYCLOAK_EVENTS_CONFIG = {
     "MAX_RESULTS_LIMIT": int(os.getenv("KEYCLOAK_EVENTS_MAX_RESULTS_LIMIT", "100")),
 }
 
-CORS_ALLOWED_ORIGINS = [
+def _parse_origins(env_key: str, default: list[str]) -> list[str]:
+    raw = os.getenv(env_key, "").strip()
+    if not raw:
+        return default
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+_DEFAULT_FRONTEND_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://127.0.0.1:5173",
 ]
+
+CORS_ALLOWED_ORIGINS = _parse_origins("CORS_ALLOWED_ORIGINS", _DEFAULT_FRONTEND_ORIGINS)
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_CREDENTIALS = True
+
+_cors_regexes_raw = os.getenv("CORS_ALLOWED_ORIGIN_REGEXES", "").strip()
+if _cors_regexes_raw:
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        regex.strip() for regex in _cors_regexes_raw.split(",") if regex.strip()
+    ]
+
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 
@@ -258,15 +271,7 @@ CACHES = {
     }
 }
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+CSRF_TRUSTED_ORIGINS = _parse_origins("CSRF_TRUSTED_ORIGINS", _DEFAULT_FRONTEND_ORIGINS)
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"

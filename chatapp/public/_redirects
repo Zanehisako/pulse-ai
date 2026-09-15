@@ -1,0 +1,7 @@
+# Cloudflare Pages Redirects & Rewrites
+
+# Single Page Application (SPA) routing fallback
+/*    /index.html   200
+
+# Optional API proxy rewrite rule (uncomment and customize if routing API requests through Cloudflare Pages instead of direct CORS):
+# /api/*  https://api.yourdomain.com/api/:splat  200

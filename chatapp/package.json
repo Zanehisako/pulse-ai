@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --experimental-strip-types --test src/config/appConfig.test.ts functions/edgeApi.test.ts",
+    "pages:build": "npm run build",
+    "pages:preview": "npx wrangler pages dev dist",
+    "pages:deploy": "npx wrangler pages deploy dist"
   },
   "dependencies": {
     "highlight.js": "^11.9.0",

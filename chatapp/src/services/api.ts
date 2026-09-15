@@ -4,9 +4,11 @@
  */
 
 import { OrchestratorStatus, StreamEvent, StreamPredictionParams } from '../types/index';
+import { appConfig } from '../config/appConfig';
 
 export async function fetchOrchestratorStatus(): Promise<OrchestratorStatus> {
-  const response = await fetch('/api/ml/orchestrator/status/');
+  const url = appConfig.resolveApiUrl(appConfig.endpoints.status);
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Status HTTP ${response.status}`);
   }
@@ -14,8 +16,8 @@ export async function fetchOrchestratorStatus(): Promise<OrchestratorStatus> {
   return {
     llm_ready: Boolean(data.llm_ready),
     active_model: data.selected_model_path
-      ? data.selected_model_path.split('/').pop() || 'gemma-4-12B-it-QAT-Q4_0.gguf'
-      : 'gemma-4-12B-it-QAT-Q4_0.gguf',
+      ? data.selected_model_path.split('/').pop() || appConfig.defaultModel
+      : appConfig.defaultModel,
     selected_model_path: data.selected_model_path
   };
 }
@@ -29,7 +31,8 @@ export async function streamNLPrediction({
   signal
 }: StreamPredictionParams): Promise<void> {
   try {
-    const response = await fetch('/api/ml/predict/nl/?stream=true', {
+    const url = appConfig.resolveApiUrl(appConfig.endpoints.streamPredict);
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -23,16 +23,16 @@ export function Header({ status, onClear }: HeaderProps): React.JSX.Element {
         <div
           className="status-badge"
           style={{
-            background: status.ws_connected ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-            borderColor: status.ws_connected ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)',
-            color: status.ws_connected ? 'var(--accent-emerald)' : 'var(--accent-amber)'
+            background: status.ws_connected || status.llm_ready ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+            borderColor: status.ws_connected || status.llm_ready ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)',
+            color: status.ws_connected || status.llm_ready ? 'var(--accent-emerald)' : 'var(--accent-amber)'
           }}
         >
           <div
             className="status-pulse"
-            style={{ background: status.ws_connected ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}
+            style={{ background: status.ws_connected || status.llm_ready ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}
           ></div>
-          <span>WS: {status.ws_connected ? 'CONNECTED' : 'DISCONNECTED'} | MODEL: {status.active_model}</span>
+          <span>{status.ws_connected ? 'WS: ONLINE' : status.llm_ready ? 'STREAM: ONLINE' : 'DISCONNECTED'} | MODEL: {status.active_model}</span>
         </div>
 
         {onClear && (

@@ -1,0 +1,10 @@
+name = "pulse-ai-chatapp"
+compatibility_date = "2024-09-01"
+pages_build_output_dir = "dist"
+
+[vars]
+# Default build environment variables (can also be set in Cloudflare Pages dashboard)
+VITE_DEFAULT_MODEL = "PulseAI Orchestrator (Modal GPU)"
+MODAL_LLM_API_URL = "https://yassinetakiko--pulseai-vllm-backend-serve.modal.run"
+MODAL_LLM_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+MODAL_LLM_TIMEOUT_S = "90.0"

@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchOrchestratorStatus, streamNLPrediction } from '../services/api';
 import { ChatMessage, OrchestratorStatus, StreamEvent, LogEntry } from '../types/index';
+import { appConfig } from '../config/appConfig';
 
 export interface UseOrchestratorStreamReturn {
   messages: ChatMessage[];
@@ -23,7 +24,7 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
     {
       id: 'welcome',
       sender: 'assistant',
-      markdown: '### 🩸 PulseAI Orchestrator Online\nConnected via **Vite + React 18 + WebSocket Protocol (`ws://`)** to **Gemma 12B QAT GGUF** model via local `llama_cpp` engine.\nAsk me any natural-language query to inspect donor eligibility, hospital stockout predictions, or digital twin simulation parameters.',
+      markdown: '### 🩸 PulseAI Clinical Orchestrator Online\nConnected to **Modal AI Serverless GPU Backend (NVIDIA A10G)** running **Qwen 2.5 7B**.\n\nAsk me any natural-language query to evaluate donor eligibility, calculate donation intervals, or check hospital inventory risk.',
       timestamp: new Date().toLocaleTimeString(),
       phase: null,
       reasoning: null,
@@ -35,7 +36,7 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [status, setStatus] = useState<OrchestratorStatus>({
     llm_ready: true,
-    active_model: 'gemma-4-12B-it-QAT-Q4_0.gguf',
+    active_model: appConfig.defaultModel,
     ws_connected: false
   });
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -49,9 +50,10 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
       })
       .catch(() => {});
 
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsHost = window.location.port === '5173' ? 'localhost:8000' : window.location.host;
-    const wsUrl = `${wsProtocol}//${wsHost}/ws/ml/orchestrator/`;
+    const wsUrl = appConfig.resolveWsUrl();
+    if (!wsUrl) {
+      return;
+    }
 
     try {
       const socket = new WebSocket(wsUrl);
