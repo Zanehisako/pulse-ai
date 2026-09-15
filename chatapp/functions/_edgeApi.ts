@@ -4,7 +4,7 @@
  * with SSE streaming, structured plan/tool telemetry, and zero backend hosting required.
  */
 
-import rawConfig from './config.json' with { type: 'json' };
+import rawConfig from './config.ts';
 
 export interface EdgeConfig {
   apiUrl: string;
