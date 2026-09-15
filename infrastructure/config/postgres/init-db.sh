@@ -105,4 +105,27 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 
 EOSQL
 
+# ══════════════════════════════════════════
+#  Ensure both pios and pulse databases exist
+# ══════════════════════════════════════════
+echo "💓 Creating application databases..."
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+
+    SELECT 'CREATE DATABASE pios OWNER $POSTGRES_USER'
+    WHERE NOT EXISTS (
+        SELECT FROM pg_database WHERE datname = 'pios'
+    )\gexec
+
+    GRANT ALL PRIVILEGES ON DATABASE pios TO $POSTGRES_USER;
+
+    SELECT 'CREATE DATABASE pulse OWNER $POSTGRES_USER'
+    WHERE NOT EXISTS (
+        SELECT FROM pg_database WHERE datname = 'pulse'
+    )\gexec
+
+    GRANT ALL PRIVILEGES ON DATABASE pulse TO $POSTGRES_USER;
+
+EOSQL
+
 echo "✅ Everything initialized!"

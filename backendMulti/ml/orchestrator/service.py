@@ -616,11 +616,20 @@ class DynamicXLAMOrchestrator:
         self.search_result_limit = max(
             1, as_int(os.getenv("PIOS_ORCH_SEARCH_RESULT_LIMIT"), 5)
         )
+        remote_cfg = getattr(self, "remote_llm_config", {})
+        default_model = remote_cfg.get("default_model", "")
+        default_timeout = as_float(remote_cfg.get("default_timeout_seconds"), 30.0)
         self.llm_api_url = os.getenv("PIOS_ORCH_LLM_API_URL", "").strip()
         self.llm_api_key = os.getenv("PIOS_ORCH_LLM_API_KEY", "").strip()
-        self.llm_api_model = os.getenv("PIOS_ORCH_LLM_API_MODEL", "").strip()
+        self.llm_api_model = (
+            os.getenv("PIOS_ORCH_LLM_API_MODEL", "").strip() or default_model
+        )
         self.llm_api_timeout_s = max(
-            1.0, as_float(os.getenv("PIOS_ORCH_LLM_API_TIMEOUT_S"), 20.0)
+            1.0, as_float(os.getenv("PIOS_ORCH_LLM_API_TIMEOUT_S"), default_timeout)
+        )
+        self.prefer_remote_llm = (
+            os.getenv("PIOS_ORCH_PREFER_REMOTE_LLM", "0").strip().lower()
+            in ("1", "true", "yes")
         )
 
         # ── LLM state ───────────────────────────────────
@@ -1971,6 +1980,121 @@ class DynamicXLAMOrchestrator:
             return "\n".join(parts).strip()
         return str(payload or "").strip()
 
+    def _call_remote_llm_text(
+        self,
+        prompt: str,
+        *,
+        max_tokens: int,
+        temperature: float = 0.1,
+        system_prompt: str | None = None,
+        event_callback: Callable[[dict[str, Any]], None] | None = None,
+    ) -> str:
+        if not self.llm_api_url:
+            raise RuntimeError("Remote LLM API URL is not configured.")
+
+        url = self.llm_api_url.rstrip("/")
+        if not url.endswith("/chat/completions") and not url.endswith("/completions"):
+            endpoint_path = getattr(self, "remote_llm_config", {}).get(
+                "chat_completions_path", "/v1/chat/completions"
+            )
+            url = f"{url}{endpoint_path}"
+
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+        if self.llm_api_key:
+            headers["Authorization"] = f"Bearer {self.llm_api_key}"
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        model_name = self.llm_api_model or getattr(
+            self, "remote_llm_config", {}
+        ).get("default_model", "Qwen/Qwen2.5-7B-Instruct")
+
+        payload: dict[str, Any] = {
+            "model": model_name,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+
+        if event_callback is not None:
+            try:
+                from ml.core.http_client import http_stream_sse_request
+
+                stream_payload = dict(payload, stream=True)
+                accumulated: list[str] = []
+                for chunk_json_str in http_stream_sse_request(
+                    method="POST",
+                    url=url,
+                    body=stream_payload,
+                    headers=headers,
+                    timeout_s=self.llm_api_timeout_s,
+                ):
+                    try:
+                        chunk = json.loads(chunk_json_str)
+                        choices = chunk.get("choices") or []
+                        if choices and isinstance(choices[0], dict):
+                            delta = choices[0].get("delta") or {}
+                            content = delta.get("content") or ""
+                            if content:
+                                accumulated.append(content)
+                                current_text = "".join(accumulated)
+                                self._emit_run_event(
+                                    event_callback,
+                                    {
+                                        "type": "token",
+                                        "phase": "summarizing",
+                                        "token": content,
+                                        "text": current_text,
+                                    },
+                                )
+                    except Exception:
+                        continue
+                full_text = "".join(accumulated).strip()
+                if full_text:
+                    return full_text
+            except Exception as stream_exc:
+                logger.debug(
+                    "Remote LLM streaming failed, falling back to non-streaming: %s",
+                    stream_exc,
+                )
+
+        from ml.core.http_client import http_json_request
+        from ml.core.external_tools import extract_llm_api_text
+
+        response = http_json_request(
+            method="POST",
+            url=url,
+            body=payload,
+            headers=headers,
+            timeout_s=self.llm_api_timeout_s,
+        )
+        data = response.get("data")
+        text = extract_llm_api_text(data)
+        if not text and isinstance(data, dict):
+            text = str(data.get("text") or data.get("content") or "").strip()
+
+        if not text:
+            raise RuntimeError(f"Remote LLM returned empty response from {url}")
+
+        if event_callback is not None:
+            self._emit_run_event(
+                event_callback,
+                {
+                    "type": "token",
+                    "phase": "summarizing",
+                    "token": text,
+                    "text": text,
+                },
+            )
+
+        return text
+
     def _generate_llm_text(
         self,
         prompt: str,
@@ -1980,6 +2104,18 @@ class DynamicXLAMOrchestrator:
         system_prompt: str | None = None,
         event_callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> str:
+        use_remote = bool(
+            self.llm_api_url and (getattr(self, "prefer_remote_llm", False) or self._llm is None)
+        )
+        if use_remote:
+            return self._call_remote_llm_text(
+                prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system_prompt=system_prompt,
+                event_callback=event_callback,
+            )
+
         if self._llm is None:
             raise RuntimeError("Orchestrator LLM unavailable.")
 
@@ -3559,6 +3695,30 @@ class DynamicXLAMOrchestrator:
                     "of non-empty strings."
                 )
 
+    def _validate_remote_llm_config(
+        self, remote_llm_config: dict[str, Any]
+    ) -> None:
+        if not isinstance(remote_llm_config, dict):
+            raise RuntimeError("orchestrator.remote_llm must be an object.")
+        if not remote_llm_config:
+            return
+        enabled = remote_llm_config.get("enabled")
+        if enabled is not None and not isinstance(enabled, bool):
+            raise RuntimeError("orchestrator.remote_llm.enabled must be a boolean.")
+        timeout = remote_llm_config.get("default_timeout_seconds")
+        if timeout is not None:
+            val = as_float(timeout, -1.0)
+            if val <= 0:
+                raise RuntimeError(
+                    "orchestrator.remote_llm.default_timeout_seconds must be a positive number."
+                )
+        chat_path = remote_llm_config.get("chat_completions_path")
+        if chat_path is not None:
+            if not isinstance(chat_path, str) or not chat_path.startswith("/"):
+                raise RuntimeError(
+                    "orchestrator.remote_llm.chat_completions_path must be a string starting with '/'."
+                )
+
     def _build_external_tools_runtime_state(self) -> dict[str, Any]:
         payload = self._load_external_tools_config()
         orchestrator_config = dict(payload.get("orchestrator") or {})
@@ -3582,9 +3742,11 @@ class DynamicXLAMOrchestrator:
         local_model_discovery_config = dict(
             orchestrator_config.get("local_model_discovery") or {}
         )
+        remote_llm_config = dict(orchestrator_config.get("remote_llm") or {})
         self._validate_plan_validation_config(dynamic_planning_config)
         self._validate_llm_planner_context_config(llm_planner_context_config)
         self._validate_local_model_discovery_config(local_model_discovery_config)
+        self._validate_remote_llm_config(remote_llm_config)
 
         planner_example_limit = max(
             0,
@@ -3780,6 +3942,7 @@ class DynamicXLAMOrchestrator:
             "simulation_tool_name": simulation_tool_name,
             "llm_api_system_prompt": llm_api_system_prompt,
             "external_fallback_order": external_fallback_order,
+            "remote_llm_config": remote_llm_config,
         }
 
     def _apply_external_tools_runtime_state(self, state: dict[str, Any]) -> None:
@@ -3801,6 +3964,7 @@ class DynamicXLAMOrchestrator:
                 "dynamic_planning": getattr(self, "dynamic_planning_config", {}),
                 "llm_planner_context": getattr(self, "llm_planner_context_config", {}),
                 "external_fallback_order": getattr(self, "external_fallback_order", []),
+                "remote_llm": getattr(self, "remote_llm_config", {}),
             }
         else:
             definitions = state["external_tool_definitions"]
@@ -3813,6 +3977,7 @@ class DynamicXLAMOrchestrator:
                 "dynamic_planning": state["dynamic_planning_config"],
                 "llm_planner_context": state["llm_planner_context_config"],
                 "external_fallback_order": state["external_fallback_order"],
+                "remote_llm": state.get("remote_llm_config", {}),
             }
         return hashlib.sha256(
             json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
@@ -5695,7 +5860,8 @@ class DynamicXLAMOrchestrator:
                 plan,
                 planner_mode,
             )
-        if self._llm is None:
+        llm_active = self._llm is not None or bool(self.llm_api_url)
+        if not llm_active:
             if not self.allow_fallback:
                 raise RuntimeError("Orchestrator LLM unavailable.")
             plan = self._fallback_plan(
@@ -6096,9 +6262,10 @@ class DynamicXLAMOrchestrator:
         success_rows = [r for r in execution_results if r.success]
         if not success_rows:
             return "No tool call succeeded."
+        llm_active = self._llm is not None or bool(self.llm_api_url)
         if (
             not planner_mode.startswith("llm")
-            or self._llm is None
+            or not llm_active
         ):
             for result in reversed(success_rows):
                 if isinstance(result.output, dict):
@@ -6257,12 +6424,19 @@ class DynamicXLAMOrchestrator:
             except OSError:
                 pass
         incomplete_path, incomplete_size_mb = self._active_incomplete_download()
+        llm_ready = self._llm is not None or bool(self.llm_api_url)
+        remote_active = bool(
+            self.llm_api_url and (getattr(self, "prefer_remote_llm", False) or self._llm is None)
+        )
         return {
-            "llm_ready": self._llm is not None,
+            "llm_ready": llm_ready,
             "llm_n_ctx": self._llm_n_ctx,
             "llm_attempted": self._llm_attempted,
             "llm_error": self._llm_error,
-            "planner_mode": "llm" if self._llm is not None else "fallback",
+            "planner_mode": "llm" if llm_ready else "fallback",
+            "remote_llm_active": remote_active,
+            "remote_llm_configured": bool(self.llm_api_url),
+            "remote_llm_model": self.llm_api_model,
             "init_mode": self.init_mode,
             "init_in_progress": self._init_in_progress,
             "init_elapsed_s": init_elapsed_s,

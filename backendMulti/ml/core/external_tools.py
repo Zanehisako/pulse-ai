@@ -3764,9 +3764,16 @@ def execute_llm_api_tool(
     if llm_api_model:
         body["model"] = llm_api_model
 
+    post_url = (llm_api_url or "").strip()
+    if post_url and not post_url.endswith("/chat/completions") and not post_url.endswith("/completions"):
+        if post_url.endswith("/v1"):
+            post_url = f"{post_url}/chat/completions"
+        else:
+            post_url = f"{post_url.rstrip('/')}/v1/chat/completions"
+
     response = http_json_request(
         method="POST",
-        url=llm_api_url,
+        url=post_url,
         body=body,
         headers=headers_dict,
         timeout_s=llm_api_timeout_s,

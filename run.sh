@@ -72,8 +72,8 @@ case "${1:-help}" in
     ;;
 
   status)
-    echo -e "${B}📊 PIOS Container Status:${N}"
-    docker ps --filter "name=pios" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    echo -e "${B}📊 PulseAI / PIOS Container Status:${N}"
+    docker ps --filter "name=pulse" --filter "name=pios" --filter "name=keycloak" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
     ;;
 
   help|--help|-h)

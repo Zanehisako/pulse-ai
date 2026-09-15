@@ -90,6 +90,14 @@ else
   echo -e "${G}   ✅ .env.local already exists${N}"
 fi
 
+if [ -f "$ROOT_DIR/.env.local" ]; then
+  set -a; source "$ROOT_DIR/.env.local"; set +a
+fi
+export SONAR_TOKEN="${SONAR_TOKEN:-}"
+
+mkdir -p "$ROOT_DIR/ml-backend/models/gguf"
+mkdir -p "$ROOT_DIR/mlflow_artifacts"
+
 # ─────────────────────────────────────────────
 # Python version check
 # ─────────────────────────────────────────────
@@ -163,11 +171,14 @@ feast apply || {
 # ─────────────────────────────────────────────
 echo -e "\n${Y}🗄️ Step 4: PostgreSQL...${N}"
 
-$DOCKER_COMPOSE -f "$ROOT_DIR/infrastructure/docker/docker-compose.local.yaml" up -d postgres
+COMPOSE_FILE="$ROOT_DIR/infrastructure/docker/docker-compose.local.yaml"
+$DOCKER_COMPOSE -f "$COMPOSE_FILE" up -d postgres
 
 # Wait for Postgres with a timeout (max 60s)
+echo -e "${Y}⏳ Waiting for PostgreSQL to be ready...${N}"
 RETRIES=0
-until docker exec pios-postgres pg_isready -U admin -d pios > /dev/null 2>&1; do
+until $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T postgres pg_isready -U "${POSTGRES_USER:-admin}" > /dev/null 2>&1 || \
+      { PG_CID=$($DOCKER_COMPOSE -f "$COMPOSE_FILE" ps -q postgres 2>/dev/null) && [ -n "$PG_CID" ] && docker exec "$PG_CID" pg_isready -U "${POSTGRES_USER:-admin}" > /dev/null 2>&1; }; do
   RETRIES=$((RETRIES + 1))
   if [ "$RETRIES" -ge 30 ]; then
     echo -e "${R}❌ PostgreSQL did not become ready after 60s. Check Docker logs.${N}"
@@ -175,6 +186,16 @@ until docker exec pios-postgres pg_isready -U admin -d pios > /dev/null 2>&1; do
   fi
   sleep 2
 done
+
+# Ensure application databases and schemas exist
+$DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T postgres psql -U "${POSTGRES_USER:-admin}" -d postgres <<-'EOSQL' > /dev/null 2>&1 || true
+SELECT 'CREATE DATABASE pios OWNER admin' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'pios')\gexec
+SELECT 'CREATE DATABASE pulse OWNER admin' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'pulse')\gexec
+SELECT 'CREATE DATABASE keycloak OWNER admin' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'keycloak')\gexec
+SELECT 'CREATE DATABASE mlflow OWNER admin' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'mlflow')\gexec
+EOSQL
+
+$DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T postgres bash /docker-entrypoint-initdb.d/init-db.sh > /dev/null 2>&1 || true
 
 echo -e "${G}   ✅ PostgreSQL ready${N}"
 

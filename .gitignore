@@ -62,6 +62,8 @@ cover/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+mlflow.db
+mlflow.db*
 ml-backend/mlflow.db
 ml-backend/mlflow.db-shm
 ml-backend/mlflow.db-wal

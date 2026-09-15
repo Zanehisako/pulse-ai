@@ -20,7 +20,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d pios"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d ${POSTGRES_DB:-pulse}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -172,7 +172,7 @@ services:
       DJANGO_DEBUG: "1"
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: pios
+      DB_NAME: ${DB_NAME:-pios}
       DB_USER: admin
       DB_PASSWORD: admin
       MLFLOW_TRACKING_URI: http://mlflow:8889
@@ -197,9 +197,7 @@ services:
       PIOS_API_DOCS_SECURITY_SCHEME: "${PIOS_API_DOCS_SECURITY_SCHEME:-Bearer Authentication}"
       PIOS_API_DOCS_KEYCLOAK_CLIENT_ID: ${PIOS_API_DOCS_KEYCLOAK_CLIENT_ID:-pios-react}
       PIOS_API_DOCS_KEYCLOAK_CLIENT_SECRET: ${PIOS_API_DOCS_KEYCLOAK_CLIENT_SECRET:-}
-      # PIOS_XLAM_MODEL_ID: xlam_7b_q2_k
-      # PIOS_XLAM_INIT_MODE: background
-      # PIOS_XLAM_DISABLE_LLM: 0
+      PIOS_XLAM_DISABLE_LLM: ${PIOS_XLAM_DISABLE_LLM:-1}
       # Simulation overrides (leave unset to use simulation_config.json defaults)
       # PIOS_SIMULATION_ENABLED: "1"       # "1" = on, "0" = off
       # PIOS_SIMULATION_TICK_MINUTES: "5"  # tick interval in minutes
@@ -212,11 +210,17 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/', timeout=5).read()",
+        ]
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 30s
+      retries: 20
+      start_period: 180s
   # celery-worker:
   #   build:
   #     context: ../../backendMulti

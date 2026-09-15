@@ -481,6 +481,8 @@ class MLIndexView(APIView):
 
 class HealthView(APIView):
     serializer_class = EmptySerializer
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
     @extend_schema(
         tags=["ML"],

@@ -1816,6 +1816,20 @@
       "retry_factor": 0.85,
       "max_retries": 3
     },
+    "remote_llm": {
+      "enabled": false,
+      "provider": "modal_vllm",
+      "api_url_env": "PIOS_ORCH_LLM_API_URL",
+      "api_key_env": "PIOS_ORCH_LLM_API_KEY",
+      "model_env": "PIOS_ORCH_LLM_API_MODEL",
+      "timeout_env": "PIOS_ORCH_LLM_API_TIMEOUT_S",
+      "prefer_remote_env": "PIOS_ORCH_PREFER_REMOTE_LLM",
+      "default_timeout_seconds": 90.0,
+      "default_model": "Qwen/Qwen2.5-7B-Instruct",
+      "chat_completions_path": "/v1/chat/completions",
+      "use_as_planner": true,
+      "use_as_summarizer": true
+    },
     "api_output_compact_keys": [
       "answer",
       "results",

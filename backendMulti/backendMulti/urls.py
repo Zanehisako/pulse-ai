@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.static import serve
 from inventory.views import DonorListView
-from ml.api.views import OrchestratorChatView
+from ml.api.views import HealthView, OrchestratorChatView
 
 from backendMulti.api_docs import (
     DocsAutoAuthTokenView,
@@ -18,6 +18,8 @@ urlpatterns = [
     path("notifications/", include("notifications.urls")),
     path("alerts/", include("alerts.urls")),
     path("admin/", admin.site.urls),
+    path("api/health/", HealthView.as_view(), name="api-health"),
+    path("api/health", HealthView.as_view(), name="api-health-no-slash"),
     path('api/', include('communications.urls')),
     path('api/workspace/', include('workspace.urls')),
     path("api/donors/", DonorListView.as_view(), name="donors-list"),

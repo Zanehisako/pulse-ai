@@ -1,0 +1,18 @@
+{
+  "app_name": "pulseai-vllm-backend",
+  "model_id": "Qwen/Qwen2.5-7B-Instruct",
+  "gpu": "A10G",
+  "max_model_len": 4096,
+  "gpu_memory_utilization": 0.90,
+  "enforce_eager": true,
+  "timeout_seconds": 1200,
+  "startup_timeout_seconds": 1200,
+  "scaledown_window_seconds": 300,
+  "volume_name": "pulseai-model-cache",
+  "volume_mount_path": "/root/.cache/huggingface",
+  "port": 8000,
+  "auth_enabled": false,
+  "auth_token_env": "MODAL_API_KEY",
+  "hf_token_secret_name": "huggingface-secret",
+  "cors_allow_origins": ["*"]
+}
