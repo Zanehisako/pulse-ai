@@ -48,6 +48,19 @@ DB_ENGINE = os.getenv("DB_ENGINE", _django_cfg.get("db_engine", "django.db.backe
 PREFER_REMOTE_LLM = "1" if _django_cfg.get("prefer_remote_llm", True) else "0"
 DISABLE_LOCAL_LLM = "1" if _django_cfg.get("disable_local_llm", True) else "0"
 
+def _get_git_commit() -> str:
+    try:
+        import subprocess
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(__file__).resolve().parent,
+        ).decode().strip()
+    except Exception:
+        return "latest"
+
+
+GIT_COMMIT = _get_git_commit()
+
 app = modal.App(APP_NAME)
 django_volume = modal.Volume.from_name("pulseai-django-volume", create_if_missing=True)
 
@@ -92,7 +105,7 @@ django_image = (
         "tqdm>=4.66.0",
     )
     .run_commands(
-        "git clone --depth 1 https://github.com/Zanehisako/pulse-ai.git /root/pulse-ai",
+        f"git clone --depth 1 https://github.com/Zanehisako/pulse-ai.git /root/pulse-ai && echo 'Deployed git commit: {GIT_COMMIT}'",
         "cd /root/pulse-ai/backendMulti && DB_ENGINE=django.db.backends.sqlite3 PIOS_DISABLE_AUTH=1 python manage.py migrate",
     )
     .env({
@@ -105,6 +118,7 @@ django_image = (
         "PIOS_XLAM_DISABLE_LLM": DISABLE_LOCAL_LLM,
         "PIOS_ORCH_PREFER_REMOTE_LLM": PREFER_REMOTE_LLM,
         "PIOS_ORCH_LLM_API_URL": VLLM_API_URL,
+        "DEPLOYED_GIT_COMMIT": GIT_COMMIT,
         "PYTHONPATH": "/root/pulse-ai/backendMulti:/root/pulse-ai/ml-backend:/root/pulse-ai",
     })
 )
