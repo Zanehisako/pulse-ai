@@ -1130,6 +1130,8 @@ def _predict_mlflow(runtime: ModelRuntime, features: dict[str, Any]) -> dict[str
                 if col not in df.columns:
                     if "datetime" in input_types.get(col, ""):
                         df[col] = _mlflow_missing_datetime_value()
+                    elif "string" in input_types.get(col, ""):
+                        df[col] = ""
                     else:
                         df[col] = 0.0
 
@@ -1137,7 +1139,9 @@ def _predict_mlflow(runtime: ModelRuntime, features: dict[str, Any]) -> dict[str
                 col = spec.name
                 expected = str(spec.type).lower()
                 if "string" in expected:
-                    df[col] = df[col].where(df[col].notna(), "").astype(str)
+                    df[col] = df[col].fillna("").astype(object).apply(
+                        lambda v: "" if v == 0.0 or v == "0.0" else str(v)
+                    )
                     continue
                 if "datetime" in expected:
                     df[col] = _coerce_mlflow_datetime_column(df[col])
