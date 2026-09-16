@@ -56,6 +56,10 @@ django_image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("libgomp1", "curl", "git")
     .pip_install(
+        "torch>=2.0.0",
+        extra_index_url="https://download.pytorch.org/whl/cpu",
+    )
+    .pip_install(
         "Django>=5.0",
         "djangorestframework>=3.15.0",
         "django-cors-headers>=4.0",
@@ -71,6 +75,7 @@ django_image = (
         "psycopg2-binary>=2.9.9",
         "numpy>=1.26.0,<2.3",
         "pandas>=2.0.0",
+        "scipy>=1.11.0",
         "scikit-learn>=1.3.0",
         "joblib>=1.3.0",
         "xgboost>=2.0.0",
@@ -82,6 +87,9 @@ django_image = (
         "APScheduler>=3.10.0",
         "asgiref>=3.8.0",
         "cloudpickle",
+        "dill>=0.3.8",
+        "psutil>=5.9.0",
+        "tqdm>=4.66.0",
     )
     .run_commands(
         "git clone --depth 1 https://github.com/Zanehisako/pulse-ai.git /root/pulse-ai",
