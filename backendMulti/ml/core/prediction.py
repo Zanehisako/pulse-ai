@@ -508,14 +508,15 @@ def _find_local_mlflow_model_dir_under_root(
             if not artifacts_dir.is_dir():
                 continue
 
+            run_score = 0
             if expected_feature_service is not None:
                 feast_tag = _read_text_if_exists(
                     run_dir / "tags" / "feast_feature_service"
                 )
-                if feast_tag != expected_feature_service:
+                if feast_tag == expected_feature_service:
+                    run_score = 100
+                elif feast_tag is not None:
                     continue
-
-            run_score = 100 if expected_feature_service is not None else 0
             for index, artifact_name in enumerate(preferences):
                 candidate_dir = artifacts_dir / artifact_name
                 if not (candidate_dir / "MLmodel").exists():
