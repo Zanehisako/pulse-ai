@@ -244,6 +244,106 @@ class TestRemoteLLMOrchestrator(unittest.TestCase):
         self.assertEqual(len(events), 3)
         self.assertEqual(events[-1]["text"], "Forecast is stable.")
 
+    @patch("ml.core.http_client.http_stream_sse_request")
+    def test_generate_llm_text_stream_phase_defaults_to_summarizing(self, mock_stream):
+        chunks = [
+            json.dumps({"choices": [{"delta": {"content": "Stable."}}]}),
+        ]
+        mock_stream.return_value = iter(chunks)
+
+        events = []
+        env = {
+            "PIOS_XLAM_DISABLE_LLM": "1",
+            "PIOS_ORCH_LLM_API_URL": "https://test--pulseai-vllm.modal.run",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            orchestrator = DynamicXLAMOrchestrator(registry=self.registry)
+            orchestrator._generate_llm_text(
+                "Summarize inventory",
+                max_tokens=100,
+                event_callback=events.append,
+            )
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["type"], "token")
+        self.assertEqual(events[0]["phase"], "summarizing")
+
+    @patch("ml.core.http_client.http_stream_sse_request")
+    def test_generate_llm_text_stream_phase_is_forwarded(self, mock_stream):
+        chunks = [
+            json.dumps({"choices": [{"delta": {"content": "Planning "}}]}),
+            json.dumps({"choices": [{"delta": {"content": "done."}}]}),
+        ]
+        mock_stream.return_value = iter(chunks)
+
+        events = []
+        env = {
+            "PIOS_XLAM_DISABLE_LLM": "1",
+            "PIOS_ORCH_LLM_API_URL": "https://test--pulseai-vllm.modal.run",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            orchestrator = DynamicXLAMOrchestrator(registry=self.registry)
+            text = orchestrator._generate_llm_text(
+                "Build a plan",
+                max_tokens=100,
+                event_callback=events.append,
+                stream_phase="planning",
+            )
+
+        self.assertEqual(text, "Planning done.")
+        self.assertEqual(len(events), 2)
+        for event in events:
+            self.assertEqual(event["type"], "token")
+            self.assertEqual(event["phase"], "planning")
+
+    @patch("ml.core.http_client.http_stream_sse_request")
+    def test_planner_streams_tokens_live_before_plan_completes(self, mock_stream):
+        mock_plan_json = json.dumps({
+            "steps": [
+                {
+                    "tool": "component_demand_quantile_forecast_model",
+                    "arguments": {"hospital_id": "H001", "blood_type": "O+"},
+                    "reasoning": "Forecast O+ demand for hospital H001 on Modal GPU",
+                }
+            ],
+            "reasoning": "Planned by Modal vLLM backend",
+        })
+        # Split the plan JSON into streaming chunks so the planner emits
+        # incremental token events while it is still working.
+        mid = len(mock_plan_json) // 2
+        plan_chunks = [
+            json.dumps({"choices": [{"delta": {"content": mock_plan_json[:mid]}}]}),
+            json.dumps({"choices": [{"delta": {"content": mock_plan_json[mid:]}}]}),
+        ]
+        mock_stream.side_effect = lambda *args, **kwargs: iter(plan_chunks)
+
+        events = []
+        env = {
+            "PIOS_XLAM_DISABLE_LLM": "1",
+            "PIOS_ORCH_LLM_API_URL": "https://test--pulseai-vllm.modal.run",
+            "PIOS_ORCH_LLM_API_MODEL": "Qwen/Qwen2.5-7B-Instruct",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            orchestrator = DynamicXLAMOrchestrator(registry=self.registry)
+            result = orchestrator.run(
+                "Forecast demand for O+ at H001",
+                event_callback=events.append,
+            )
+
+        planning_tokens = [
+            event for event in events
+            if event.get("type") == "token" and event.get("phase") == "planning"
+        ]
+        # Planner tokens must stream live (before the plan/tool events finish).
+        self.assertGreaterEqual(len(planning_tokens), 2)
+        first_planning_idx = events.index(planning_tokens[0])
+        plan_idx = next(
+            idx for idx, event in enumerate(events) if event.get("type") == "plan"
+        )
+        self.assertLess(first_planning_idx, plan_idx)
+        self.assertTrue(result["success"])
+        self.assertTrue(str(result["planner_mode"]).startswith("llm"))
+
     @patch("ml.core.http_client.http_json_request")
     def test_remote_llm_failure_falls_back_gracefully(self, mock_http):
         mock_http.side_effect = RuntimeError("Connection refused from Modal GPU backend")

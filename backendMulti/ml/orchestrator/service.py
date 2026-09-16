@@ -1988,6 +1988,7 @@ class DynamicXLAMOrchestrator:
         temperature: float = 0.1,
         system_prompt: str | None = None,
         event_callback: Callable[[dict[str, Any]], None] | None = None,
+        stream_phase: str = "summarizing",
     ) -> str:
         if not self.llm_api_url:
             raise RuntimeError("Remote LLM API URL is not configured.")
@@ -2048,7 +2049,7 @@ class DynamicXLAMOrchestrator:
                                     event_callback,
                                     {
                                         "type": "token",
-                                        "phase": "summarizing",
+                                        "phase": stream_phase,
                                         "token": content,
                                         "text": current_text,
                                     },
@@ -2087,7 +2088,7 @@ class DynamicXLAMOrchestrator:
                 event_callback,
                 {
                     "type": "token",
-                    "phase": "summarizing",
+                    "phase": stream_phase,
                     "token": text,
                     "text": text,
                 },
@@ -2103,6 +2104,7 @@ class DynamicXLAMOrchestrator:
         temperature: float = 0.1,
         system_prompt: str | None = None,
         event_callback: Callable[[dict[str, Any]], None] | None = None,
+        stream_phase: str = "summarizing",
     ) -> str:
         use_remote = bool(
             self.llm_api_url and (getattr(self, "prefer_remote_llm", False) or self._llm is None)
@@ -2114,6 +2116,7 @@ class DynamicXLAMOrchestrator:
                 temperature=temperature,
                 system_prompt=system_prompt,
                 event_callback=event_callback,
+                stream_phase=stream_phase,
             )
 
         if self._llm is None:
@@ -2147,7 +2150,7 @@ class DynamicXLAMOrchestrator:
                                     event_callback,
                                     {
                                         "type": "token",
-                                        "phase": "summarizing",
+                                        "phase": stream_phase,
                                         "token": text_token,
                                         "text": current_text,
                                     },
@@ -2191,7 +2194,7 @@ class DynamicXLAMOrchestrator:
                                 event_callback,
                                 {
                                     "type": "token",
-                                    "phase": "summarizing",
+                                    "phase": stream_phase,
                                     "token": text_token,
                                     "text": current_text,
                                 },
@@ -5957,6 +5960,8 @@ class DynamicXLAMOrchestrator:
                 prompt,
                 max_tokens=max_tokens,
                 temperature=0.1,
+                event_callback=event_callback,
+                stream_phase="planning",
             )
         except Exception as exc:
             logger.warning("Planner generation failed: %s", exc)
@@ -6824,6 +6829,10 @@ class DynamicXLAMOrchestrator:
             if not self._llm_attempted:
                 self._ensure_llm(blocking=False)
             if self._init_in_progress:
+                self._emit_run_event(
+                    event_callback,
+                    {"type": "progress", "phase": "loading_model"},
+                )
                 self._ensure_llm(blocking=True)
 
         loaded = self.registry.loaded()

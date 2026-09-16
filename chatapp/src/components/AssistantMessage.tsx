@@ -18,6 +18,15 @@ export function AssistantMessage({ message, isStreaming }: AssistantMessageProps
     }
   }, [message.markdown]);
 
+  const showPhase = Boolean(
+    isStreaming &&
+    message.phase &&
+    message.phase !== 'completed' &&
+    message.phase !== 'error' &&
+    (!message.telemetry || message.telemetry.durationMs === 0)
+  );
+  const humanizedPhase = (message.phase || '').replace(/_/g, ' ');
+
   return (
     <div className="message-row message-row-assistant">
       <div className="message-avatar assistant-avatar">
@@ -30,6 +39,12 @@ export function AssistantMessage({ message, isStreaming }: AssistantMessageProps
           <span>{message.timestamp}</span>
         </div>
 
+        {showPhase && (
+          <div className="agent-phase-indicator">
+            <i className="fa-solid fa-circle-notch fa-spin"></i>
+            <span>{humanizedPhase}…</span>
+          </div>
+        )}
         <ReasoningBox reasoning={message.reasoning} />
         <PlanDrawer steps={message.steps} />
 

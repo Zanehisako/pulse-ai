@@ -199,9 +199,17 @@ export function useOrchestratorStream(): UseOrchestratorStreamReturn {
             }];
           }
         } else if (event.type === 'token') {
-          updated.phase = 'generating_response';
-          const newContent = event.text !== undefined ? event.text : ((updated.markdown || '') + (event.token || ''));
-          updated.markdown = newContent;
+          // Preserve the backend-reported phase (planning vs summarizing) so
+          // planner tokens keep the UI in "planning" state instead of jumping
+          // to "generating_response". Only summary-phase tokens are appended
+          // to the visible answer; planner tokens are raw plan JSON and must
+          // not pollute the chat markdown.
+          const tokenPhase = event.phase || 'generating_response';
+          updated.phase = tokenPhase;
+          if (tokenPhase === 'generating_response' || tokenPhase === 'summarizing' || tokenPhase === 'summary_ready') {
+            const newContent = event.text !== undefined ? event.text : ((updated.markdown || '') + (event.token || ''));
+            updated.markdown = newContent;
+          }
         } else if (event.type === 'final' || event.type === 'result') {
           updated.phase = 'completed';
           const summary = event.markdown || (event.result ? event.result.summary : null);
