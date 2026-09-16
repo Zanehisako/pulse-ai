@@ -15,6 +15,7 @@
     "tracking_uri": "../mlflow_artifacts",
     "local_artifact_roots": [
       "../mlflow_artifacts",
+      "../mlruns",
       "ml/artifacts/training_scripts/mlruns"
     ],
     "local_load_python_paths": [
