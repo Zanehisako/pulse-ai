@@ -68,6 +68,7 @@ django_image = (
         "PyJWT>=2.10.0",
         "cryptography>=43.0.0",
         "pymongo>=4.6.0",
+        "psycopg2-binary>=2.9.9",
         "numpy>=1.26.0,<2.3",
         "pandas>=2.0.0",
         "scikit-learn>=1.3.0",
