@@ -101,6 +101,7 @@ django_image = (
         "DJANGO_ALLOWED_HOSTS": "*",
         "DB_ENGINE": DB_ENGINE,
         "PIOS_DISABLE_AUTH": "1",
+        "PIOS_MLFLOW_SUBPROCESS": "0",
         "PIOS_XLAM_DISABLE_LLM": DISABLE_LOCAL_LLM,
         "PIOS_ORCH_PREFER_REMOTE_LLM": PREFER_REMOTE_LLM,
         "PIOS_ORCH_LLM_API_URL": VLLM_API_URL,
@@ -139,6 +140,7 @@ def serve():
     sys.path.insert(0, "/root/pulse-ai/backendMulti")
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backendMulti.settings")
     os.environ.setdefault("PIOS_DISABLE_AUTH", "1")
+    os.environ.setdefault("PIOS_MLFLOW_SUBPROCESS", "0")
     os.environ.setdefault("DB_ENGINE", DB_ENGINE)
 
     _ensure_model_artifacts()
@@ -172,6 +174,7 @@ def test_orchestrator():
     sys.path.insert(0, "/root/pulse-ai/backendMulti")
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backendMulti.settings")
     os.environ.setdefault("PIOS_DISABLE_AUTH", "1")
+    os.environ.setdefault("PIOS_MLFLOW_SUBPROCESS", "0")
     os.environ.setdefault("DB_ENGINE", DB_ENGINE)
 
     _ensure_model_artifacts()
