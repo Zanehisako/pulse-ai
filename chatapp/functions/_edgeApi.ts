@@ -13,6 +13,7 @@ export interface EdgeConfig {
   djangoStatusPath: string;
   djangoPredictPath: string;
   djangoTimeoutMs: number;
+  djangoAwaitHeartbeatSeconds: number;
   apiUrl: string;
   model: string;
   apiKey: string;
@@ -42,6 +43,10 @@ export function resolveEdgeConfig(env?: Record<string, string | undefined>): Edg
     get('DJANGO_BACKEND_TIMEOUT_S', String(rawConfig.django_backend?.timeout_seconds || 120))
   ) || 120.0;
 
+  const djangoAwaitHeartbeatS = parseFloat(
+    get('DJANGO_BACKEND_AWAIT_HEARTBEAT_S', String(rawConfig.django_backend?.await_heartbeat_seconds ?? 5))
+  ) || 5.0;
+
   const rawUrl = get(
     'MODAL_LLM_API_URL',
     rawConfig.remote_llm.default_api_url
@@ -56,6 +61,7 @@ export function resolveEdgeConfig(env?: Record<string, string | undefined>): Edg
     djangoStatusPath: rawConfig.django_backend?.status_path || '/api/ml/orchestrator/status/',
     djangoPredictPath: rawConfig.django_backend?.predict_stream_path || '/api/ml/predict/nl/?stream=true',
     djangoTimeoutMs: djangoTimeoutS * 1000,
+    djangoAwaitHeartbeatSeconds: djangoAwaitHeartbeatS,
     apiUrl: rawUrl,
     model: get('MODAL_LLM_MODEL', rawConfig.remote_llm.default_model).trim(),
     apiKey: get('MODAL_LLM_API_KEY', '').trim(),
@@ -132,45 +138,31 @@ export async function forwardToDjangoPredict(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), config.djangoTimeoutMs);
 
-  try {
-    const res = await fetch(targetUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: isStreaming ? 'text/event-stream' : 'application/json',
-      },
-      body: JSON.stringify({ query, features }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
+  if (!isStreaming) {
+    try {
+      const res = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ query, features }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
 
-    if (isStreaming && res.body) {
-      return new Response(res.body, {
+      const resData = await res.text();
+      return new Response(resData, {
         status: res.status,
         headers: {
-          'Content-Type': 'text/event-stream; charset=utf-8',
-          'Cache-Control': 'no-cache, no-transform',
-          Connection: 'keep-alive',
+          'Content-Type': res.headers.get('Content-Type') || 'application/json',
           'X-PulseAI-Backend': 'django-orchestrator',
           ...corsHeaders,
         },
       });
-    }
-
-    const resData = await res.text();
-    return new Response(resData, {
-      status: res.status,
-      headers: {
-        'Content-Type': res.headers.get('Content-Type') || 'application/json',
-        'X-PulseAI-Backend': 'django-orchestrator',
-        ...corsHeaders,
-      },
-    });
-  } catch (err: unknown) {
-    clearTimeout(timeoutId);
-    const msg = err instanceof Error ? err.message : String(err);
-
-    if (!isStreaming) {
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      const msg = err instanceof Error ? err.message : String(err);
       return new Response(
         JSON.stringify({
           success: false,
@@ -183,46 +175,130 @@ export async function forwardToDjangoPredict(
         }
       );
     }
-
-    const { readable, writable } = new TransformStream();
-    const writer = writable.getWriter();
-    const encoder = new TextEncoder();
-
-    (async () => {
-      await writer.write(
-        encoder.encode(
-          `data: ${JSON.stringify({
-            type: 'tool_finished',
-            step: 1,
-            tool: 'django_orchestrator',
-            success: false,
-            error: `Django backend unreachable at ${config.djangoUrl}: ${msg}`,
-          })}\n\n`
-        )
-      );
-      await writer.write(
-        encoder.encode(
-          `data: ${JSON.stringify({
-            type: 'final',
-            phase: 'completed',
-            markdown: `### ⚠️ Django Orchestrator Connection Notice\n\nCould not reach Django backend at \`${config.djangoUrl}\`:\n\`${msg}\`\n\n*Please ensure your Django backend or Cloudflare Tunnel is running.*`,
-            result: {
-              summary: `Django backend unreachable: ${msg}`,
-            },
-          })}\n\n`
-        )
-      );
-      await writer.close();
-    })();
-
-    return new Response(readable, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/event-stream; charset=utf-8',
-        ...corsHeaders,
-      },
-    });
   }
+
+  // Streaming: return a live stream immediately so the browser receives bytes
+  // while the Django backend boots or warms up (serverless cold starts can
+  // take a minute with zero upstream bytes). Emit a preamble plus periodic
+  // heartbeats until Django's first byte arrives, then pipe its SSE through.
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+  const streamStartedAt = Date.now();
+  const heartbeatMs = Math.max(
+    1000,
+    (config.djangoAwaitHeartbeatSeconds || 5) * 1000
+  );
+
+  const writeSSE = async (data: Record<string, unknown>) => {
+    await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+  };
+
+  (async () => {
+    let heartbeat: ReturnType<typeof setInterval> | undefined;
+    try {
+      await writeSSE({ type: 'progress', phase: 'received' });
+      heartbeat = setInterval(() => {
+        writeSSE({
+          type: 'progress',
+          phase: 'awaiting_orchestrator',
+          heartbeat: true,
+          elapsed_seconds: Math.round((Date.now() - streamStartedAt) / 100) / 10,
+          message: 'Django orchestrator is starting; live updates stream as they arrive.',
+        }).catch(() => {
+          // Stream might be closed
+        });
+      }, heartbeatMs);
+
+      const res = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify({ query, features }),
+        signal: controller.signal,
+      });
+
+      // Upstream headers arrived: stop preamble heartbeats, pipe SSE through.
+      clearInterval(heartbeat);
+      heartbeat = undefined;
+
+      if (!res.ok || !res.body) {
+        const detail = await res.text().catch(() => '');
+        await writeSSE({
+          type: 'tool_finished',
+          step: 1,
+          tool: 'django_orchestrator',
+          success: false,
+          error: `Django orchestrator HTTP ${res.status}: ${detail.slice(0, 300)}`,
+        });
+        await writeSSE({
+          type: 'final',
+          phase: 'completed',
+          markdown: `### ⚠️ Django Orchestrator Error\n\nBackend at \`${config.djangoUrl}\` returned HTTP ${res.status}.\n\`${detail.slice(0, 300)}\``,
+          result: {
+            summary: `Django orchestrator HTTP ${res.status}`,
+          },
+        });
+        return;
+      }
+
+      const reader = res.body.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          await writer.write(value);
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (err: unknown) {
+      if (heartbeat) clearInterval(heartbeat);
+      heartbeat = undefined;
+      const msg = err instanceof Error ? err.message : String(err);
+
+      try {
+        await writeSSE({
+          type: 'tool_finished',
+          step: 1,
+          tool: 'django_orchestrator',
+          success: false,
+          error: `Django backend unreachable at ${config.djangoUrl}: ${msg}`,
+        });
+        await writeSSE({
+          type: 'final',
+          phase: 'completed',
+          markdown: `### ⚠️ Django Orchestrator Connection Notice\n\nCould not reach Django backend at \`${config.djangoUrl}\`:\n\`${msg}\`\n\n*Please ensure your Django backend or Cloudflare Tunnel is running.*`,
+          result: {
+            summary: `Django backend unreachable: ${msg}`,
+          },
+        });
+      } catch {
+        // Client disconnected mid-stream; nothing left to write.
+      }
+    } finally {
+      if (heartbeat) clearInterval(heartbeat);
+      clearTimeout(timeoutId);
+      try {
+        await writer.close();
+      } catch {
+        // Already closed
+      }
+    }
+  })();
+
+  return new Response(readable, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-PulseAI-Backend': 'django-orchestrator',
+      ...corsHeaders,
+    },
+  });
 }
 
 export async function handleStatusRequest(

@@ -544,3 +544,56 @@ class PredictNLViewTests(SimpleTestCase):
         self.assertEqual(kwargs["query"], "Rank eligible donors")
         self.assertTrue(callable(kwargs["event_callback"]))
         mock_alert_engine.return_value.evaluate_prediction.assert_called_once()
+
+    @patch("ml.api.views.AlertEngine")
+    @patch("ml.api.views.is_ready")
+    @patch("ml.api.views.get_registry")
+    @patch("ml.api.views.get_orchestrator")
+    @patch("ml.api.views.refresh_runtime_state")
+    def test_predict_nl_stream_param_streams_without_sse_accept_header(
+        self,
+        mock_refresh,
+        mock_get_orchestrator,
+        mock_get_registry,
+        mock_is_ready,
+        mock_alert_engine,
+    ):
+        mock_is_ready.return_value = True
+
+        mock_registry = MagicMock()
+        mock_registry.loaded.return_value = []
+        mock_get_registry.return_value = mock_registry
+
+        def fake_run(**kwargs):
+            kwargs["event_callback"]({"type": "progress", "phase": "planning"})
+            return {
+                "success": True,
+                "execution_results": [],
+                "planner_mode": "fallback",
+                "plan": {"steps": []},
+                "natural_language_response": "Ranked donors.",
+            }
+
+        mock_orchestrator = MagicMock()
+        mock_orchestrator.run.side_effect = fake_run
+        mock_get_orchestrator.return_value = mock_orchestrator
+
+        request = self.factory.post(
+            "/api/ml/predict/nl/?stream=true",
+            {"query": "Rank eligible donors"},
+            format="json",
+            HTTP_ACCEPT="application/json",
+        )
+        force_authenticate(request, user=SimpleNamespace(is_authenticated=True))
+        response = self.view(request)
+        body = _collect_stream(response)
+        events = [
+            json.loads(frame.removeprefix("data: "))
+            for frame in body.strip().split("\n\n")
+            if frame.startswith("data: ")
+        ]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("text/event-stream", response["Content-Type"])
+        self.assertEqual(events[0]["type"], "progress")
+        self.assertEqual(events[-1]["type"], "final")

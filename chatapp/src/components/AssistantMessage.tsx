@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { marked } from 'marked';
 import { ReasoningBox } from './ReasoningBox';
 import { PlanDrawer } from './PlanDrawer';
@@ -27,6 +27,17 @@ export function AssistantMessage({ message, isStreaming }: AssistantMessageProps
   );
   const humanizedPhase = (message.phase || '').replace(/_/g, ' ');
 
+  // Live elapsed timer: ticks every second while streaming so silent stretches
+  // (cold starts, model loads, long tool runs with no intermediate events)
+  // are visibly alive on both the SSE and WebSocket transports.
+  const [elapsedSec, setElapsedSec] = useState<number>(0);
+  useEffect(() => {
+    if (!isStreaming) return;
+    setElapsedSec(0);
+    const timer = setInterval(() => setElapsedSec(prev => prev + 1), 1000);
+    return () => clearInterval(timer);
+  }, [isStreaming, message.id]);
+
   return (
     <div className="message-row message-row-assistant">
       <div className="message-avatar assistant-avatar">
@@ -42,7 +53,7 @@ export function AssistantMessage({ message, isStreaming }: AssistantMessageProps
         {showPhase && (
           <div className="agent-phase-indicator">
             <i className="fa-solid fa-circle-notch fa-spin"></i>
-            <span>{humanizedPhase}…</span>
+            <span>{humanizedPhase}… · {elapsedSec}s</span>
           </div>
         )}
         <ReasoningBox reasoning={message.reasoning} />

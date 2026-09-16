@@ -9,6 +9,7 @@ export interface EdgeConfigDefinition {
     status_path: string;
     predict_stream_path: string;
     timeout_seconds: number;
+    await_heartbeat_seconds: number;
   };
   remote_llm: {
     default_api_url: string;
@@ -38,6 +39,7 @@ export const rawConfig: EdgeConfigDefinition = {
     status_path: '/api/ml/orchestrator/status/',
     predict_stream_path: '/api/ml/predict/nl/?stream=true',
     timeout_seconds: 120.0,
+    await_heartbeat_seconds: 5.0,
   },
   remote_llm: {
     default_api_url: 'https://yassinetakiko--pulseai-vllm-backend-serve.modal.run',

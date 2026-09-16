@@ -241,6 +241,15 @@ test('resolveEdgeConfig parses DJANGO_BACKEND_URL and DJANGO_BACKEND_TIMEOUT_S',
   assert.equal(config.djangoTimeoutMs, 90000);
   assert.equal(config.djangoStatusPath, '/api/ml/orchestrator/status/');
   assert.equal(config.djangoPredictPath, '/api/ml/predict/nl/?stream=true');
+  assert.equal(config.djangoAwaitHeartbeatSeconds, 5);
+});
+
+test('resolveEdgeConfig respects DJANGO_BACKEND_AWAIT_HEARTBEAT_S override', () => {
+  const config = resolveEdgeConfig({
+    DJANGO_BACKEND_URL: 'https://pulse-django.trycloudflare.com',
+    DJANGO_BACKEND_AWAIT_HEARTBEAT_S: '2.5',
+  });
+  assert.equal(config.djangoAwaitHeartbeatSeconds, 2.5);
 });
 
 test('handleEdgeApiRequest forwards status to Django when DJANGO_BACKEND_URL is set', async () => {
@@ -329,11 +338,13 @@ test('handleEdgeApiRequest forwards streaming prediction to Django orchestrator 
     });
 
     assert.equal(res.status, 200);
-    assert.equal(capturedUrl, 'https://pulse-tunnel.trycloudflare.com/api/ml/predict/nl/?stream=true');
-    assert.match(capturedBody, /"age":30/);
     assert.equal(res.headers.get('X-PulseAI-Backend'), 'django-orchestrator');
 
+    // The edge returns a live stream immediately and fetches Django in the
+    // background, so drain the body before asserting on the upstream call.
     const text = await res.text();
+    assert.equal(capturedUrl, 'https://pulse-tunnel.trycloudflare.com/api/ml/predict/nl/?stream=true');
+    assert.match(capturedBody, /"age":30/);
     assert.match(text, /ideal_donor_probability_model/);
     assert.match(text, /"probability":0\.88/);
     assert.match(text, /Donor has an 88% probability/);
@@ -408,6 +419,63 @@ test('handleEdgeApiRequest handles unreachable Django backend gracefully in stre
     assert.match(text, /"tool":"django_orchestrator"/);
     assert.match(text, /"success":false/);
     assert.match(text, /Django Orchestrator Connection Notice/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('Django streaming emits preamble bytes while upstream boots', async () => {
+  const originalFetch = globalThis.fetch;
+  // Upstream Django (cold serverless container) responds only after 300ms.
+  globalThis.fetch = async () => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return new Response(
+      'data: {"type":"final","phase":"completed","markdown":"Warm donor summary."}\n\n',
+      { status: 200, headers: { 'Content-Type': 'text/event-stream' } }
+    );
+  };
+
+  try {
+    const req = new Request(
+      'https://pulse-ai-chatapp.pages.dev/api/ml/predict/nl/?stream=true',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+        body: JSON.stringify({ query: 'Assess donor' }),
+      }
+    );
+
+    const res = await handleEdgeApiRequest(req, {
+      DJANGO_BACKEND_URL: 'https://pulse-tunnel.trycloudflare.com',
+      DJANGO_BACKEND_AWAIT_HEARTBEAT_S: '60',
+    });
+
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('X-PulseAI-Backend'), 'django-orchestrator');
+
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    const startedAt = Date.now();
+    let firstText = '';
+    let fullText = '';
+    let firstByteMs = -1;
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      if (firstByteMs < 0) {
+        firstByteMs = Date.now() - startedAt;
+        firstText = decoder.decode(chunk.value, { stream: true });
+      }
+      fullText += decoder.decode(chunk.value, { stream: true });
+    }
+    fullText += decoder.decode();
+
+    // First byte must be the edge preamble, long before upstream responds.
+    assert.ok(firstByteMs >= 0 && firstByteMs < 300, `first byte took ${firstByteMs}ms`);
+    assert.match(firstText, /"phase":"received"/);
+
+    // Full body still contains the piped Django events after the preamble.
+    assert.match(fullText, /Warm donor summary/);
   } finally {
     globalThis.fetch = originalFetch;
   }

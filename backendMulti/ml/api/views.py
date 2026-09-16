@@ -998,7 +998,15 @@ def _encode_sse_event(payload):
 
 
 def _request_accepts_event_stream(request):
-    return "text/event-stream" in str(request.headers.get("Accept", "")).lower()
+    if "text/event-stream" in str(request.headers.get("Accept", "")).lower():
+        return True
+    # Honor the explicit ?stream=true query param as well, so an intermediary
+    # that strips the Accept header cannot silently downgrade SSE streaming
+    # to a buffered JSON response.
+    try:
+        return str(request.query_params.get("stream", "")).lower() == "true"
+    except Exception:
+        return False
 
 
 def _first_model_used(result):
