@@ -3,6 +3,7 @@ import { marked } from 'marked';
 import { ReasoningBox } from './ReasoningBox';
 import { PlanDrawer } from './PlanDrawer';
 import { ChatMessage } from '../types/index';
+import { uiConfig } from '../config/uiConfig';
 
 export interface AssistantMessageProps {
   message: ChatMessage;
@@ -27,9 +28,6 @@ export function AssistantMessage({ message, isStreaming }: AssistantMessageProps
   );
   const humanizedPhase = (message.phase || '').replace(/_/g, ' ');
 
-  // Live elapsed timer: ticks every second while streaming so silent stretches
-  // (cold starts, model loads, long tool runs with no intermediate events)
-  // are visibly alive on both the SSE and WebSocket transports.
   const [elapsedSec, setElapsedSec] = useState<number>(0);
   useEffect(() => {
     if (!isStreaming) return;
@@ -40,20 +38,20 @@ export function AssistantMessage({ message, isStreaming }: AssistantMessageProps
 
   return (
     <div className="message-row message-row-assistant">
-      <div className="message-avatar assistant-avatar">
+      <div className="message-avatar assistant-avatar" aria-hidden="true">
         <i className="fa-solid fa-robot"></i>
       </div>
 
       <div className="message-content">
         <div className="message-header">
-          <span className="message-sender">PulseAI Agent</span>
+          <span className="message-sender">{uiConfig.labels.assistant}</span>
           <span>{message.timestamp}</span>
         </div>
 
         {showPhase && (
           <div className="agent-phase-indicator">
-            <i className="fa-solid fa-circle-notch fa-spin"></i>
-            <span>{humanizedPhase}… · {elapsedSec}s</span>
+            <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+            <span>{humanizedPhase}... · {elapsedSec}s</span>
           </div>
         )}
         <ReasoningBox reasoning={message.reasoning} />
@@ -69,10 +67,7 @@ export function AssistantMessage({ message, isStreaming }: AssistantMessageProps
         {message.telemetry && message.telemetry.durationMs > 0 && (
           <div className="telemetry-tag">
             <span>
-              <i className="fa-solid fa-clock"></i> Stream Time: {message.telemetry.durationMs} ms
-            </span>
-            <span>
-              <i className="fa-solid fa-shield-halved"></i> Config-Driven Tool Execution
+              <i className="fa-solid fa-clock" aria-hidden="true"></i> {message.telemetry.durationMs} ms
             </span>
           </div>
         )}

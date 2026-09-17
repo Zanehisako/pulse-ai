@@ -20,18 +20,7 @@ export interface UseOrchestratorStreamReturn {
 }
 
 export function useOrchestratorStream(): UseOrchestratorStreamReturn {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      sender: 'assistant',
-      markdown: '### 🩸 PulseAI Clinical Orchestrator Online\nConnected to **Modal AI Serverless GPU Backend (NVIDIA A10G)** running **Qwen 2.5 7B**.\n\nAsk me any natural-language query to evaluate donor eligibility, calculate donation intervals, or check hospital inventory risk.',
-      timestamp: new Date().toLocaleTimeString(),
-      phase: null,
-      reasoning: null,
-      steps: [],
-      telemetry: null
-    }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [status, setStatus] = useState<OrchestratorStatus>({

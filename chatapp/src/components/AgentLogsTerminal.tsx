@@ -1,112 +1,62 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { LogEntry } from '../types/index';
+import { uiConfig } from '../config/uiConfig';
 
 export interface AgentLogsTerminalProps {
   logs: LogEntry[];
   onClearLogs?: () => void;
+  isStreaming?: boolean;
 }
 
-export function AgentLogsTerminal({ logs, onClearLogs }: AgentLogsTerminalProps): React.JSX.Element {
-  const [expanded, setExpanded] = useState<boolean>(false);
+export function AgentLogsTerminal({ logs, onClearLogs, isStreaming }: AgentLogsTerminalProps): React.JSX.Element {
   const terminalEndRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (expanded) {
-      terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [logs, expanded]);
-
   return (
-    <div
-      style={{
-        background: '#090d16',
-        border: '1px solid var(--border-bright)',
-        borderRadius: '10px',
-        margin: '10px 0',
-        overflow: 'hidden',
-        fontFamily: 'var(--font-mono)'
+    <details
+      className="activity-log"
+      onToggle={(e: React.SyntheticEvent<HTMLDetailsElement>) => {
+        if ((e.target as HTMLDetailsElement).open) {
+          terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
       }}
     >
-      <div
-        onClick={() => setExpanded(prev => !prev)}
-        style={{
-          padding: '8px 14px',
-          background: 'rgba(13, 17, 32, 0.95)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          cursor: 'pointer',
-          fontSize: '12px',
-          color: 'var(--accent-cyan)'
-        }}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <i className="fa-solid fa-terminal"></i> Live Agent Logs Terminal ({logs.length} entries)
+      <summary className="activity-log-summary">
+        <span className="activity-log-title">
+          <i className="fa-solid fa-terminal" aria-hidden="true"></i>
+          {uiConfig.labels.activity}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {onClearLogs && expanded && (
+        <span className="activity-log-actions">
+          {onClearLogs && (
             <button
-              onClick={(e) => {
+              type="button"
+              className="activity-log-clear"
+              onClick={e => {
                 e.stopPropagation();
                 onClearLogs();
               }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-muted)',
-                cursor: 'pointer',
-                fontSize: '11px'
-              }}
+              disabled={isStreaming}
             >
-              Clear Logs
+              {uiConfig.labels.clearLogs}
             </button>
           )}
-          <i className={`fa-solid ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}`}></i>
-        </div>
-      </div>
-
-      {expanded && (
-        <div
-          style={{
-            maxHeight: '220px',
-            overflowY: 'auto',
-            padding: '12px',
-            fontSize: '11px',
-            lineHeight: '1.5',
-            color: '#cbd5e1',
-            background: '#05070d'
-          }}
-        >
-          {logs.length === 0 ? (
-            <div style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
-              No log output recorded yet. Run a query to view live agent execution logs.
+          <span className="activity-log-count">{logs.length}</span>
+        </span>
+      </summary>
+      <div className="activity-log-body">
+        {logs.length === 0 ? (
+          <div className="activity-log-empty">{uiConfig.labels.emptyLogs}</div>
+        ) : (
+          logs.map((log, idx) => (
+            <div key={idx} className={`activity-log-line log-level-${log.level.toLowerCase()}`}>
+              <span className="activity-log-timestamp">[{log.timestamp}]</span>
+              <span className="activity-log-level">[{log.level}]</span>
+              <span className="activity-log-logger">{log.logger}:</span>
+              <span className="activity-log-message">{log.message}</span>
             </div>
-          ) : (
-            logs.map((log, idx) => (
-              <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-                <span style={{ color: 'var(--text-dim)', flexShrink: 0 }}>[{log.timestamp}]</span>
-                <span
-                  style={{
-                    color:
-                      log.level === 'ERROR'
-                        ? 'var(--accent-crimson)'
-                        : log.level === 'WARNING'
-                        ? 'var(--accent-amber)'
-                        : 'var(--accent-cyan)',
-                    fontWeight: 600,
-                    flexShrink: 0
-                  }}
-                >
-                  [{log.level}]
-                </span>
-                <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{log.logger}:</span>
-                <span style={{ wordBreak: 'break-all' }}>{log.message}</span>
-              </div>
-            ))
-          )}
-          <div ref={terminalEndRef} />
-        </div>
-      )}
-    </div>
+          ))
+        )}
+        <div ref={terminalEndRef} />
+      </div>
+    </details>
   );
 }
