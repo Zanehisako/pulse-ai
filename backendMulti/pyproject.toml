@@ -80,7 +80,7 @@ training = [
   "torch>=2.0.0",
 ]
 dreamerv3 = [
-  "jax==0.4.33",
+  "jax==0.10.2",
   "jaxlib==0.4.33",
   "elements>=3.19.1",
   "portal>=3.5.0",
