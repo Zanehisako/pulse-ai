@@ -37,7 +37,7 @@ dev = [
     "notebook==7.2.2",
     "ipykernel==6.29.5",
     "pytest==7.0.0",           # ADD THIS for testing
-    "pytest-cov==4.0.0",       # ADD THIS for coverage
+    "pytest-cov==7.1.0",       # ADD THIS for coverage
     "coverage==7.0.0"          # ADD THIS for SonarQube coverage
 ]
 # mlops extras removed — feast/mlflow/pyarrow live in backendMulti/pyproject.toml
